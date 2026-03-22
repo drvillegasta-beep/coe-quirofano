@@ -2597,7 +2597,7 @@ function generarHTMLOrden(o) {
 
 function imprimirOrden() {
   var win=window.open('','_blank','width=800,height=900');
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Orden de Cobro</title><style>body{margin:30px;font-family:Georgia,serif}@media print{body{margin:15mm}}</style>\n</head><body>'+_currentOrdenHTML+'<scr'+'ipt>window.onload=function(){window.print();}</'+'script></body></html>');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Orden de Cobro</title><style>body{margin:30px;font-family:Georgia,serif}@media print{body{margin:15mm}}</style>\n</head><body>'+_currentOrdenHTML+'\x3cscript>window.onload=function(){window.print();}\x3c/script></body></html>');
   win.document.close();
 }
 
@@ -3859,7 +3859,7 @@ function verDetalleConteo(id) {
   html += '<div style="margin-top:24px;padding-top:12px;border-top:1px solid #ddd;text-align:center;font-size:10px;color:#aaa">Ajustes aplicados automáticamente al inventario al cerrar la sesión</div></div>';
 
   var win = window.open('', '_blank', 'width=800,height=900');
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reporte Conteo</title><style>body{margin:30px;font-family:Georgia,serif}@media print{body{margin:15mm}}</style>\n</head><body>' + html + '<scr'+'ipt>window.onload=function(){window.print();}</'+'script></body></html>');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reporte Conteo</title><style>body{margin:30px;font-family:Georgia,serif}@media print{body{margin:15mm}}</style>\n</head><body>' + html + '\x3cscript>window.onload=function(){window.print();}\x3c/script></body></html>');
   win.document.close();
 }
 
@@ -4013,8 +4013,8 @@ function imprimirEtiqueta(item) {
 function imprimirEtiquetasMultiple(items) {
   var etiquetas = items.map(etiquetaHTML).join('');
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Etiquetas COE</title>' +
-    '<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>' +
-    '<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>' +
+    '\x3cscript src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js">\x3c/script>' +
+    '\x3cscript src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js">\x3c/script>' +
     '<style>' +
     'body{margin:10px;font-family:Arial,sans-serif;background:#fff}' +
     '.etiquetas-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px}' +
@@ -4028,7 +4028,7 @@ function imprimirEtiquetasMultiple(items) {
     '@media print{body{margin:5mm}.etiquetas-grid{grid-template-columns:repeat(3,1fr);gap:5px}}' +
     '<\/style><\/head><body>' +
     '<div class="etiquetas-grid">' + etiquetas + '</div>' +
-    '<scr'+'ipt>' +
+    '\x3cscript>' +
     'window.onload = function() {' +
     '  var svgs = document.querySelectorAll(".barcode");' +
     '  for (var i = 0; i < svgs.length; i++) {' +
@@ -4040,7 +4040,7 @@ function imprimirEtiquetasMultiple(items) {
     '  }' +
     '  setTimeout(function(){ window.print(); }, 800);' +
     '};' +
-    '</scr'+'ipt></body></html>';
+    '\x3c/script></body></html>';
 
   var win = window.open('', '_blank', 'width=900,height=800');
   win.document.write(html);
@@ -4785,7 +4785,7 @@ function imprimirConteo(sesionId) {
     '<div class="firma-box">Realizo: ' + sesion.usuario + '<br>' + sesion.rol + '</div>' +
     '<div class="firma-box">Superviso:<br>&nbsp;</div>' +
     '<div class="firma-box">Autorizo:<br>&nbsp;</div></div>' +
-    '<scr'+'ipt>window.onload=function(){window.print();}<'+'/script></body></html>';
+    '\x3cscript>window.onload=function(){window.print();}<'+'/script></body></html>';
   var win = window.open('','_blank','width=900,height=700');
   win.document.write(body); win.document.close();
 }
@@ -4821,7 +4821,7 @@ function imprimirPedido(pedidoId) {
     '<div class="firma-box">Solicito: ' + p.solicitante + '</div>' +
     '<div class="firma-box">Autoriza:<br>&nbsp;</div>' +
     '<div class="firma-box">Recibe:<br>&nbsp;</div></div>' +
-    '<scr'+'ipt>window.onload=function(){window.print();}<'+'/script></body></html>';
+    '\x3cscript>window.onload=function(){window.print();}<'+'/script></body></html>';
   var win = window.open('','_blank','width=900,height=700');
   win.document.write(body); win.document.close();
 }
