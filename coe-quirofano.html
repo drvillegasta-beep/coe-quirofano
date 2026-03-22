@@ -1507,9 +1507,13 @@ tbody td { padding: 10px 14px; font-size: 13px; }
 <div class="modal-overlay" id="modalModulos">
   <div class="modal" style="max-width:420px">
     <div class="modal-header">
-      <h3>⚙
+      <h3>⚙ Módulos</h3>
+    </div>
+    <div id="modalModulosContent"></div>
+  </div>
+</div>
 
-
+<script>
 // ============================================================
 // SUPABASE — CAPA DE DATOS
 // ============================================================
@@ -2593,7 +2597,7 @@ function generarHTMLOrden(o) {
 
 function imprimirOrden() {
   var win=window.open('','_blank','width=800,height=900');
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Orden de Cobro</title><style>body{margin:30px;font-family:Georgia,serif}@media print{body{margin:15mm}}</style>\n</head><body>'+_currentOrdenHTML+'<script>window.onload=function(){window.print();}<\/script></body></html>');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Orden de Cobro</title><style>body{margin:30px;font-family:Georgia,serif}@media print{body{margin:15mm}}</style>\n</head><body>'+_currentOrdenHTML+'<script>window.onload=function(){window.print();}</script></body></html>');
   win.document.close();
 }
 
@@ -3855,7 +3859,7 @@ function verDetalleConteo(id) {
   html += '<div style="margin-top:24px;padding-top:12px;border-top:1px solid #ddd;text-align:center;font-size:10px;color:#aaa">Ajustes aplicados automáticamente al inventario al cerrar la sesión</div></div>';
 
   var win = window.open('', '_blank', 'width=800,height=900');
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reporte Conteo</title><style>body{margin:30px;font-family:Georgia,serif}@media print{body{margin:15mm}}</style>\n</head><body>' + html + '<script>window.onload=function(){window.print();}<\/script></body></html>');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reporte Conteo</title><style>body{margin:30px;font-family:Georgia,serif}@media print{body{margin:15mm}}</style>\n</head><body>' + html + '<script>window.onload=function(){window.print();}</script></body></html>');
   win.document.close();
 }
 
@@ -4009,8 +4013,8 @@ function imprimirEtiqueta(item) {
 function imprimirEtiquetasMultiple(items) {
   var etiquetas = items.map(etiquetaHTML).join('');
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Etiquetas COE</title>' +
-    '<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>' +
-    '<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>' +
+    '<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>' +
+    '<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>' +
     '<style>' +
     'body{margin:10px;font-family:Arial,sans-serif;background:#fff}' +
     '.etiquetas-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px}' +
@@ -4022,7 +4026,7 @@ function imprimirEtiquetasMultiple(items) {
     '.etq-qr{display:inline-block;margin-top:4px}' +
     '.etq-footer{font-size:7px;color:#666;margin-top:3px}' +
     '@media print{body{margin:5mm}.etiquetas-grid{grid-template-columns:repeat(3,1fr);gap:5px}}' +
-    '<\/style><\/head><body>' +
+    '</style></head><body>' +
     '<div class="etiquetas-grid">' + etiquetas + '</div>' +
     '<script>' +
     'window.onload = function() {' +
@@ -4036,7 +4040,7 @@ function imprimirEtiquetasMultiple(items) {
     '  }' +
     '  setTimeout(function(){ window.print(); }, 800);' +
     '};' +
-    '<\/script><\/body><\/html>';
+    '</script></body></html>';
 
   var win = window.open('', '_blank', 'width=900,height=800');
   win.document.write(html);
@@ -4703,9 +4707,8 @@ function renderPedidosIol() {
     var pac=p.paciente||{}, l=p.lente||{};
     var tor=(l.tipo==='torico'||l.tipo==='multifocal_torico')&&l.cilindro?' — Tórico '+l.cilindro+'D/'+l.eje+'°':'';
     var btns=p.estado==='pendiente'&&puedeGestionar
-      ?'<button class="btn btn-ghost btn-sm" onclick="imprimirPedido(\''+p.id+'\')" title="Imprimir">🖨</button>'+
-      '<button class="btn btn-ghost btn-sm" title="Imprimir" onclick="imprimirPedido(\''+p.id+'\')" style="padding:4px 8px">🖨</button>'+
-      '<button class="btn btn-green btn-sm" onclick="iolPedRecibido(\''+p.id+'\')"''>✓ Marcar Recibido</button>'+
+      ?'<button class="btn btn-ghost btn-sm" onclick="imprimirPedido(\''+p.id+'\')" title="Imprimir" style="padding:4px 8px">🖨</button>'+
+      '<button class="btn btn-green btn-sm" onclick="iolPedRecibido(\''+p.id+'\')" >✓ Marcar Recibido</button>'+
         '<button class="btn btn-danger btn-sm" onclick="iolPedCancelar(\''+p.id+'\')">✕</button>'
       :'';
     return '<div class="card" style="margin-bottom:10px;padding:14px 18px;border-color:rgba(167,139,250,0.25)">'+
@@ -4838,14 +4841,8 @@ function checkIolRetrasados() {
   var badge = document.getElementById('iolRetrasadosBadge');
   if (badge) { badge.textContent = ret.length > 0 ? '⚠ ' + ret.length + ' IOL retrasado(s)' : ''; badge.style.display = ret.length > 0 ? '' : 'none'; }
 }
-
-</script>didos.length;i++){if(pedidos[i].id===id){pedidos[i].estado='cancelado';break;}}
-  save(KEYS.pedidos,pedidos);
-  showToast('Pedido cancelado','warn');
-  renderPedidosIol();
-}
-
-</script>    <div style="padding:4px 0 16px">
+</script>
+    <div style="padding:4px 0 16px">
       <div style="font-size:12px;color:var(--text2);margin-bottom:16px">
         Selecciona un respaldo para restaurar. <span style="color:var(--red);font-weight:600">⚠ Los datos actuales serán reemplazados.</span>
       </div>
