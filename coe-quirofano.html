@@ -691,7 +691,8 @@ tbody td { padding: 10px 14px; font-size: 13px; }
       <h2>Generación de Pedidos</h2>
       <div class="btn-row">
         <button class="btn btn-ghost btn-sm" onclick="exportExcel('pedidos')">📥 Excel</button>
-        <button class="btn btn-purple btn-sm" onclick="pedidoIolPremium()">👁 Pedir IOL Premium</button>
+        <span id="iolRetrasadosBadge" style="display:none;background:rgba(255,77,109,0.15);color:var(--red);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700"></span>
+        <span id="iolRetrasadosBadge" style="display:none;background:rgba(255,77,109,0.15);color:var(--red);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;margin-right:6px"></span><button class="btn btn-purple btn-sm" onclick="pedidoIolPremium()">👁 Pedir IOL Premium</button>
         <button class="btn btn-accent btn-sm" onclick="generarPedidoAuto()">⚡ Generar Pedido Automático</button>
       </div>
     </div>
@@ -1224,6 +1225,20 @@ tbody td { padding: 10px 14px; font-size: 13px; }
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalItem')">Cancelar</button>
+    <div class="frow" id="almacenInicialSection">
+      <div class="field">
+        <label>Almacén inicial</label>
+        <select id="itemAlmacenInicial" onchange="toggleCentralFields()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:9px 12px;font-size:13px">
+          <option value="quirofano">Solo Quirófano</option>
+          <option value="central">Solo Almacén Central</option>
+          <option value="ambos">Ambos (cantidades separadas)</option>
+        </select>
+      </div>
+    </div>
+    <div id="centralInitFields" class="frow" style="display:none">
+      <div class="field"><label>Cantidad inicial en Central</label><input type="number" id="itemCantCentral" min="0" value="0"></div>
+      <div class="field"><label>Mínimo en Central</label><input type="number" id="itemMinCentral" min="0" value="0"></div>
+    </div>
       <button class="btn btn-green" onclick="saveItem()">Guardar Material</button>
     </div>
   </div>
@@ -1492,13 +1507,7 @@ tbody td { padding: 10px 14px; font-size: 13px; }
 <div class="modal-overlay" id="modalModulos">
   <div class="modal" style="max-width:420px">
     <div class="modal-header">
-      <h3>⚙ Configurar Módulos</h3>
-      <button class="modal-close" onclick="closeModal('modalModulos')">✕</button>
-    </div>
-    <div id="modalModulosContent"></div>
-  </div>
-</div>
-<<script>
+      <h3>⚙
 
 
 // ============================================================
@@ -1921,9 +1930,18 @@ function _doLoginCore() {
     var p = document.getElementById('loginPass').value;
     if (!u||!p) { document.getElementById('loginError').style.display='block'; return; }
     var usuarios = load(KEYS.usuarios);
+    // Si no hay usuarios cargados, intentar recargar desde Supabase
+    if (!usuarios || !usuarios.length) {
+      sbLoadAll(function() { _doLoginCore(); });
+      return;
+    }
     var found = null;
     for (var i=0;i<usuarios.length;i++) {
-      if (usuarios[i].login.toLowerCase()===u && usuarios[i].activo && usuarios[i].pass===p) { found=usuarios[i]; break; }
+      var uItem = usuarios[i];
+      var loginOk = uItem.login && uItem.login.toLowerCase()===u;
+      var passOk  = uItem.pass === p;
+      var activoOk= uItem.activo === true || uItem.activo === 'true' || uItem.activo === 1;
+      if (loginOk && passOk && activoOk) { found=uItem; break; }
     }
     if (!found) { document.getElementById('loginError').style.display='block'; return; }
     found.lastAccess = new Date().toLocaleString('es-MX');
@@ -1947,6 +1965,7 @@ function _doLoginCore() {
     ejsInit();
     sbStartPolling();
     sbPing(sbMostrarEstado);
+    checkIolRetrasados();
   } catch(err) {
     console.error('Login error:',err);
     document.getElementById('loginError').style.display='block';
@@ -2683,7 +2702,7 @@ function renderBitacora(search,filtroTipo) {
 // ============================================================
 function renderUsuarios() {
   var users=load(KEYS.usuarios);
-  var ALL_TABS=['dashboard','inventario','lentes','paquetes','pedidos','mermas','bitacora','usuarios','salidas','conteo'];
+  var ALL_TABS=['dashboard','inventario','lentes','paquetes','pedidos','mermas','bitacora','usuarios','salidas','conteo','traspasos'];
   var TAB_LABELS={dashboard:'Dashboard',inventario:'Inventario',lentes:'Lentes IOL',paquetes:'Paquetes',pedidos:'Pedidos',mermas:'Mermas',bitacora:'Bitácora',usuarios:'Usuarios',salidas:'Salidas',conteo:'Conteo'};
   document.getElementById('bodyUsuarios').innerHTML=users.map(function(u){
     var rc=u.rol==='admin'?'critico':u.rol==='jefe'?'warn':u.rol==='enfermera'?'estandar':'ok';
@@ -2698,10 +2717,10 @@ function renderUsuarios() {
 
 function configurarModulosUsuario(id) {
   var users=load(KEYS.usuarios),u=null;
-  for(var i=0;i<users.length;i++){if(users[i].id===id){u=users[i];break;}}
+  for(var i=0;i<users.length;i++){if(users[i].id==id){u=users[i];break;}}
   if(!u)return;
-  var ALL_TABS=['dashboard','inventario','lentes','paquetes','pedidos','mermas','bitacora','usuarios','salidas','conteo'];
-  var TAB_LABELS={dashboard:'📊 Dashboard',inventario:'📦 Inventario',lentes:'👁 Lentes IOL',paquetes:'🎁 Paquetes',pedidos:'🛒 Pedidos',mermas:'📉 Mermas',bitacora:'📋 Bitácora',usuarios:'👤 Usuarios',salidas:'🚪 Salidas',conteo:'🔢 Conteo Físico'};
+  var ALL_TABS=['dashboard','inventario','lentes','paquetes','pedidos','mermas','bitacora','usuarios','salidas','conteo','traspasos'];
+  var TAB_LABELS={dashboard:'📊 Dashboard',inventario:'📦 Inventario',lentes:'👁 Lentes IOL',paquetes:'🎁 Paquetes',pedidos:'🛒 Pedidos',mermas:'📉 Mermas',bitacora:'📋 Bitácora',usuarios:'👤 Usuarios',salidas:'🚪 Salidas',conteo:'🔢 Conteo Físico',traspasos:'🔄 Traspasos'};
   var activos=u.tabsPersonalizados||TAB_PERMISOS[u.rol]||[];
   var html='<div style="padding:16px"><div style="font-size:13px;font-weight:700;margin-bottom:12px">Módulos activos para <span style="color:var(--accent)">'+u.nombre+'</span></div>';
   html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
@@ -2719,16 +2738,17 @@ function configurarModulosUsuario(id) {
 }
 
 function guardarModulosUsuario(id) {
-  var ALL_TABS=['dashboard','inventario','lentes','paquetes','pedidos','mermas','bitacora','usuarios','salidas','conteo'];
+  var ALL_TABS=['dashboard','inventario','lentes','paquetes','pedidos','mermas','bitacora','usuarios','salidas','conteo','traspasos'];
   var seleccionados=ALL_TABS.filter(function(t){var el=document.getElementById('modCheck_'+t);return el&&el.checked;});
   var users=load(KEYS.usuarios);
-  for(var i=0;i<users.length;i++){if(users[i].id===id){users[i].tabsPersonalizados=seleccionados;break;}}
+  for(var i=0;i<users.length;i++){if(users[i].id==id){users[i].tabsPersonalizados=seleccionados;break;}}
   save(KEYS.usuarios,users);
+  _cacheTs['usuarios'] = 0;
   closeModal('modalModulos');
   renderUsuarios();
   showToast('Módulos actualizados','success');
   // If editing yourself, reapply tabs
-  if(currentUser&&currentUser.id===id){
+  if(currentUser&&currentUser.id==id){
     currentUser.tabsPersonalizados=seleccionados;
     aplicarPermisosTabs();
   }
@@ -2744,13 +2764,21 @@ function saveUsuario() {
   else{if(!pass){showToast('La contraseña es requerida','error');return;}users.push({id:Date.now(),nombre:nombre,login:login,pass:pass,rol:rol,lastAccess:null,activo:true});}
   save(KEYS.usuarios,users);
   logEvent('alta','Usuario '+(editId?'modificado':'creado')+': '+nombre+' ('+rol+')');
+  // Si se editó el usuario en sesión activa, actualizar currentUser
+  if(editId && currentUser && currentUser.id==editId){
+    currentUser.nombre=nombre; currentUser.rol=rol;
+    aplicarPermisosTabs();
+    var rb=document.getElementById('dashRolBadge'); if(rb) rb.textContent=rolLabel(rol);
+    var ai=document.getElementById('avatarInit'); if(ai) ai.textContent=nombre.charAt(0).toUpperCase();
+  }
+  _cacheTs['usuarios'] = 0; // Force re-fetch on next login
   closeModal('modalUsuario'); renderUsuarios();
   showToast('Usuario guardado','success');
 }
 
 function editUsuario(id) {
   var users=load(KEYS.usuarios),u=null;
-  for(var i=0;i<users.length;i++){if(users[i].id===id){u=users[i];break;}}
+  for(var i=0;i<users.length;i++){if(users[i].id==id){u=users[i];break;}}
   if(!u)return;
   document.getElementById('modalUserTitle').textContent='Editar Usuario';
   document.getElementById('editUserId').value=u.id; document.getElementById('userNombre').value=u.nombre;
@@ -3171,15 +3199,25 @@ function salAgregarExtra() {
 }
 
 function renderSalExtraList() {
-  var div = document.getElementById('salExtraList'); if (!div) return;
+  var div = document.getElementById('salExtraLista');
+  if (!div) return;
+  if (!_salExtra || !_salExtra.length) {
+    div.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0">Sin material extra agregado</div>';
+    return;
+  }
   div.innerHTML = _salExtra.map(function(e, i) {
-    return '<div style="display:flex;align-items:center;gap:8px;padding:4px 0"><span style="flex:1;font-size:12px;color:var(--amber)">⚡ '+e.nombre+'</span>' +
-      '<button class="qty-btn" onclick="salExtraQty('+i+',-1)">−</button>' +
-      '<span style="font-family:var(--mono);font-size:12px">'+e.qty+'</span>' +
-      '<button class="qty-btn" onclick="salExtraQty('+i+',1)">+</button>' +
-      '<span style="font-size:11px;color:var(--text3)">'+e.unidad+'</span>' +
-      '<button class="btn btn-danger btn-sm" onclick="_salExtra.splice('+i+',1);renderSalExtraList()">✕</button></div>';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">' +
+      '<span style="flex:1;font-size:13px">' + e.nombre + '</span>' +
+      '<input type="number" min="1" value="' + e.qty + '" style="width:55px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:4px 8px;font-size:12px;text-align:center" onchange="_salExtra[' + i + '].qty=parseInt(this.value)||1">' +
+      '<span style="font-size:11px;color:var(--text2)">' + e.unidad + '</span>' +
+      '<button class="btn btn-danger btn-sm" onclick="salEliminarExtra(' + i + ')" style="padding:3px 7px;font-size:11px">✕</button>' +
+      '</div>';
   }).join('');
+}
+
+function salEliminarExtra(idx) {
+  _salExtra.splice(idx, 1);
+  renderSalExtraList();
 }
 function salExtraQty(i,d){ _salExtra[i].qty = Math.max(1,_salExtra[i].qty+d); renderSalExtraList(); }
 
@@ -3672,6 +3710,8 @@ function cerrarSesionConteo() {
   if (pendientes.length > 0) {
     if (!confirm(pendientes.length + ' artículos sin contar. ¿Cerrar de todas formas? Los no contados se marcarán como "sin verificar".')) return;
   }
+  // Confirmación final
+  if (!confirm('¿Confirmas el cierre del conteo físico?\nSe ajustará el inventario automáticamente y se enviará reporte por correo.')) return;
 
   var diferencias = _conteoItems.filter(function(i) { return i.contado !== null && i.diferencia !== 0; });
   var sesion = {
@@ -4663,7 +4703,9 @@ function renderPedidosIol() {
     var pac=p.paciente||{}, l=p.lente||{};
     var tor=(l.tipo==='torico'||l.tipo==='multifocal_torico')&&l.cilindro?' — Tórico '+l.cilindro+'D/'+l.eje+'°':'';
     var btns=p.estado==='pendiente'&&puedeGestionar
-      ?'<button class="btn btn-green btn-sm" onclick="iolPedRecibido(\''+p.id+'\')">✓ Marcar Recibido</button>'+
+      ?'<button class="btn btn-ghost btn-sm" onclick="imprimirPedido(\''+p.id+'\')" title="Imprimir">🖨</button>'+
+      '<button class="btn btn-ghost btn-sm" title="Imprimir" onclick="imprimirPedido(\''+p.id+'\')" style="padding:4px 8px">🖨</button>'+
+      '<button class="btn btn-green btn-sm" onclick="iolPedRecibido(\''+p.id+'\')"''>✓ Marcar Recibido</button>'+
         '<button class="btn btn-danger btn-sm" onclick="iolPedCancelar(\''+p.id+'\')">✕</button>'
       :'';
     return '<div class="card" style="margin-bottom:10px;padding:14px 18px;border-color:rgba(167,139,250,0.25)">'+
@@ -4703,6 +4745,101 @@ function iolPedCancelar(id) {
   if(!confirm('¿Cancelar este pedido de IOL?')) return;
   var pedidos=load(KEYS.pedidos)||[];
   for(var i=0;i<pedidos.length;i++){if(pedidos[i].id===id){pedidos[i].estado='cancelado';break;}}
+  save(KEYS.pedidos,pedidos);
+  showToast('Pedido cancelado','warn');
+  renderPedidosIol();
+}
+
+
+// ============================================================
+
+function imprimirConteo(sesionId) {
+  var conteos = load(KEYS.conteos);
+  var sesion = null;
+  for (var i = 0; i < conteos.length; i++) { if (conteos[i].id === sesionId) { sesion = conteos[i]; break; } }
+  if (!sesion) return;
+  var filas = (sesion.items || []).map(function(it) {
+    var diff = it.diferencia || 0;
+    var color = diff < 0 ? '#cc2244' : diff > 0 ? '#00aa66' : '#999';
+    var signo = diff > 0 ? '+' : '';
+    return '<tr><td style="padding:3px 6px;font-size:11px">' + (it.codigo||'') + '</td>' +
+      '<td style="padding:3px 6px;font-size:12px">' + it.nombre + '</td>' +
+      '<td style="padding:3px 6px;text-align:center">' + it.sistema + '</td>' +
+      '<td style="padding:3px 6px;text-align:center;font-weight:700">' + (it.contado !== null ? it.contado : '—') + '</td>' +
+      '<td style="padding:3px 6px;text-align:center;font-weight:700;color:' + color + '">' + (it.contado !== null ? signo + diff : '—') + '</td></tr>';
+  }).join('');
+  var body = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Conteo Fisico</title>' +
+    '<style>body{font-family:Arial,sans-serif;margin:20px}h1{font-size:16px;margin:0}' +
+    'table{width:100%;border-collapse:collapse;margin-top:10px}th{background:#eee;padding:5px 6px;font-size:11px;text-align:left}' +
+    'td{border-bottom:1px solid #eee}.firma{margin-top:40px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px}' +
+    '.firma-box{border-top:1px solid #999;padding-top:6px;font-size:11px;color:#666}@media print{body{margin:10mm}}</style></head><body>' +
+    '<h1>Conteo Fisico — COE Quirofano</h1>' +
+    '<p style="font-size:12px;color:#666">Inicio: ' + sesion.inicio + ' | Cierre: ' + sesion.cierre + ' | Impreso: ' + new Date().toLocaleString('es-MX') + '</p>' +
+    '<p style="font-size:12px"><strong>Verificados:</strong> ' + sesion.contados + '/' + sesion.totalArticulos +
+    ' | <strong>Diferencias:</strong> ' + sesion.diferencias + ' | <strong>Faltantes:</strong> ' + sesion.faltantes + ' | <strong>Sobrantes:</strong> ' + sesion.sobrantes + '</p>' +
+    '<table><thead><tr><th>Codigo</th><th>Articulo</th><th>Sistema</th><th>Fisico</th><th>Diferencia</th></tr></thead><tbody>' + filas + '</tbody></table>' +
+    '<div class="firma" style="margin-top:50px">' +
+    '<div class="firma-box">Realizo: ' + sesion.usuario + '<br>' + sesion.rol + '</div>' +
+    '<div class="firma-box">Superviso:<br>&nbsp;</div>' +
+    '<div class="firma-box">Autorizo:<br>&nbsp;</div></div>' +
+    '<scr'+'ipt>window.onload=function(){window.print();}<'+'/script></body></html>';
+  var win = window.open('','_blank','width=900,height=700');
+  win.document.write(body); win.document.close();
+}
+
+function imprimirPedido(pedidoId) {
+  var pedidos = load(KEYS.pedidos) || [];
+  var p = null;
+  for (var i = 0; i < pedidos.length; i++) { if (pedidos[i].id === pedidoId) { p = pedidos[i]; break; } }
+  if (!p) return;
+  var pac = p.paciente || {}, l = p.lente || {};
+  var esIol = p.tipo === 'iol_premium';
+  var body = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido</title>' +
+    '<style>body{font-family:Arial,sans-serif;margin:20px}h1{font-size:16px;margin:0}' +
+    '.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.field{font-size:12px}.label{color:#666;font-size:11px}' +
+    '.box{background:#f5f0ff;padding:10px;border-radius:6px;margin:10px 0}' +
+    '.firma{margin-top:50px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px}' +
+    '.firma-box{border-top:1px solid #999;padding-top:6px;font-size:11px;color:#666}@media print{body{margin:10mm}}</style></head><body>' +
+    '<h1>' + (esIol ? 'Pedido IOL Premium' : 'Pedido de Material') + ' — COE Quirofano</h1>' +
+    '<div class="grid">' +
+    '<div class="field"><div class="label">Folio</div><strong>' + p.folio + '</strong></div>' +
+    '<div class="field"><div class="label">Fecha</div>' + (p.fechaHora||p.fecha) + '</div>' +
+    '<div class="field"><div class="label">Solicito</div>' + p.solicitante + '</div>' +
+    '<div class="field"><div class="label">Estado</div>' + (p.estado||'—') + '</div>' +
+    (p.fechaEstimada ? '<div class="field"><div class="label">Fecha estimada llegada</div><strong>' + p.fechaEstimada + '</strong></div>' : '') +
+    '</div>' +
+    (esIol ? '<div class="box"><strong>Paciente:</strong> ' + (pac.nombre||'—') + ' | Exp: ' + (pac.expediente||'—') + ' | Ojo: <strong>' + (pac.ojo||'—') + '</strong>' +
+      (pac.medico ? ' | Dr: ' + pac.medico : '') + '<br>' +
+      '<strong>Lente:</strong> ' + (l.tipo||'') + ' ' + (l.poder>0?'+':'') + (l.poder||'') + 'D' +
+      (l.cilindro ? ' Cil:' + l.cilindro + 'D/Eje:' + l.eje + '°' : '') +
+      (l.marca ? ' — ' + l.marca + ' ' + l.modelo : '') + '</div>' : '') +
+    (p.notas ? '<p style="font-size:12px"><strong>Notas:</strong> ' + p.notas + '</p>' : '') +
+    '<div class="firma">' +
+    '<div class="firma-box">Solicito: ' + p.solicitante + '</div>' +
+    '<div class="firma-box">Autoriza:<br>&nbsp;</div>' +
+    '<div class="firma-box">Recibe:<br>&nbsp;</div></div>' +
+    '<scr'+'ipt>window.onload=function(){window.print();}<'+'/script></body></html>';
+  var win = window.open('','_blank','width=900,height=700');
+  win.document.write(body); win.document.close();
+}
+
+function toggleCentralFields() {
+  var v = document.getElementById('itemAlmacenInicial');
+  var div = document.getElementById('centralInitFields');
+  if (v && div) div.style.display = (v.value === 'ambos') ? 'flex' : 'none';
+}
+
+function checkIolRetrasados() {
+  var pedidos = load(KEYS.pedidos) || [];
+  var hoy = today();
+  var ret = pedidos.filter(function(p){
+    return p.tipo === 'iol_premium' && p.estado === 'pendiente' && p.fechaEstimada && p.fechaEstimada < hoy;
+  });
+  var badge = document.getElementById('iolRetrasadosBadge');
+  if (badge) { badge.textContent = ret.length > 0 ? '⚠ ' + ret.length + ' IOL retrasado(s)' : ''; badge.style.display = ret.length > 0 ? '' : 'none'; }
+}
+
+</script>didos.length;i++){if(pedidos[i].id===id){pedidos[i].estado='cancelado';break;}}
   save(KEYS.pedidos,pedidos);
   showToast('Pedido cancelado','warn');
   renderPedidosIol();
@@ -4851,7 +4988,10 @@ function iolPedCancelar(id) {
         <div class="field"><label>Marca</label><input type="text" id="iolPedMarca" placeholder="Ej: Alcon, Johnson"></div>
         <div class="field"><label>Modelo</label><input type="text" id="iolPedModelo" placeholder="Ej: AcrySof IQ"></div>
       </div>
+      <div class="frow">
       <div class="field"><label>Notas para almacén</label><input type="text" id="iolPedNotas" placeholder="Observaciones o urgencia"></div>
+      <div class="field"><label>Fecha estimada de llegada</label><input type="date" id="iolPedFechaEstimada"></div>
+    </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalPedidoIol')">Cancelar</button>
