@@ -1532,6 +1532,7 @@ function sbGet(table, callback) {
   }
   var xhr = new XMLHttpRequest();
   xhr.open('GET', SB_URL + '/rest/v1/' + table + '?order=created_at.desc&limit=2000', true);
+  xhr.timeout = 10000;
   Object.keys(SB_HEADS).forEach(function(h){ xhr.setRequestHeader(h, SB_HEADS[h]); });
   xhr.setRequestHeader('Prefer', 'return=representation');
   xhr.onreadystatechange = function() {
@@ -1548,6 +1549,7 @@ function sbGet(table, callback) {
       }
     } catch(e) { callback(_cache[table] || []); }
   };
+  xhr.ontimeout = function() { callback(_cache[table] || []); };
   xhr.send();
 }
 
@@ -1703,10 +1705,23 @@ function sbLoadAll(callback) {
                 'central','traspasos','pedidos'];
   var done = 0;
   var total = tables.length + 1; // +1 for config
+  var finished = false;
+
+  // Safety timeout — if Supabase takes >12s, proceed anyway
+  var timeout = setTimeout(function() {
+    if (!finished) {
+      console.warn('sbLoadAll timeout — proceeding with partial data');
+      finished = true;
+      _sbLoaded = true;
+      if (callback) callback();
+    }
+  }, 12000);
 
   function finish() {
     done++;
-    if (done >= total) {
+    if (done >= total && !finished) {
+      finished = true;
+      clearTimeout(timeout);
       _sbLoaded = true;
       if (callback) callback();
       _sbLoadCb.forEach(function(cb){ cb(); });
@@ -1724,6 +1739,7 @@ function sbLoadAll(callback) {
   // Config (singular)
   var xhr = new XMLHttpRequest();
   xhr.open('GET', SB_URL + '/rest/v1/config?id=eq.singleton', true);
+  xhr.timeout = 10000;
   Object.keys(SB_HEADS).forEach(function(h){ xhr.setRequestHeader(h, SB_HEADS[h]); });
   xhr.onreadystatechange = function() {
     if (xhr.readyState !== 4) return;
@@ -1733,6 +1749,7 @@ function sbLoadAll(callback) {
     } catch(e) { _mem['config'] = {}; }
     finish();
   };
+  xhr.ontimeout = function() { _mem['config'] = {}; finish(); };
   xhr.send();
 }
 
@@ -1875,16 +1892,24 @@ function initData() {
 // LOGIN / LOGOUT
 // ============================================================
 function doLogin() {
-  // Si ya tenemos datos cargados de Supabase, continuar directo
-  if (_sbLoaded) { _doLoginCore(); return; }
-  // Primera vez — mostrar loading y cargar datos
   document.getElementById('loginError').style.display = 'none';
   var loginBtn = document.querySelector('#loginScreen button[onclick="doLogin()"]');
-  if (loginBtn) loginBtn.textContent = 'Conectando…';
-  sbLoadAll(function() {
-    if (loginBtn) loginBtn.textContent = 'Entrar';
-    _doLoginCore();
-  });
+  if (loginBtn) { loginBtn.textContent = 'Conectando…'; loginBtn.disabled = true; }
+  // Always reload usuarios fresh so password/permission changes apply
+  _cacheTs['usuarios'] = 0;
+  if (!_sbLoaded) {
+    // First load — fetch all tables
+    sbLoadAll(function() {
+      if (loginBtn) { loginBtn.textContent = 'Entrar'; loginBtn.disabled = false; }
+      _doLoginCore();
+    });
+  } else {
+    // Already loaded — just refresh usuarios
+    sbRefresh('usuarios', function() {
+      if (loginBtn) { loginBtn.textContent = 'Entrar'; loginBtn.disabled = false; }
+      _doLoginCore();
+    });
+  }
 }
 function _doLoginCore() {
   try {
@@ -1929,6 +1954,11 @@ function _doLoginCore() {
     sbPing(sbMostrarEstado);
     checkIolRetrasados();
     checkVencimientosEmail();
+    // Force refresh all key tables after login (ensures iOS has latest data)
+    setTimeout(function() {
+      var refreshTables = ['inventario','lentes','paquetes','salidas','ordenes','traspasos','pedidos'];
+      refreshTables.forEach(function(t) { _cacheTs[t] = 0; sbRefresh(t, null); });
+    }, 1500);
   } catch(err) {
     console.error('Login error:',err);
     document.getElementById('loginError').style.display='block';
