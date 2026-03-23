@@ -1579,16 +1579,22 @@ function sbDelete(table, id, callback) {
   xhr.send();
 }
 
+// Track pending writes to avoid Realtime overwriting in-flight data
+var _pendingWrites = {};
+
 function sbSaveAll(table, arr, callback) {
   // Upsert entire array
-  _cacheTs[table] = 0;
   if (!arr || !arr.length) { if (callback) callback(true); return; }
+  _pendingWrites[table] = (_pendingWrites[table] || 0) + 1;
   var xhr = new XMLHttpRequest();
   xhr.open('POST', SB_URL + '/rest/v1/' + table, true);
   Object.keys(SB_HEADS).forEach(function(h){ xhr.setRequestHeader(h, SB_HEADS[h]); });
   xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates,return=minimal');
   xhr.onreadystatechange = function() {
     if (xhr.readyState !== 4) return;
+    _pendingWrites[table] = Math.max(0, (_pendingWrites[table] || 1) - 1);
+    // Invalidate cache AFTER write completes so Realtime refresh gets fresh data
+    if (_pendingWrites[table] === 0) _cacheTs[table] = 0;
     if (callback) callback(xhr.status < 300);
   };
   xhr.send(JSON.stringify(arr));
@@ -1675,7 +1681,7 @@ function load(k) {
 function save(k, arr) {
   var table = KEYS[k] || k;
   _mem[table] = arr;
-  _cacheTs[table] = Date.now();
+  _cacheTs[table] = Date.now() + 10000; // Protect for 10s against Realtime overwrite
   // Persist async — non-blocking
   if (table === 'config') {
     sbUpsert('config', { id: 'singleton', data: arr }, null);
@@ -1732,8 +1738,18 @@ function sbLoadAll(callback) {
 
 // ── Refrescar una tabla específica (para tiempo real manual) ──
 function sbRefresh(table, callback) {
+  // Don't refresh if there's a pending write — it would overwrite in-flight data
+  if (_pendingWrites && _pendingWrites[table] > 0) {
+    if (callback) callback();
+    return;
+  }
   _cacheTs[table] = 0;
   sbGet(table, function(rows) {
+    // Double-check no write started while we were fetching
+    if (_pendingWrites && _pendingWrites[table] > 0) {
+      if (callback) callback();
+      return;
+    }
     _mem[table] = rows.map(function(r){ return toCamel(r); });
     if (callback) callback();
   });
