@@ -4802,7 +4802,50 @@ var SESSION_MS = 10 * 60 * 1000;
 var _realtimeWs = null;
 var _realtimeHb = null;
 
+function sbRefreshUI(table) {
+  if (!currentUser) return;
+  var btn = document.querySelector('.tab-btn.active');
+  var tab = btn ? btn.getAttribute('data-tab') : '';
+  if (tab === 'inventario' && (table==='inventario'||table==='central')) renderInventario();
+  else if (tab === 'lentes'    && table==='lentes')     renderLentes();
+  else if (tab === 'salidas'   && (table==='salidas'||table==='ordenes')) { renderSalidasHistorial(); renderOrdenesTab(); }
+  else if (tab === 'traspasos' && (table==='traspasos'||table==='central')) renderTraspasos();
+  else if (tab === 'pedidos'   && (table==='pedidos'||table==='lentes'))  { renderPedidos(); renderPedidosIol(); }
+  else if (tab === 'dashboard') renderDashboard();
+  tspRefrescarBadge(); checkAlerts();
+}
+
 function sbStartRealtime() {
+  // Also start polling as reliable fallback (5s)
+  if (_pollInterval) clearInterval(_pollInterval);
+  _pollInterval = setInterval(function() {
+    if (!currentUser) return;
+    var tables = ['inventario','lentes','salidas','ordenes','traspasos','pedidos'];
+    var done = 0;
+    tables.forEach(function(t) {
+      // Only refresh if not in a pending write
+      if (_pendingWrites && _pendingWrites[t] > 0) { done++; return; }
+      _cacheTs[t] = 0; // force fresh fetch
+      sbGet(t, function(rows) {
+        var changed = false;
+        var fresh = rows.map(function(r){ return toCamel(r); });
+        var old = _mem[t] || [];
+        if (fresh.length !== old.length) changed = true;
+        if (!changed) {
+          for (var i=0;i<Math.min(fresh.length,3);i++) {
+            if (JSON.stringify(fresh[i]) !== JSON.stringify(old[i])) { changed=true; break; }
+          }
+        }
+        if (changed) {
+          _mem[t] = fresh;
+          sbRefreshUI(t);
+        }
+        done++;
+      });
+    });
+  }, 5000);
+
+  // Also try WebSocket Realtime for instant updates
   try {
     var wsUrl = SB_URL.replace('https://', 'wss://') +
       '/realtime/v1/websocket?apikey=' + SB_KEY + '&vsn=1.0.0';
@@ -4812,39 +4855,44 @@ function sbStartRealtime() {
       sbMostrarEstado(true);
       var tables = ['inventario','lentes','salidas','ordenes','traspasos','pedidos','mermas','central'];
       tables.forEach(function(t) {
+        // Supabase Realtime v2 format
         _realtimeWs.send(JSON.stringify({
-          topic: 'realtime:public:' + t, event: 'phx_join',
-          payload: { config: { broadcast: { self: false } } }, ref: t
+          topic: 'realtime:public:' + t,
+          event: 'phx_join',
+          payload: {
+            config: {
+              postgres_changes: [{ event: '*', schema: 'public', table: t }]
+            }
+          },
+          ref: t
         }));
       });
       _realtimeHb = setInterval(function() {
         if (_realtimeWs && _realtimeWs.readyState === 1) {
           _realtimeWs.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:null}));
         }
-      }, 30000);
+      }, 25000);
     };
 
     _realtimeWs.onmessage = function(ev) {
       try {
         var msg = JSON.parse(ev.data);
-        if (!msg || msg.event === 'phx_reply' || msg.event === 'phx_join') return;
-        if (msg.event === 'INSERT' || msg.event === 'UPDATE' || msg.event === 'DELETE') {
-          var table = msg.topic.replace('realtime:public:','');
-          sbRefresh(table, function() {
-            if (!currentUser) return;
-            var btn = document.querySelector('.tab-btn.active');
-            if (!btn) return;
-            var tab = btn.getAttribute('data-tab');
-            if (tab === 'inventario') renderInventario();
-            else if (tab === 'lentes') renderLentes();
-            else if (tab === 'salidas') { renderSalidasHistorial(); renderOrdenesTab(); }
-            else if (tab === 'traspasos') renderTraspasos();
-            else if (tab === 'pedidos') { renderPedidos(); renderPedidosIol(); }
-            else if (tab === 'dashboard') renderDashboard();
-            tspRefrescarBadge();
-            checkAlerts();
-          });
-        }
+        if (!msg) return;
+        // Handle both old and new event formats
+        var isChange = msg.event === 'INSERT' || msg.event === 'UPDATE' || msg.event === 'DELETE';
+        var isPayloadChange = msg.payload && msg.payload.data &&
+          (msg.payload.data.type === 'INSERT' || msg.payload.data.type === 'UPDATE' || msg.payload.data.type === 'DELETE');
+        if (!isChange && !isPayloadChange) return;
+
+        var table = (msg.topic || '').replace('realtime:public:','');
+        if (!table) return;
+        if (_pendingWrites && _pendingWrites[table] > 0) return;
+        _cacheTs[table] = 0;
+        sbGet(table, function(rows) {
+          if (_pendingWrites && _pendingWrites[table] > 0) return;
+          _mem[table] = rows.map(function(r){ return toCamel(r); });
+          sbRefreshUI(table);
+        });
       } catch(e2) {}
     };
 
@@ -4852,16 +4900,17 @@ function sbStartRealtime() {
     _realtimeWs.onclose = function() {
       clearInterval(_realtimeHb);
       sbMostrarEstado(false);
-      setTimeout(function() { if (currentUser) sbStartRealtime(); }, 5000);
+      setTimeout(function() { if (currentUser) sbStartRealtime(); }, 8000);
     };
   } catch(e) {
-    console.warn('Realtime unavailable, using polling');
-    sbStartPolling();
+    console.warn('WebSocket unavailable, using polling only');
   }
 }
 
 function sbStopRealtime() {
   clearInterval(_realtimeHb);
+  clearInterval(_pollInterval);
+  _pollInterval = null;
   if (_realtimeWs) { try { _realtimeWs.close(); } catch(e){} _realtimeWs = null; }
 }
 
