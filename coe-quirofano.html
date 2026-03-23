@@ -1894,23 +1894,7 @@ function initData() {
   });
   save(KEYS.usuarios, usuarios);
 
-  if (!load(KEYS.inventario).length) {
-    save(KEYS.inventario,[
-      {id:uid(),codigo:'SUT-001',nombre:'Sutura Vicryl 3-0',tipo:'critico',categoria:'Suturas',existencia:8,minimo:15,unidad:'pza',caducidad:futureDate(60),esterilidad:futureDate(45),proveedor:'Ethicon',ubicacion:'A-01',notas:''},
-      {id:uid(),codigo:'GAS-002',nombre:'Gasas Estériles 10x10',tipo:'no_critico',categoria:'Gasas/Compresas',existencia:200,minimo:50,unidad:'pza',caducidad:futureDate(365),esterilidad:futureDate(300),proveedor:'MedPro',ubicacion:'B-02',notas:''},
-      {id:uid(),codigo:'SOL-003',nombre:'BSS Solución Salina Balanceada',tipo:'critico',categoria:'Soluciones',existencia:3,minimo:10,unidad:'frasco',caducidad:futureDate(20),esterilidad:futureDate(20),proveedor:'Alcon',ubicacion:'C-01',notas:''},
-      {id:uid(),codigo:'VIS-004',nombre:'Viscoelástico OVD',tipo:'critico',categoria:'Soluciones',existencia:12,minimo:8,unidad:'jeringa',caducidad:futureDate(180),esterilidad:futureDate(150),proveedor:'Alcon',ubicacion:'C-02',notas:''},
-      {id:uid(),codigo:'CAP-005',nombre:'Cápula Escleral Siliconada',tipo:'no_critico',categoria:'Instrumental',existencia:25,minimo:10,unidad:'pza',caducidad:futureDate(730),esterilidad:futureDate(700),proveedor:'MedPro',ubicacion:'D-03',notas:''}
-    ]);
-  }
-  if (!load(KEYS.lentes).length) {
-    save(KEYS.lentes,[
-      {id:uid(),codigo:'IOL-SA60AT',marca:'Alcon',modelo:'SA60AT',clasif:'estandar',tipo:'monofocal',poder:21.0,cilindro:0,eje:0,inyector:'Monarch III',proveedor:'Alcon México',existencia:5,caducidad:futureDate(400),precio:0,notas:''},
-      {id:uid(),codigo:'IOL-ZCB00',marca:'J&J',modelo:'ZCB00 Tecnis',clasif:'estandar',tipo:'monofocal',poder:20.5,cilindro:0,eje:0,inyector:'Unfolder Platinum',proveedor:'J&J México',existencia:3,caducidad:futureDate(500),precio:0,notas:''},
-      {id:uid(),codigo:'IOL-SN6AT3',marca:'Alcon',modelo:'AcrySof IQ Toric SN6AT3',clasif:'premium',tipo:'torico',poder:21.0,cilindro:1.5,eje:90,inyector:'Monarch III',proveedor:'Alcon México',existencia:2,caducidad:futureDate(350),precio:0,notas:''},
-      {id:uid(),codigo:'IOL-ZXT450',marca:'J&J',modelo:'Symfony ZXT450',clasif:'premium',tipo:'edof',poder:22.0,cilindro:0,eje:0,inyector:'Unfolder Platinum',proveedor:'J&J México',existencia:1,caducidad:futureDate(600),precio:0,notas:''}
-    ]);
-  }
+  // Datos demo eliminados — sistema listo para datos reales
 }
 
 // ============================================================
