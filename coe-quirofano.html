@@ -1531,10 +1531,13 @@ function sbGet(table, callback) {
     callback(_cache[table]); return;
   }
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', SB_URL + '/rest/v1/' + table + '?order=created_at.desc&limit=2000', true);
-  xhr.timeout = 10000;
+  // Cache-busting param prevents iOS Safari from returning stale HTTP cache
+  var url = SB_URL + '/rest/v1/' + table + '?order=created_at.desc&limit=2000&_t=' + now;
+  xhr.open('GET', url, true);
+  xhr.timeout = 15000;
   Object.keys(SB_HEADS).forEach(function(h){ xhr.setRequestHeader(h, SB_HEADS[h]); });
-  xhr.setRequestHeader('Prefer', 'return=representation');
+  xhr.setRequestHeader('Accept', 'application/json');
+  xhr.setRequestHeader('Cache-Control', 'no-cache');
   xhr.onreadystatechange = function() {
     if (xhr.readyState !== 4) return;
     try {
@@ -1547,9 +1550,15 @@ function sbGet(table, callback) {
         console.error('SB GET error', table, xhr.status, xhr.responseText);
         callback(_cache[table] || []);
       }
-    } catch(e) { callback(_cache[table] || []); }
+    } catch(e) {
+      console.error('SB GET parse error', table, e);
+      callback(_cache[table] || []);
+    }
   };
-  xhr.ontimeout = function() { callback(_cache[table] || []); };
+  xhr.ontimeout = function() {
+    console.warn('SB GET timeout', table);
+    callback(_cache[table] || []);
+  };
   xhr.send();
 }
 
@@ -1730,6 +1739,8 @@ function sbLoadAll(callback) {
   }
 
   tables.forEach(function(table) {
+    _cache[table] = null; // clear HTTP cache to force fresh fetch
+    _cacheTs[table] = 0;
     sbGet(table, function(rows) {
       _mem[table] = rows.map(function(r){ return toCamel(r); });
       finish();
@@ -1954,11 +1965,26 @@ function _doLoginCore() {
     sbPing(sbMostrarEstado);
     checkIolRetrasados();
     checkVencimientosEmail();
-    // Force refresh all key tables after login (ensures iOS has latest data)
+    // Force refresh all key tables after login — re-render UI when data arrives
     setTimeout(function() {
       var refreshTables = ['inventario','lentes','paquetes','salidas','ordenes','traspasos','pedidos'];
-      refreshTables.forEach(function(t) { _cacheTs[t] = 0; sbRefresh(t, null); });
-    }, 1500);
+      var refreshDone = 0;
+      refreshTables.forEach(function(t) {
+        _cacheTs[t] = 0;
+        _cache[t] = null; // clear HTTP cache too
+        sbGet(t, function(rows) {
+          _mem[t] = rows.map(function(r){ return toCamel(r); });
+          refreshDone++;
+          if (refreshDone === refreshTables.length) {
+            // All tables refreshed — re-render current view
+            renderAll();
+            checkAlerts();
+            renderDashboard();
+            showToast('Datos actualizados', 'success');
+          }
+        });
+      });
+    }, 500);
   } catch(err) {
     console.error('Login error:',err);
     document.getElementById('loginError').style.display='block';
