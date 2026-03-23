@@ -468,7 +468,8 @@ tbody td { padding: 10px 14px; font-size: 13px; }
     <div class="section-hdr">
       <h2>Dashboard <small id="dashDate"></small></h2>
       <div class="btn-row">
-<span id="sbStatus" title="Conexión Supabase" style="cursor:default;font-size:14px">🟡</span>
+<div style="position:relative;flex:1;max-width:280px"><input type="text" id="globalSearch" placeholder="🔍 Buscar paciente, material, IOL..." oninput="busquedaGlobal(this.value)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:6px 12px;font-size:12px"><div id="globalResultados" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);z-index:1000;max-height:320px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.4)"></div></div>
+        <span id="sbStatus" title="Conexión Supabase" style="cursor:default;font-size:14px">🟡</span>
         <span id="dashRolBadge" style="font-size:11px;padding:4px 10px;border-radius:20px;font-weight:600"></span>
         <button class="btn btn-ghost btn-sm" onclick="exportExcel('dashboard')">📥 Excel</button>
         <button class="btn btn-ghost btn-sm" onclick="hacerRespaldo(false)" title="Respaldo manual por correo">📧 Respaldar</button>
@@ -562,6 +563,7 @@ tbody td { padding: 10px 14px; font-size: 13px; }
       <h2>Inventario General</h2>
       <div class="btn-row">
         <button class="btn btn-ghost btn-sm" onclick="exportExcel('inventario')">📥 Excel</button>
+        <button class="btn btn-ghost btn-sm" onclick="abrirEntradaMaterial()">📦 Entrada</button>
         <button class="btn btn-ghost btn-sm" onclick="generarEtiquetasLote()">🏷 Imprimir Etiquetas</button>
         <button class="btn btn-green btn-sm" id="btnAgregarMaterial" onclick="openModal('modalItem')" style="display:none">+ Agregar Material</button>
       </div>
@@ -1493,23 +1495,8 @@ tbody td { padding: 10px 14px; font-size: 13px; }
       <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
         <div style="width:220px;height:80px;border:3px solid var(--accent);border-radius:8px;box-shadow:0 0 0 2000px rgba(0,0,0,0.45)"></div>
       </div>
-      <div id="camaraScanResult" style="position:absolute;bottom:12px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:700;background:rgba(0,0,0,0.6);padding:6px"></div>
+      <div id="camaraScanResult" style="position:absolute;bottom:12px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:700;background:rgba(0,0,0,0.6);color:#fff;padding:4px;border-radius:4px"></div>
     </div>
-    <div style="font-size:12px;color:var(--text2);text-align:center;margin-bottom:8px">Centra el código de barras o QR en el recuadro</div>
-    <div id="camaraStatus" style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px">Iniciando cámara…</div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="cerrarCamara()">Cerrar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: CONFIGURAR MÓDULOS USUARIO -->
-<div class="modal-overlay" id="modalModulos">
-  <div class="modal" style="max-width:420px">
-    <div class="modal-header">
-      <h3>⚙ Módulos</h3>
-    </div>
-    <div id="modalModulosContent"></div>
   </div>
 </div>
 
@@ -1754,36 +1741,7 @@ function sbRefresh(table, callback) {
 
 // ── Polling para multi-dispositivo (cada 15s) ─────────────────
 var _pollInterval = null;
-function sbStartPolling() {
-  if (_pollInterval) return;
-  _pollInterval = setInterval(function() {
-    if (!currentUser) return;
-    // Refresh tables que cambian frecuentemente
-    var active = ['inventario','lentes','salidas','ordenes','traspasos','pedidos'];
-    var done = 0;
-    active.forEach(function(t) {
-      sbRefresh(t, function() {
-        done++;
-        if (done === active.length) {
-          // Silent UI refresh
-          if (document.querySelector('.tab-btn.active')) {
-            var tab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
-            if (tab === 'inventario') renderInventario();
-            if (tab === 'lentes')     renderLentes();
-            if (tab === 'salidas')    renderSalidasHistorial();
-            if (tab === 'traspasos')  renderTraspasos();
-            tspRefrescarBadge();
-            checkAlerts();
-          }
-        }
-      });
-    });
-  }, 15000);
-}
-
-function sbStopPolling() {
-  if (_pollInterval) { clearInterval(_pollInterval); _pollInterval = null; }
-}
+// sbStartPolling/sbStopPolling overridden by v5 Realtime module
 
 // ── Indicador de conexión ─────────────────────────────────────
 function sbPing(callback) {
@@ -1815,7 +1773,7 @@ var pkgItems = [];
 var pkgExtra = [];
 var currentPaqueteUsar = null;
 var _sessionTimer = null;
-var SESSION_MS = 30 * 60 * 1000;
+var SESSION_MS = 10 * 60 * 1000;
 var _currentOrdenHTML = '';
 var _ordenFolioCounter = null;
 
@@ -1954,6 +1912,7 @@ function _doLoginCore() {
     sbStartPolling();
     sbPing(sbMostrarEstado);
     checkIolRetrasados();
+    checkVencimientosEmail();
   } catch(err) {
     console.error('Login error:',err);
     document.getElementById('loginError').style.display='block';
@@ -4643,7 +4602,7 @@ function iolPedTipoChange() {
   if(torico) torico.style.display=(tipo==='torico'||tipo==='multifocal_torico')?'flex':'none';
 }
 
-function savePedidoIol() {
+function _savePedidoIolBase() {
   var nombre=document.getElementById('iolPedNombre').value.trim();
   var expediente=document.getElementById('iolPedExpediente').value.trim();
   var fechaNac=document.getElementById('iolPedFechaNac').value;
@@ -4809,6 +4768,429 @@ function imprimirPedido(pedidoId) {
   var win = window.open('','_blank','width=900,height=700');
   win.document.write(body); win.document.close();
 }
+
+// toggleCentralFields defined in v5 module
+
+
+// checkIolRetrasados defined in v5 module
+
+
+// ============================================================
+// MEJORAS v5
+// ============================================================
+
+// ── 1. SESSION 10 MIN ────────────────────────────────────────
+var SESSION_MS = 10 * 60 * 1000;
+
+// ── 2. SUPABASE REALTIME ─────────────────────────────────────
+var _realtimeWs = null;
+var _realtimeHb = null;
+
+function sbStartRealtime() {
+  try {
+    var wsUrl = SB_URL.replace('https://', 'wss://') +
+      '/realtime/v1/websocket?apikey=' + SB_KEY + '&vsn=1.0.0';
+    _realtimeWs = new WebSocket(wsUrl);
+
+    _realtimeWs.onopen = function() {
+      sbMostrarEstado(true);
+      var tables = ['inventario','lentes','salidas','ordenes','traspasos','pedidos','mermas','central'];
+      tables.forEach(function(t) {
+        _realtimeWs.send(JSON.stringify({
+          topic: 'realtime:public:' + t, event: 'phx_join',
+          payload: { config: { broadcast: { self: false } } }, ref: t
+        }));
+      });
+      _realtimeHb = setInterval(function() {
+        if (_realtimeWs && _realtimeWs.readyState === 1) {
+          _realtimeWs.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:null}));
+        }
+      }, 30000);
+    };
+
+    _realtimeWs.onmessage = function(ev) {
+      try {
+        var msg = JSON.parse(ev.data);
+        if (!msg || msg.event === 'phx_reply' || msg.event === 'phx_join') return;
+        if (msg.event === 'INSERT' || msg.event === 'UPDATE' || msg.event === 'DELETE') {
+          var table = msg.topic.replace('realtime:public:','');
+          sbRefresh(table, function() {
+            if (!currentUser) return;
+            var btn = document.querySelector('.tab-btn.active');
+            if (!btn) return;
+            var tab = btn.getAttribute('data-tab');
+            if (tab === 'inventario') renderInventario();
+            else if (tab === 'lentes') renderLentes();
+            else if (tab === 'salidas') { renderSalidasHistorial(); renderOrdenesTab(); }
+            else if (tab === 'traspasos') renderTraspasos();
+            else if (tab === 'pedidos') { renderPedidos(); renderPedidosIol(); }
+            else if (tab === 'dashboard') renderDashboard();
+            tspRefrescarBadge();
+            checkAlerts();
+          });
+        }
+      } catch(e2) {}
+    };
+
+    _realtimeWs.onerror = function() { sbMostrarEstado(false); };
+    _realtimeWs.onclose = function() {
+      clearInterval(_realtimeHb);
+      sbMostrarEstado(false);
+      setTimeout(function() { if (currentUser) sbStartRealtime(); }, 5000);
+    };
+  } catch(e) {
+    console.warn('Realtime unavailable, using polling');
+    sbStartPolling();
+  }
+}
+
+function sbStopRealtime() {
+  clearInterval(_realtimeHb);
+  if (_realtimeWs) { try { _realtimeWs.close(); } catch(e){} _realtimeWs = null; }
+}
+
+// Override sbStartPolling to use Realtime
+var _sbStartPollingOrig = sbStartPolling;
+function sbStartPolling() { sbStartRealtime(); }
+function sbStopPolling()  { sbStopRealtime(); }
+
+// ── 3. IOL PREMIUM — VALIDACION PACIENTE OBLIGATORIO ─────────
+var _savePedidoIolOrig = _savePedidoIolBase;
+function savePedidoIol() {
+  var nombre     = (document.getElementById('iolPedNombre')     || {value:''}).value.trim();
+  var expediente = (document.getElementById('iolPedExpediente') || {value:''}).value.trim();
+  var ojo        = (document.getElementById('iolPedOjo')        || {value:''}).value;
+  var poder      = (document.getElementById('iolPedPoder')      || {value:''}).value.trim();
+  if (!nombre)     { showToast('Nombre del paciente es obligatorio','error'); return; }
+  if (!expediente) { showToast('Expediente es obligatorio','error'); return; }
+  if (!ojo)        { showToast('Ojo (OD/OI/AO) es obligatorio','error'); return; }
+  if (!poder)      { showToast('Poder del lente es obligatorio','error'); return; }
+  _savePedidoIolOrig();
+}
+
+// ── 4. CANCELAR SALIDA ────────────────────────────────────────
+function cancelarSalida(salidaId) {
+  var salidas = load(KEYS.salidas), salida = null;
+  for (var i=0;i<salidas.length;i++){if(salidas[i].id===salidaId){salida=salidas[i];break;}}
+  if (!salida){showToast('Salida no encontrada','error');return;}
+  var esPropia   = salida.capturista === currentUser.nombre;
+  var esSupervisor = currentUser.rol==='admin'||currentUser.rol==='jefe';
+  if (!esPropia && !esSupervisor){showToast('Solo puedes cancelar tus propias salidas','error');return;}
+  if (salida.cancelada){showToast('Esta salida ya fue cancelada','warn');return;}
+  var motivo = prompt('Motivo de cancelación (obligatorio):');
+  if (!motivo||!motivo.trim()){showToast('El motivo es obligatorio','warn');return;}
+
+  var inv=load(KEYS.inventario), lentes=load(KEYS.lentes);
+  if (salida.paqueteItems&&salida.paqueteItems.length) {
+    salida.paqueteItems.forEach(function(pi){
+      for(var j=0;j<inv.length;j++){if(inv[j].id===pi.id){inv[j].existencia+=(pi.qty||1);break;}}
+    });
+  }
+  if (salida.extras&&salida.extras.length) {
+    salida.extras.forEach(function(e){
+      for(var j=0;j<inv.length;j++){if(inv[j].id===e.id){inv[j].existencia+=(e.qty||1);break;}}
+    });
+  }
+  if (salida.lenteId) {
+    for(var k=0;k<lentes.length;k++){if(lentes[k].id===salida.lenteId){lentes[k].existencia+=1;break;}}
+    save(KEYS.lentes,lentes);
+  }
+  save(KEYS.inventario,inv);
+
+  for(var m=0;m<salidas.length;m++){
+    if(salidas[m].id===salidaId){
+      salidas[m].cancelada=true;
+      salidas[m].motivoCancelacion=motivo.trim();
+      salidas[m].canceladaPor=currentUser.nombre;
+      salidas[m].fechaCancelacion=new Date().toLocaleString('es-MX');
+      break;
+    }
+  }
+  save(KEYS.salidas,salidas);
+  logEvent('baja','Salida cancelada: '+salidaId+' — '+motivo);
+  showToast('Salida cancelada y stock restaurado','success');
+  renderSalidasHistorial(); checkAlerts();
+}
+
+// ── 5. DEVOLUCION DE MATERIAL ─────────────────────────────────
+function abrirDevolucion() {
+  var inv=load(KEYS.inventario);
+  var opts=inv.map(function(i){
+    return '<option value="'+i.id+'">'+i.nombre+' ('+i.codigo+') — Stock: '+i.existencia+' '+i.unidad+'</option>';
+  }).join('');
+  var html='<div style="padding:4px 0 16px">'+
+    '<div class="field"><label>Artículo a devolver *</label>'+
+    '<select id="devItemId" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:9px 12px;font-size:13px">'+
+    '<option value="">— Selecciona artículo —</option>'+opts+'</select></div>'+
+    '<div class="frow">'+
+    '<div class="field"><label>Cantidad *</label><input type="number" id="devCantidad" min="1" value="1"></div>'+
+    '<div class="field"><label>Motivo</label>'+
+    '<select id="devMotivo" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:9px 12px;font-size:13px">'+
+    '<option value="sobrante">Sobrante de cirugía</option>'+
+    '<option value="no_utilizado">No utilizado</option>'+
+    '<option value="error_cargo">Error en cargo</option>'+
+    '<option value="otro">Otro</option>'+
+    '</select></div></div>'+
+    '<div class="field"><label>Notas</label><input type="text" id="devNotas" placeholder="Observaciones"></div>'+
+    '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">'+
+    '<button class="btn btn-ghost" onclick="closeModal(\'modalDevolucion\')">Cancelar</button>'+
+    '<button class="btn btn-green" onclick="confirmarDevolucion()">✓ Confirmar</button>'+
+    '</div></div>';
+  document.getElementById('modalDevolucionContent').innerHTML=html;
+  openModal('modalDevolucion');
+}
+
+function confirmarDevolucion() {
+  var itemId=document.getElementById('devItemId').value;
+  var cantidad=parseInt(document.getElementById('devCantidad').value)||0;
+  var motivo=document.getElementById('devMotivo').value;
+  var notas=document.getElementById('devNotas').value.trim();
+  if(!itemId){showToast('Selecciona un artículo','error');return;}
+  if(cantidad<1){showToast('Cantidad debe ser mayor a 0','error');return;}
+  var inv=load(KEYS.inventario), item=null;
+  for(var i=0;i<inv.length;i++){if(inv[i].id===itemId){item=inv[i];inv[i].existencia+=cantidad;break;}}
+  if(!item){showToast('Artículo no encontrado','error');return;}
+  save(KEYS.inventario,inv);
+  var mermas=load(KEYS.mermas);
+  mermas.unshift({id:uid(),fecha:today(),itemId:itemId,nombre:item.nombre,codigo:item.codigo,
+    cantidad:cantidad,unidad:item.unidad,tipo:'devolucion',motivo:motivo,notas:notas,
+    usuario:currentUser.nombre,rol:rolLabel(currentUser.rol)});
+  save(KEYS.mermas,mermas);
+  logEvent('alta','Devolución: '+item.nombre+' ×'+cantidad+' — '+motivo);
+  closeModal('modalDevolucion');
+  showToast('Devolución registrada: +'+cantidad+' '+item.unidad+' a '+item.nombre,'success');
+  renderInventario(); checkAlerts();
+}
+
+// ── 6. CAMBIO DE CONTRASEÑA ──────────────────────────────────
+function abrirCambioPass() {
+  var html='<div style="padding:4px 0 16px">'+
+    '<div class="field"><label>Contraseña actual *</label><input type="password" id="passActual" placeholder="Tu contraseña actual"></div>'+
+    '<div class="field"><label>Nueva contraseña *</label><input type="password" id="passNueva" placeholder="Mínimo 4 caracteres"></div>'+
+    '<div class="field"><label>Confirmar nueva *</label><input type="password" id="passConfirm" placeholder="Repite la nueva contraseña"></div>'+
+    '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">'+
+    '<button class="btn btn-ghost" onclick="closeModal(\'modalCambioPass\')">Cancelar</button>'+
+    '<button class="btn btn-accent" onclick="confirmarCambioPass()">🔐 Cambiar</button>'+
+    '</div></div>';
+  document.getElementById('modalCambioPassContent').innerHTML=html;
+  openModal('modalCambioPass');
+}
+
+function confirmarCambioPass() {
+  var actual=(document.getElementById('passActual')||{value:''}).value;
+  var nueva=(document.getElementById('passNueva')||{value:''}).value;
+  var confirm2=(document.getElementById('passConfirm')||{value:''}).value;
+  if(!actual){showToast('Ingresa tu contraseña actual','error');return;}
+  if(!nueva||nueva.length<4){showToast('La nueva contraseña debe tener al menos 4 caracteres','error');return;}
+  if(nueva!==confirm2){showToast('Las contraseñas no coinciden','error');return;}
+  if(currentUser.pass!==actual){showToast('Contraseña actual incorrecta','error');return;}
+  var users=load(KEYS.usuarios);
+  for(var i=0;i<users.length;i++){
+    if(users[i].id==currentUser.id){users[i].pass=nueva;currentUser.pass=nueva;break;}
+  }
+  save(KEYS.usuarios,users);
+  _cacheTs['usuarios']=0;
+  logEvent('alta','Cambio de contraseña: '+currentUser.nombre);
+  closeModal('modalCambioPass');
+  showToast('Contraseña actualizada','success');
+}
+
+// ── 7. ENTRADA DE MATERIAL CON ESCANER ───────────────────────
+function abrirEntradaMaterial() {
+  if (typeof BarcodeDetector === 'undefined') {
+    var code=prompt('Ingresa el código de barras:');
+    if(code) buscarPorCodigoEntrada(code.trim());
+    return;
+  }
+  openModal('modalScanEntrada');
+  var video=document.getElementById('scanEntradaVideo');
+  if(!video) return;
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
+    .then(function(stream){
+      video.srcObject=stream; video.play();
+      var detector=new BarcodeDetector({formats:['code_128','code_39','ean_13','ean_8','qr_code']});
+      var scanning=true;
+      function scan(){
+        if(!scanning) return;
+        detector.detect(video).then(function(codes){
+          if(codes.length>0){
+            scanning=false;
+            video.srcObject.getTracks().forEach(function(t){t.stop();});
+            closeModal('modalScanEntrada');
+            buscarPorCodigoEntrada(codes[0].rawValue);
+          } else requestAnimationFrame(scan);
+        }).catch(function(){requestAnimationFrame(scan);});
+      }
+      requestAnimationFrame(scan);
+    }).catch(function(){closeModal('modalScanEntrada');});
+}
+
+function buscarPorCodigoEntrada(codigo) {
+  var inv=load(KEYS.inventario), item=null;
+  for(var i=0;i<inv.length;i++){if(inv[i].codigo===codigo){item=inv[i];break;}}
+  if(item){
+    abrirModalEntrada(item);
+  } else {
+    openModal('modalItem');
+    var el=document.getElementById('itemCodigo');
+    if(el) el.value=codigo;
+    showToast('Código no encontrado — completa los datos','warn');
+  }
+}
+
+function abrirModalEntrada(item) {
+  var html='<div style="padding:4px 0 16px">'+
+    '<div style="padding:10px 14px;background:rgba(0,212,255,0.08);border-radius:var(--radius);margin-bottom:16px">'+
+    '<div style="font-weight:700">'+item.nombre+'</div>'+
+    '<div style="font-size:12px;color:var(--text2)">'+item.codigo+' · Stock actual: <strong>'+item.existencia+' '+item.unidad+'</strong></div></div>'+
+    '<div class="frow">'+
+    '<div class="field"><label>Cantidad a ingresar *</label>'+
+    '<input type="number" id="entradaCantidad" min="1" value="1" style="font-size:18px;font-weight:700;text-align:center"></div>'+
+    '<div class="field"><label>Lote (opcional)</label><input type="text" id="entradaLote" placeholder="Número de lote"></div>'+
+    '</div>'+
+    '<div class="frow">'+
+    '<div class="field"><label>Caducidad (opcional)</label><input type="date" id="entradaCaducidad"></div>'+
+    '<div class="field"><label>Proveedor</label><input type="text" id="entradaProveedor" value="'+(item.proveedor||'')+'"></div>'+
+    '</div>'+
+    '<input type="hidden" id="entradaItemId" value="'+item.id+'">'+
+    '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">'+
+    '<button class="btn btn-ghost" onclick="closeModal(\'modalEntrada\')">Cancelar</button>'+
+    '<button class="btn btn-green" onclick="confirmarEntrada()">📦 Registrar Entrada</button>'+
+    '</div></div>';
+  document.getElementById('modalEntradaContent').innerHTML=html;
+  openModal('modalEntrada');
+}
+
+function confirmarEntrada() {
+  var itemId=document.getElementById('entradaItemId').value;
+  var cantidad=parseInt(document.getElementById('entradaCantidad').value)||0;
+  var lote=(document.getElementById('entradaLote')||{value:''}).value.trim();
+  var caducidad=(document.getElementById('entradaCaducidad')||{value:''}).value;
+  var proveedor=(document.getElementById('entradaProveedor')||{value:''}).value.trim();
+  if(cantidad<1){showToast('Cantidad debe ser mayor a 0','error');return;}
+  var inv=load(KEYS.inventario), item=null;
+  for(var i=0;i<inv.length;i++){
+    if(inv[i].id===itemId){
+      item=inv[i]; inv[i].existencia+=cantidad;
+      if(caducidad) inv[i].caducidad=caducidad;
+      if(proveedor) inv[i].proveedor=proveedor;
+      if(lote)      inv[i].lote=lote;
+      break;
+    }
+  }
+  if(!item){showToast('Artículo no encontrado','error');return;}
+  save(KEYS.inventario,inv);
+  if(lote){
+    var lotes=load(KEYS.lotes);
+    lotes.unshift({id:uid(),itemId:itemId,numero:lote,caducidad:caducidad,cantidad:cantidad,proveedor:proveedor,fechaEntrada:today()});
+    save(KEYS.lotes,lotes);
+  }
+  logEvent('alta','Entrada: '+item.nombre+' ×'+cantidad+(lote?' Lote:'+lote:''));
+  closeModal('modalEntrada');
+  showToast('Entrada registrada: +'+cantidad+' '+item.unidad,'success');
+  renderInventario(); checkAlerts();
+}
+
+// ── 8. ALERTAS VENCIMIENTO EMAIL ─────────────────────────────
+function checkVencimientosEmail() {
+  var last=lsGet('coeq_last_venc_alert')||'';
+  if(last===today()) return;
+  var inv=load(KEYS.inventario), lentes=load(KEYS.lentes);
+  var hoy=new Date(), alertas=[];
+  inv.forEach(function(item){
+    if(!item.caducidad) return;
+    var dias=Math.floor((new Date(item.caducidad)-hoy)/86400000);
+    if(dias>=0&&dias<=30) alertas.push('  • '+item.nombre+' ('+item.codigo+') — '+dias+' días ('+fmtDate(item.caducidad)+')');
+  });
+  lentes.forEach(function(l){
+    if(!l.caducidad) return;
+    var dias=Math.floor((new Date(l.caducidad)-hoy)/86400000);
+    if(dias>=0&&dias<=30) alertas.push('  • IOL '+l.marca+' '+l.modelo+' '+(l.poder>0?'+':'')+l.poder+'D — '+dias+' días');
+  });
+  if(!alertas.length) return;
+  var cuerpo='ALERTA DE VENCIMIENTOS - COE Quirofano\n\nArticulos que caducan en 30 dias:\n\n'+alertas.join('\n')+'\n\nFecha: '+new Date().toLocaleString('es-MX')+'\n\nCOE Quirofano';
+  ejsEnviar('⚠ COE — '+alertas.length+' artículo(s) por vencer', cuerpo);
+  lsSet('coeq_last_venc_alert', today());
+}
+
+// ── 9. HOJA DE CARGO ─────────────────────────────────────────
+function imprimirHojaCargo(salidaId) {
+  var salidas=load(KEYS.salidas), s=null;
+  for(var i=0;i<salidas.length;i++){if(salidas[i].id===salidaId){s=salidas[i];break;}}
+  if(!s) return;
+  var extrasRows=(s.extras||[]).map(function(e){
+    return '<tr><td style="padding:4px 8px">'+e.nombre+'</td><td style="padding:4px 8px;text-align:center">'+e.qty+'</td><td style="padding:4px 8px">'+e.unidad+'</td><td style="padding:4px 8px;color:#888">Material extra</td></tr>';
+  }).join('');
+  var lenteRow=s.lente?'<tr><td style="padding:4px 8px">IOL '+(s.lente.marca||'')+' '+(s.lente.modelo||'')+' '+(s.lente.poder>0?'+':'')+s.lente.poder+'D</td><td style="padding:4px 8px;text-align:center">1</td><td style="padding:4px 8px">pza</td><td style="padding:4px 8px;color:'+(s.lente.clasif==='premium'?'#7c3aed':'#888')+'">'+(s.lente.clasif==='premium'?'⭐ Premium':'Estándar')+'</td></tr>':'';
+  var body='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Hoja de Cargo</title>'+
+    '<style>body{font-family:Arial,sans-serif;margin:20px;color:#222}h1{font-size:16px;margin:0}'+
+    '.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.field{font-size:12px}.label{color:#666;font-size:11px}'+
+    'table{width:100%;border-collapse:collapse;margin-top:8px}th{background:#f0f0f0;padding:5px 8px;font-size:11px;text-align:left}td{border-bottom:1px solid #eee}'+
+    '.firma{margin-top:40px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:30px}'+
+    '.firma-box{border-top:1px solid #999;padding-top:6px;font-size:11px;color:#666}'+
+    (s.cancelada?'.cancelada{background:#fff0f0;border:2px solid #cc2244;padding:8px;border-radius:4px;color:#cc2244;font-weight:700;text-align:center;margin-bottom:12px}':'')+
+    '@media print{body{margin:10mm}}</style></head><body>'+
+    '<div style="display:flex;justify-content:space-between"><div><h1>🏥 Centro Ocular Especializado</h1>'+
+    '<h2 style="font-size:13px;color:#444;margin:4px 0 0">Hoja de Cargo — Material Quirúrgico</h2></div>'+
+    '<div style="text-align:right;font-size:11px;color:#666">Folio: <strong>'+(s.folio||s.id.slice(-6))+'</strong><br>'+new Date().toLocaleString('es-MX')+'</div></div>'+
+    (s.cancelada?'<div class="cancelada">⚠ SALIDA CANCELADA — '+(s.motivoCancelacion||'')+'</div>':'')+
+    '<div class="grid">'+
+    '<div class="field"><div class="label">Paciente</div><strong>'+s.paciente+'</strong></div>'+
+    '<div class="field"><div class="label">Expediente</div>'+(s.expediente||'—')+'</div>'+
+    '<div class="field"><div class="label">Médico</div>'+(s.medico||'—')+'</div>'+
+    '<div class="field"><div class="label">Fecha</div>'+fmtDate(s.fecha)+'</div>'+
+    '<div class="field"><div class="label">Cirugía</div>'+(s.cirugia||'—')+'</div>'+
+    '<div class="field"><div class="label">No. Procedimiento</div>'+(s.numProcedimiento||'—')+'</div>'+
+    '</div>'+
+    '<div style="font-size:12px;margin-bottom:8px"><span style="color:#666;font-size:11px">Paquete: </span>'+(s.paquete||'—')+'</div>'+
+    '<table><thead><tr><th>Material</th><th>Cant.</th><th>Unidad</th><th>Tipo</th></tr></thead>'+
+    '<tbody>'+lenteRow+extrasRows+'</tbody></table>'+
+    '<div class="firma">'+
+    '<div class="firma-box">Capturó: '+(s.capturista||'—')+'</div>'+
+    '<div class="firma-box">Instrumentista:<br>&nbsp;</div>'+
+    '<div class="firma-box">Médico responsable:<br>&nbsp;</div>'+
+    '</div>'+
+    '\x3cscript>window.onload=function(){window.print();}\x3c/script></body></html>';
+  var win=window.open('','_blank','width=900,height=700');
+  win.document.write(body); win.document.close();
+}
+
+// ── 10. BUSQUEDA GLOBAL ───────────────────────────────────────
+function busquedaGlobal(query) {
+  var div=document.getElementById('globalResultados');
+  if(!div) return;
+  if(!query||query.length<2){div.innerHTML='';div.style.display='none';return;}
+  var q=query.toLowerCase(), resultados=[];
+  load(KEYS.inventario).forEach(function(i){
+    if((i.nombre+i.codigo+(i.categoria||'')).toLowerCase().indexOf(q)>=0)
+      resultados.push({tipo:'📦',titulo:i.nombre,sub:i.codigo+' · Stock: '+i.existencia+' '+i.unidad,tab:'inventario'});
+  });
+  load(KEYS.lentes).forEach(function(l){
+    if((l.marca+l.modelo+l.codigo+(l.paciente?l.paciente.nombre:'')).toLowerCase().indexOf(q)>=0)
+      resultados.push({tipo:'👁',titulo:l.marca+' '+l.modelo+' '+(l.poder>0?'+':'')+l.poder+'D',
+        sub:(l.paciente&&l.paciente.nombre?'Pac: '+l.paciente.nombre:'Sin asignar'),tab:'lentes'});
+  });
+  load(KEYS.salidas).forEach(function(s){
+    if((s.paciente+(s.medico||'')+(s.cirugia||'')+(s.numProcedimiento||'')).toLowerCase().indexOf(q)>=0)
+      resultados.push({tipo:'🚪',titulo:s.paciente,sub:fmtDate(s.fecha)+' · '+(s.medico||''),tab:'salidas'});
+  });
+  (load(KEYS.pedidos)||[]).forEach(function(p){
+    if(p.tipo==='iol_premium'&&p.paciente&&
+       (p.paciente.nombre+p.paciente.expediente+(p.folio||'')).toLowerCase().indexOf(q)>=0)
+      resultados.push({tipo:'📋',titulo:p.paciente.nombre+' ('+p.paciente.ojo+')',sub:p.folio+' · '+p.estado,tab:'pedidos'});
+  });
+  if(!resultados.length){div.innerHTML='<div style="padding:10px 14px;font-size:12px;color:var(--text3)">Sin resultados</div>';div.style.display='block';return;}
+  div.style.display='block';
+  div.innerHTML=resultados.slice(0,8).map(function(r){
+    return '<div onclick="switchTab(\''+r.tab+'\');document.getElementById(\'globalSearch\').value=\'\';busquedaGlobal(\'\')" '+
+      'style="padding:8px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px" '+
+      'onmouseover="this.style.background=\'var(--surface2)\'" onmouseout="this.style.background=\'\'">'+
+      '<span style="font-size:14px">'+r.tipo+'</span>'+
+      '<div><div style="font-size:13px;font-weight:600">'+r.titulo+'</div>'+
+      '<div style="font-size:11px;color:var(--text2)">'+r.sub+'</div></div></div>';
+  }).join('');
+}
+
 
 function toggleCentralFields() {
   var v = document.getElementById('itemAlmacenInicial');
@@ -5004,6 +5386,42 @@ function checkIolRetrasados() {
         <button class="btn btn-ghost" onclick="closeModal('modalIolAsignacion')">Cancelar</button>
         <button class="btn btn-purple" onclick="iolGuardarAsignacion()">💾 Guardar Asignación</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DEVOLUCION -->
+<div class="modal-overlay" id="modalDevolucion">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header"><h3>↩ Devolución de Material</h3>
+      <button class="modal-close" onclick="closeModal('modalDevolucion')">✕</button></div>
+    <div id="modalDevolucionContent"></div>
+  </div>
+</div>
+<!-- MODAL: CAMBIO DE CONTRASEÑA -->
+<div class="modal-overlay" id="modalCambioPass">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header"><h3>🔐 Cambiar Contraseña</h3>
+      <button class="modal-close" onclick="closeModal('modalCambioPass')">✕</button></div>
+    <div id="modalCambioPassContent"></div>
+  </div>
+</div>
+<!-- MODAL: ENTRADA MATERIAL -->
+<div class="modal-overlay" id="modalEntrada">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header"><h3>📦 Registrar Entrada de Material</h3>
+      <button class="modal-close" onclick="closeModal('modalEntrada')">✕</button></div>
+    <div id="modalEntradaContent"></div>
+  </div>
+</div>
+<!-- MODAL: SCAN ENTRADA -->
+<div class="modal-overlay" id="modalScanEntrada">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header"><h3>📷 Escanear Código</h3>
+      <button class="modal-close">✕</button></div>
+    <div style="padding:16px;text-align:center">
+      <video id="scanEntradaVideo" style="width:100%;border-radius:var(--radius);background:#000"></video>
+      <div style="font-size:12px;color:var(--text2);margin-top:8px">Apunta al código de barras</div>
     </div>
   </div>
 </div>
