@@ -298,7 +298,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;backgroun
 .ttl span{font-size:12.5px;color:var(--muted)}
 .bell{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:0}
 .bell span{top:-6px;right:-6px;font-size:10.5px;font-weight:600}
-.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:0;padding:0;background:var(--surface);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:18px}
+.strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(104px,1fr);overflow-x:auto!important;gap:0;padding:0;background:var(--surface);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:18px}
 .kpi,.kpi.crit,.kpi.warn,.kpi.dead{border:0;border-right:1px solid var(--line);border-radius:0;background:var(--surface);padding:12px 16px;min-width:0;display:flex;flex-direction:column;gap:4px;transform:none}
 .kpi:last-child{border-right:0}
 .kpi:hover{transform:none;box-shadow:none;background:var(--bg)}
@@ -345,6 +345,29 @@ tbody tr:hover td{background:var(--bg)}
  .content{padding-inline:16px}
  header.top{position:static;padding:14px 0 10px}
 }
+
+.login{position:fixed;inset:0;z-index:60;background:var(--side);display:grid;place-items:center;padding:16px}
+.login[hidden]{display:none}
+body.locked .shell{visibility:hidden}
+.lcard{width:min(380px,100%);background:var(--surface);color:var(--ink);border-radius:16px;padding:28px 26px 22px;box-shadow:0 20px 60px rgba(0,0,0,.35);display:grid;gap:6px}
+.liso{width:54px;height:54px;background:var(--ink);-webkit-mask:var(--iso) center/contain no-repeat;mask:var(--iso) center/contain no-repeat;margin-bottom:6px}
+.lcard h1{margin:0;font-size:22px;font-weight:600}
+.lsub{margin:0 0 12px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.lcard label,.pw label{font-size:13px;font-weight:600;margin-top:6px;display:block}
+.pw input,.pw select,#msgB input,#msgB select{margin-top:4px}
+.lcard .btn.pri{margin-top:12px;padding:12px;font-size:15px}
+.lerr{margin:6px 0 0;color:var(--crit);font-size:13px;font-weight:600}
+.lnote{margin:10px 0 0;font-size:12px;color:var(--muted);text-align:center}
+.lnk{border:0;background:none;color:var(--accent);font-size:13px;text-decoration:underline;margin-top:4px}
+.me{display:grid;gap:2px;color:var(--side-hi)}
+.me b{font-size:13.5px;font-weight:600;line-height:1.25}
+.me small{font-size:11.5px;color:var(--side-ink)}
+.me small.soon{color:#f0b04a;font-weight:600}
+.me-btns{display:flex;gap:6px;flex-wrap:wrap}
+.me-btns .btn{background:rgba(255,255,255,.06);color:var(--side-hi);border-color:rgba(255,255,255,.14);font-size:12px}
+.dlg.pw{width:min(420px,100%)}
+.tmp{font-size:24px;font-weight:600;letter-spacing:.06em;background:var(--accent-soft);padding:12px;border-radius:10px;text-align:center;user-select:all}
+@media (max-width:900px){.me,.side-foot .online{display:none}}
 body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 </style>
 
@@ -354,14 +377,8 @@ body{margin:0}[hidden]{display:none!important}img{max-width:100%}
   <nav class="tabs" id="tabs" role="tablist" aria-label="Secciones"></nav>
   <div class="side-foot">
    <div class="online"><i></i>En línea · sincronizado</div>
-   <label for="roleSel" class="who">Sesión</label>
-   <select id="roleSel">
-    <option value="dir">Dr. Villegas · Director General</option>
-    <option value="dra">Dra. Rivera · Dirección</option>
-    <option value="mos">Mostrador de Farmacia</option>
-    <option value="fin">Finanzas · Contadora</option>
-    <option value="med">Médico</option>
-   </select>
+   <div class="me" id="meBox"><b id="meName">—</b><small id="mePerf"></small><small id="meClose"></small></div>
+   <div class="me-btns"><button class="btn sm" id="chgPass">Cambiar contraseña</button><button class="btn sm" id="logoutBtn">Cerrar sesión</button></div>
   </div>
  </aside>
  <div class="content">
@@ -372,6 +389,24 @@ body{margin:0}[hidden]{display:none!important}img{max-width:100%}
  </div>
 </div>
 
+<div class="login" id="login">
+ <form class="lcard" id="loginForm" autocomplete="on">
+  <div class="liso"></div>
+  <h1>COE Farmacia</h1><p class="lsub">Centro Ocular Especializado</p>
+  <label for="lgUser">Usuario</label><input id="lgUser" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+  <label for="lgPass">Contraseña</label><input id="lgPass" name="password" type="password" autocomplete="current-password" required>
+  <p class="lerr" id="lgErr" hidden></p>
+  <button class="btn pri" id="lgBtn" type="submit">Entrar</button>
+  <p class="lnote">La sesión se cierra sola a las 2:30 pm y a las 6:30 pm.</p>
+  <button class="lnk" type="button" id="lgDemo" hidden>Ver demostración sin conexión</button>
+ </form>
+</div>
+<div class="ovl" id="pwOvl" hidden><form class="dlg pw" id="pwForm"><div class="dlg-h"><div><h3 id="pwT">Cambie su contraseña</h3><div class="cur" id="pwSub">Es su primer ingreso con la contraseña temporal.</div></div><button class="icon-btn" type="button" id="pwX" aria-label="Cerrar">✕</button></div>
+ <div class="dlg-b"><label for="pwA">Contraseña actual</label><input id="pwA" type="password" autocomplete="current-password" required>
+ <label for="pwN">Nueva contraseña (mínimo 8 caracteres)</label><input id="pwN" type="password" autocomplete="new-password" minlength="8" required>
+ <label for="pwN2">Repita la nueva contraseña</label><input id="pwN2" type="password" autocomplete="new-password" minlength="8" required>
+ <p class="lerr" id="pwErr" hidden></p><button class="btn pri" type="submit" style="width:100%;margin-top:12px">Guardar contraseña</button></div></form></div>
+<div class="ovl" id="msgOvl" hidden><div class="dlg pw"><div class="dlg-h"><div><h3 id="msgT"></h3></div><button class="icon-btn" type="button" id="msgX" aria-label="Cerrar">✕</button></div><div class="dlg-b" id="msgB"></div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 document.documentElement.style.setProperty('--iso','url("data:image/png;base64,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")');
@@ -508,7 +543,7 @@ function vDash(){
  const al=alerts().filter(a=>!ATENDIDAS.has(a.id)).slice(0,6);
  const top=PROD.filter(p=>!p.srv).sort((a,b)=>b.sal-a.sal).slice(0,8),mx=top[0].sal;
  const sinMov=PROD.filter(p=>p.sal===0&&!p.srv);
- return `<div class="proto">${DEMO?'<b>Modo demostración:</b> no hay conexión con la base de datos de farmacia; los datos no se guardan.':'<b>Conectado a Supabase.</b> Claves y descripciones del reporte de eOptics. Lotes, caducidades, mínimos y precios están cargados como ejemplo hasta que capture los reales.'} Cambie la <b>Sesión</b> (abajo a la izquierda) para ver qué ve cada rol.</div>
+ return `<div class="proto">${DEMO?'<b>Modo demostración:</b> no hay conexión con la base de datos de farmacia; los datos no se guardan.':'<b>Conectado a Supabase.</b> Claves y descripciones del reporte de eOptics. Lotes, caducidades, mínimos y precios están cargados como ejemplo hasta que capture los reales.'}</div>
  <div class="dashgrid">
   <section class="panel"><h3>Atender primero</h3>${al.map(alertRow).join('')||'<p class="note">Sin alertas pendientes.</p>'}</section>
   <section class="panel"><h3>Más vendidos · últimas 4 semanas</h3><div class="bars">${top.map(p=>`<div><span>${esc(p.nm)}</span><i style="width:${p.sal/mx*100}%"></i><span class="mono">${p.sal}</span></div>`).join('')}</div>
@@ -727,18 +762,18 @@ function vAcc(){
  <tr class="grp"><td colspan="6">Pantallas</td></tr>${ACC_TABS.map(row).join('')}<tr class="grp"><td colspan="6">Acciones</td></tr>${ACC_ACT.map(row).join('')}</tbody></table></div>
  <div class="toolbar" style="justify-content:flex-end;margin-top:12px"><button class="btn pri" data-demo="Guardar los accesos con el PIN del Director; el cambio queda en la bitácora">Guardar con PIN</button></div>
  <h2 style="margin-top:22px">Usuarios</h2><div class="panel tbl"><table><thead><tr><th>Nombre</th><th>Perfil</th><th>Estado</th><th></th></tr></thead><tbody>
- ${USERS.map((u,i)=>`<tr><td><b>${esc(u.n)}</b><div class="note mono">${esc(u.u)}</div></td><td><select id="up${i}" data-up="${i}" ${u.p==='dir'?'disabled':''}>${Object.entries(PERFILES).map(([k,t])=>`<option value="${k}" ${u.p===k?'selected':''}>${t}</option>`).join('')}</select></td><td>${u.a?chip(['ok','Activo']):chip(['mute','Baja'])}</td>
-  <td style="white-space:nowrap">${u.p==='dir'?'':`<button class="btn sm" data-as="${u.p}">Ver como</button> <button class="btn sm" data-demo="Contraseña temporal generada; se le pedirá cambiarla al entrar">Contraseña</button> <button class="btn sm" data-demo="PIN temporal generado">PIN</button> <button class="btn sm" data-ua="${i}">${u.a?'Dar de baja':'Reactivar'}</button>`}</td></tr>`).join('')}
- </tbody></table></div><div class="toolbar" style="margin-top:10px"><button class="btn" data-demo="Alta de usuario: nombre, usuario, perfil, contraseña y PIN temporales">+ Nuevo usuario</button></div>`;
+ ${USERS.map((u,i)=>`<tr><td><b>${esc(u.n)}</b><div class="note mono">${esc(u.u)}</div></td><td><select id="up${i}" data-up="${i}" ${u.dbid===ME?.id?'disabled':''}>${Object.entries(PERFILES).map(([k,t])=>`<option value="${k}" ${u.p===k?'selected':''}>${t}</option>`).join('')}</select></td><td>${u.a?chip(['ok','Activo']):chip(['mute','Baja'])}${u.dc?' '+chip(['warn','Contraseña temporal']):''}${u.ua?`<div class="note">Último acceso ${new Date(u.ua).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
+  <td style="white-space:nowrap">${u.dbid===ME?.id?'<span class="note">Usted</span>':`<button class="btn sm" data-as="${u.p}">Ver como</button> <button class="btn sm" data-rp="${i}">Nueva contraseña</button> <button class="btn sm" data-ua="${i}">${u.a?'Dar de baja':'Reactivar'}</button>`}</td></tr>`).join('')}
+ </tbody></table></div><div class="toolbar" style="margin-top:10px"><button class="btn" id="newUser">+ Nuevo usuario</button></div>`;
 }
 function toast(t){const d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;z-index:50;max-width:90vw;font-size:14px';document.body.appendChild(d);setTimeout(()=>d.remove(),3000)}
-async function addPedido(p,qty,prio){const items=(p?p.nm:($('#pNew')?.value||'Medicamento'))+' × '+qty,monto0=p?p.c*qty:qty*300,por0=PERFILES[eff()];if(sb){const d=await db(sb.from('far_pedidos').insert({producto_id:p?p.id:null,items,monto:monto0,prioridad:prio,solicitante:por0}).select().single(),'Pedido');if(!d)return;await logDb('pedido_creado',{folio:d.folio,items});await reload();toast(`Pedido ${d.folio} enviado a Finanzas.`);return}const n='PF-00'+(42+PEDIDOS.length-3);const monto=p?p.c*qty:qty*300;PEDIDOS.unshift({id:n,items:(p?p.nm:($('#pNew')?.value||'Medicamento'))+' × '+qty,monto,prio,est:0,por:{dir:'Director',dra:'Dra. Rivera',mos:'Mostrador',med:'Médico'}[eff()]||'Mostrador',fecha:ISO(TODAY)});toast(`Pedido ${n} enviado a Finanzas. Se avisó al mostrador y a Finanzas.`)}
+async function addPedido(p,qty,prio){const items=(p?p.nm:($('#pNew')?.value||'Medicamento'))+' × '+qty,monto0=p?p.c*qty:qty*300,por0=ME?ME.nombre:PERFILES[eff()];if(sb){const d=await db(sb.from('far_pedidos').insert({producto_id:p?p.id:null,items,monto:monto0,prioridad:prio,solicitante:por0}).select().single(),'Pedido');if(!d)return;await logDb('pedido_creado',{folio:d.folio,items});await reload();toast(`Pedido ${d.folio} enviado a Finanzas.`);return}const n='PF-00'+(42+PEDIDOS.length-3);const monto=p?p.c*qty:qty*300;PEDIDOS.unshift({id:n,items:(p?p.nm:($('#pNew')?.value||'Medicamento'))+' × '+qty,monto,prio,est:0,por:{dir:'Director',dra:'Dra. Rivera',mos:'Mostrador',med:'Médico'}[eff()]||'Mostrador',fecha:ISO(TODAY)});toast(`Pedido ${n} enviado a Finanzas. Se avisó al mostrador y a Finanzas.`)}
 function render(){if(!tabsFor().includes(tab))tab=tabsFor()[0];$('#pgTitle').textContent=TABN[tab];$('#main').innerHTML=(viewAs?`<div class="asbar"><span>Vista previa: así le aparece la app a <b>${PERFILES[viewAs]}</b>. Puede navegar sus pestañas.</span><button class="btn sm" id="asBack">Volver a mi vista de Director</button></div>`:'')+{dash:vDash,inv:vInv,conteo:vConteo,alert:vAlert,ped:vPed,rx:vRx,acc:vAcc}[tab]();renderStrip();bind();fitPaper()}
 function fitPaper(){const w=document.querySelector('.paperwrap'),p=w&&w.querySelector('.paper');if(!p)return;p.style.zoom='';const z=Math.min(1,(w.clientWidth-28)/816);p.style.zoom=z<1?z.toFixed(3):''}
 window.addEventListener('resize',fitPaper);
 function bind(){
  const M=$('#main');
- M.querySelectorAll('[data-ok]').forEach(b=>b.onclick=async()=>{ATENDIDAS.add(b.dataset.ok);render();if(sb)await db(sb.from('far_alertas_atendidas').upsert({alerta_id:b.dataset.ok,atendida_por:PERFILES[eff()]}),'Alerta')});
+ M.querySelectorAll('[data-ok]').forEach(b=>b.onclick=async()=>{ATENDIDAS.add(b.dataset.ok);render();if(sb)await db(sb.from('far_alertas_atendidas').upsert({alerta_id:b.dataset.ok,atendida_por:ME?ME.nombre:PERFILES[eff()]}),'Alerta')});
  M.querySelectorAll('[data-ped],[data-pedp]').forEach(b=>b.onclick=()=>{MODAL=null;const p=PROD.find(x=>x.id==(b.dataset.ped||b.dataset.pedp));addPedido(p,Math.max(p.min*2-stock(p),2),stock(p)===0?'Urgente':'Normal');render()});
  M.querySelectorAll('[data-adv]').forEach(b=>b.onclick=async()=>{const p=PEDIDOS.find(x=>x.id===b.dataset.adv);p.est++;if(sb){await db(sb.from('far_pedidos').update({estado:p.est,updated_at:new Date().toISOString()}).eq('id',p.dbid),'Pedido');await logDb('pedido_estado',{folio:p.id,estado:PSTEPS[p.est]})}toast(`${p.id}: ${PSTEPS[p.est]}. Se avisó al mostrador.`);render()});
  M.querySelectorAll('[data-demo]').forEach(b=>b.onclick=()=>toast('En la app final: '+b.dataset.demo));
@@ -746,7 +781,7 @@ function bind(){
  const f=$('#invF');if(f)f.onchange=e=>{invFilter=e.target.value;render()};
  M.querySelectorAll('[data-cnt]').forEach(c=>c.onchange=()=>{CONTEO[+c.dataset.cnt]=Math.max(0,+c.value||0);render()});
  M.querySelectorAll('[data-just]').forEach(c=>c.oninput=()=>{JUST[+c.dataset.just]=c.value});
- const cu=$('#cuadrar');if(cu)cu.onclick=()=>{const pend=PROD.filter(p=>CONTEO[p.id]!==sistema(p)&&!(JUST[p.id]||'').trim());if(pend.length){toast(`Falta explicar la diferencia de: ${pend.map(p=>p.nm).join(', ')}.`);render();return}if(sb){const rows=PROD.map(p=>({producto_id:p.id,conteo:CONTEO[p.id],existencia:sistema(p),explicacion:JUST[p.id]||null,firmado_por:PERFILES[eff()]}));db(sb.from('far_conteos').insert(rows),'Conteo').then(d=>{if(d!==null){logDb('conteo_firmado',{productos:rows.length});toast('Conteo guardado y firmado. Los ajustes quedan pendientes de autorización del Director.')}});return}toast('Conteo firmado por el mostrador. Los ajustes quedan pendientes de autorización del Director.')};
+ const cu=$('#cuadrar');if(cu)cu.onclick=()=>{const pend=PROD.filter(p=>CONTEO[p.id]!==sistema(p)&&!(JUST[p.id]||'').trim());if(pend.length){toast(`Falta explicar la diferencia de: ${pend.map(p=>p.nm).join(', ')}.`);render();return}if(sb){const rows=PROD.map(p=>({producto_id:p.id,conteo:CONTEO[p.id],existencia:sistema(p),explicacion:JUST[p.id]||null,firmado_por:ME?ME.nombre:PERFILES[eff()]}));db(sb.from('far_conteos').insert(rows),'Conteo').then(d=>{if(d!==null){logDb('conteo_firmado',{productos:rows.length});toast('Conteo guardado y firmado. Los ajustes quedan pendientes de autorización del Director.')}});return}toast('Conteo firmado por el mostrador. Los ajustes quedan pendientes de autorización del Director.')};
  const pa=$('#pAdd');if(pa)pa.onclick=()=>{if(!$('#pNew').value.trim()){toast('Escriba el nombre del medicamento que hace falta.');return}addPedido(null,+$('#pQty').value||1,$('#pPrio').value);render()};
  M.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>loadTpl(b.dataset.tpl));
  [['rxMed','med'],['rxSede','sede'],['rxPac','pac'],['rxEdad','edad'],['rxCita','cita'],['rxDx','dx']].forEach(([id,k])=>{const el=$('#'+id);if(el)el.onchange=()=>{RX[k]=el.value;render()}});
@@ -761,6 +796,8 @@ function bind(){
  M.querySelectorAll('[data-up]').forEach(s=>s.onchange=()=>{const u=USERS[+s.dataset.up];u.p=s.value;render();if(sb&&u.dbid)db(sb.from('far_usuarios').update({perfil:u.p}).eq('id',u.dbid),'Usuario')});
  M.querySelectorAll('[data-ua]').forEach(b=>b.onclick=()=>{const u=USERS[+b.dataset.ua];u.a=u.a?0:1;if(sb&&u.dbid)db(sb.from('far_usuarios').update({activo:!!u.a}).eq('id',u.dbid),'Usuario');toast(`${u.n}: ${u.a?'reactivado':'dado de baja'}.`);render()});
  const ab=$('#asBack');if(ab)ab.onclick=()=>{viewAs=null;tab='acc';renderTabs();render()};
+ M.querySelectorAll('[data-rp]').forEach(b=>b.onclick=()=>resetPass(USERS[+b.dataset.rp]));
+ const nu=$('#newUser');if(nu)nu.onclick=newUserDlg;
  const sv=$('#saveRx');if(sv)sv.onclick=saveRx;
  const am=$('#addMed');if(am)am.onclick=()=>{if(RX.meds.length>=4){toast('Máximo 4 medicamentos para que la receta quepa en una hoja.');return}MODAL={add:1,q:''};render()};
  M.querySelectorAll('[data-chg]').forEach(b=>b.onclick=()=>{MODAL={i:+b.dataset.chg,q:''};render()});
@@ -777,17 +814,16 @@ function bind(){
  M.querySelectorAll('[data-du]').forEach(b=>b.onclick=()=>{const[i,v]=b.dataset.du.split(':');RX.meds[+i].d=+v;render()});
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&MODAL){MODAL=null;render()}});
-$('#roleSel').onchange=e=>{role=e.target.value;viewAs=null;renderTabs();render()};
 $('#bellBtn').onclick=()=>{if(tabsFor().includes('alert'))go('alert');else toast('Este usuario recibe solo las alertas de pedidos.')};
 /* ===== conexión con Supabase ===== */
 const SB_URL='https://ckjkdenwqicdjvodflba.supabase.co',SB_KEY='sb_publishable_6kfSTYsmi2KxAeX0AMwymQ_dWPTAxYz';
 let sb=null,DEMO=true;
 async function db(q,que){try{const r=await q;if(r.error){toast(`${que}: no se guardó (${r.error.message}).`);return null}return r.data??true}catch(e){toast(`${que}: sin conexión, no se guardó.`);return null}}
-const logDb=(accion,detalle)=>sb?sb.from('far_log').insert({accion,detalle,usuario:PERFILES[eff()]}).then(()=>{}):null;
+const logDb=(accion,detalle)=>sb?sb.from('far_log').insert({accion,detalle,usuario:ME?ME.nombre:PERFILES[eff()]}).then(()=>{}):null;
 function setOnline(ok,txt){const o=document.querySelector('.side-foot .online');if(o){o.innerHTML='<i></i>'+txt;o.classList.toggle('off',!ok)}}
 const OLDCL=Object.fromEntries(PROD.map(p=>[p.id,p.cl]));
 async function loadAll(){
- const R=await Promise.all([sb.from('far_productos').select('*').eq('activo',true).order('nombre'),sb.from('far_lotes').select('*'),sb.from('far_pedidos').select('*').order('created_at',{ascending:false}).limit(200),sb.from('far_permisos').select('*'),sb.from('far_alertas_atendidas').select('alerta_id'),sb.from('far_usuarios').select('*').order('id'),sb.from('rec_recetas').select('folio,paciente,estado,created_at').gte('created_at',new Date(TODAY.getFullYear(),TODAY.getMonth(),TODAY.getDate()).toISOString()).order('created_at',{ascending:false})]);
+ const R=await Promise.all([sb.from('far_productos').select('*').eq('activo',true).order('nombre'),sb.from('far_lotes').select('*'),sb.from('far_pedidos').select('*').order('created_at',{ascending:false}).limit(200),sb.from('far_permisos').select('*'),sb.from('far_alertas_atendidas').select('alerta_id'),sb.from('far_usuarios').select('id,nombre,usuario,perfil,activo,debe_cambiar,ultimo_acceso').order('id'),sb.from('rec_recetas').select('folio,paciente,estado,created_at').gte('created_at',new Date(TODAY.getFullYear(),TODAY.getMonth(),TODAY.getDate()).toISOString()).order('created_at',{ascending:false})]);
  for(const r of R)if(r.error)throw r.error;
  const [p,l,pe,pm,at,us,rh]=R.map(r=>r.data);RXHOY=rh;
  if(!p.length)throw new Error('vacio');
@@ -795,7 +831,7 @@ async function loadAll(){
  PEDIDOS=pe.map(r=>({id:r.folio,dbid:r.id,items:r.items,monto:+r.monto,prio:r.prioridad,est:r.estado,por:r.solicitante||'',fecha:r.created_at.slice(0,10)}));
  pm.forEach(r=>{PERMS[r.perfil]=r.permisos});
  ATENDIDAS=new Set(at.map(r=>r.alerta_id));
- if(us.length)USERS=us.map(r=>({dbid:r.id,n:r.nombre,u:r.usuario,p:r.perfil,a:r.activo?1:0}));
+ if(us.length)USERS=us.map(r=>({dbid:r.id,n:r.nombre,u:r.usuario,p:r.perfil,a:r.activo?1:0,dc:r.debe_cambiar,ua:r.ultimo_acceso}));
  PROD.forEach(p=>{if(!(p.id in CONTEO))CONTEO[p.id]=sistema(p)});
 }
 function remap(){const byCl=Object.fromEntries(PROD.map(p=>[p.cl,p.id]));const fix=id=>byCl[OLDCL[id]]??PROD.find(RXABLE).id;
@@ -809,26 +845,74 @@ async function saveRx(){
  if(!RX.meds.length){toast('Agregue al menos un medicamento.');return}
  if(!sb){RX.folio='DEMO-'+String(Date.now()).slice(-5);RX.saved=rxHash();toast('Modo demostración: la receta no se guardó en la base de datos.');render();return}
  const meds=RX.meds.map(m=>{const p=PROD.find(x=>x.id===m.pid);return{clave:p.cl,producto:p.nm,principio:p.pa,ojo:m.eye,gotas:m.dose,veces_dia:m.taper?null:m.f,dias:m.taper?28:m.d,reduccion:!!m.taper}});
- const d=await db(sb.from('rec_recetas').insert({paciente:RX.pac,edad:+RX.edad||null,diagnostico:RX.dx,medico:DOCS[RX.med].n,sede:RX.sede==='tac'?'Tacámbaro':'Morelia',proxima_cita:RX.cita||null,medicamentos:meds,creada_por:PERFILES[eff()]}).select().single(),'Receta');
+ const d=await db(sb.from('rec_recetas').insert({paciente:RX.pac,edad:+RX.edad||null,diagnostico:RX.dx,medico:DOCS[RX.med].n,sede:RX.sede==='tac'?'Tacámbaro':'Morelia',proxima_cita:RX.cita||null,medicamentos:meds,creada_por:ME?ME.nombre:PERFILES[eff()]}).select().single(),'Receta');
  if(!d)return;RX.folio=d.folio;RX.saved=rxHash();RXHOY.unshift(d);logDb('receta_emitida',{folio:d.folio});toast(`Receta ${d.folio} guardada.`);render();
 }
-async function boot(){
- $('#pgSub').textContent=TODAY.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).replace(/^./,c=>c.toUpperCase())+' · Tacámbaro';
- RX.cita=ISO(new Date(TODAY.getTime()+7*86400000));
- renderTabs();render();setOnline(false,'Conectando…');
- try{
-  if(!window.supabase)throw new Error('lib');
-  sb=window.supabase.createClient(SB_URL,SB_KEY);
-  await loadAll();DEMO=false;remap();setOnline(true,'En línea · sincronizado');renderTabs();render();
+/* ===== sesión: usuario + contraseña, cierres 14:30 y 18:30 ===== */
+let ME=null,closeT=null;
+const SKEY='coe_farmacia_sesion';
+const sGet=()=>{try{return JSON.parse(localStorage.getItem(SKEY)||'null')}catch(e){return null}};
+const sSet=v=>{try{v?localStorage.setItem(SKEY,JSON.stringify(v)):localStorage.removeItem(SKEY)}catch(e){}};
+function nextCut(){const n=new Date(),c=new Date(n);for(const [h,m] of [[14,30],[18,30]]){c.setHours(h,m,0,0);if(c>n)return c}c.setDate(c.getDate()+1);c.setHours(14,30,0,0);return c}
+const hm=d=>d.toLocaleTimeString('es-MX',{hour:'numeric',minute:'2-digit'});
+function showMsg(t,html){$('#msgT').textContent=t;$('#msgB').innerHTML=html;$('#msgOvl').hidden=false}
+$('#msgX').onclick=()=>{$('#msgOvl').hidden=true};
+function lgErr(t){const e=$('#lgErr');e.textContent=t;e.hidden=!t}
+function paintMe(){if(!ME)return;$('#meName').textContent=ME.nombre;$('#mePerf').textContent=PERFILES[ME.perfil]||ME.perfil;const exp=new Date(ME.expira);$('#meClose').textContent='Cierre automático '+hm(exp)}
+function tick(){if(!ME)return;const left=new Date(ME.expira)-Date.now();
+ if(left<=0){logout('Sesión cerrada automáticamente ('+hm(new Date(ME.expira))+'). Vuelva a entrar.');return}
+ const w=$('#meClose');if(w){w.classList.toggle('soon',left<10*60000);if(left<10*60000)w.textContent='Se cierra en '+Math.ceil(left/60000)+' min'}}
+async function logout(msg){const t=ME&&ME.token;ME=null;sSet(null);clearInterval(closeT);viewAs=null;MODAL=null;
+ if(sb&&t){try{await sb.rpc('far_logout',{p_token:t})}catch(e){}}
+ $('#login').hidden=false;$('#lgPass').value='';lgErr(msg||'');document.body.classList.add('locked');setTimeout(()=>$('#lgUser').focus(),50)}
+async function enter(sess){
+ ME=sess;sSet(sess);role=sess.perfil;viewAs=null;tab='dash';
+ $('#login').hidden=true;document.body.classList.remove('locked');paintMe();clearInterval(closeT);closeT=setInterval(tick,20000);tick();
+ if(!DEMO&&!LOADED){await startData()}else{renderTabs();render()}
+ if(sess.debe_cambiar)openPw(true);
+}
+let LOADED=false;
+async function startData(){
+ try{await loadAll();LOADED=true;remap();setOnline(true,'En línea · sincronizado');renderTabs();render();
   const ch=sb.channel('coe-farmacia');
   ['far_productos','far_lotes','far_pedidos','far_alertas_atendidas','far_permisos','far_usuarios','rec_recetas'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{clearTimeout(rlT);rlT=setTimeout(reload,500)}));
   ch.subscribe();
- }catch(e){
-  sb=null;DEMO=true;setOnline(false,'Modo demostración');render();
-  const falta=/far_|relation|schema cache|vacio/i.test(String(e.message||e));
-  toast(falta?'Las tablas de farmacia aún no están instaladas en Supabase: se muestran datos de ejemplo.':'Sin conexión con Supabase: se muestran datos de ejemplo.');
- }
+ }catch(e){setOnline(false,'Sin conexión');renderTabs();render();toast('No se pudieron cargar los datos. Revise su conexión.')}
 }
+function openPw(first){$('#pwT').textContent=first?'Cambie su contraseña':'Cambiar contraseña';$('#pwSub').textContent=first?'Está usando una contraseña temporal. Elija una propia para continuar.':'Escriba su contraseña actual y la nueva.';$('#pwX').hidden=!!first;$('#pwErr').hidden=true;['pwA','pwN','pwN2'].forEach(k=>$('#'+k).value='');$('#pwOvl').hidden=false;setTimeout(()=>$('#pwA').focus(),50)}
+$('#pwX').onclick=()=>{$('#pwOvl').hidden=true};
+$('#chgPass').onclick=()=>{if(DEMO){toast('En modo demostración no hay contraseñas.');return}openPw(false)};
+$('#logoutBtn').onclick=()=>logout('');
+$('#pwForm').onsubmit=async e=>{e.preventDefault();const er=$('#pwErr'),a=$('#pwA').value,n=$('#pwN').value,n2=$('#pwN2').value;const bad=t=>{er.textContent=t;er.hidden=false};
+ if(n.length<8)return bad('La nueva contraseña debe tener al menos 8 caracteres.');if(n!==n2)return bad('Las dos contraseñas nuevas no coinciden.');if(n===a)return bad('La nueva contraseña debe ser distinta a la actual.');
+ const r=await sb.rpc('far_cambiar_pass',{p_token:ME.token,p_actual:a,p_nueva:n});
+ if(r.error)return bad(r.error.message);if(!r.data)return bad('La contraseña actual no es correcta.');
+ ME.debe_cambiar=false;sSet(ME);$('#pwOvl').hidden=true;toast('Contraseña actualizada.');reload()};
+$('#loginForm').onsubmit=async e=>{e.preventDefault();lgErr('');const u=$('#lgUser').value.trim(),p=$('#lgPass').value;if(!sb){lgErr('Sin conexión con el servidor.');return}
+ const b=$('#lgBtn');b.disabled=true;b.textContent='Entrando…';
+ try{const r=await sb.rpc('far_login',{p_usuario:u,p_pass:p});if(r.error)throw r.error;if(!r.data){lgErr('Usuario o contraseña incorrectos.');$('#lgPass').select();return}await enter(r.data)}
+ catch(err){lgErr('No se pudo entrar: '+(err.message||'sin conexión')+'.')}
+ finally{b.disabled=false;b.textContent='Entrar'}};
+$('#lgDemo').onclick=()=>{DEMO=true;sb=null;setOnline(false,'Modo demostración');enter({id:0,nombre:'Demostración',perfil:'dir',token:null,expira:nextCut().toISOString(),debe_cambiar:false})};
+async function resetPass(u){if(!sb||!u.dbid){toast('Disponible solo con conexión.');return}
+ const r=await sb.rpc('far_reset_pass',{p_token:ME.token,p_usuario_id:u.dbid});if(r.error){toast(r.error.message);return}
+ showMsg('Nueva contraseña temporal',`<p><b>${esc(u.n)}</b> · usuario <span class="mono">${esc(u.u)}</span></p><p class="tmp mono">${esc(r.data)}</p><p class="note">Entréguela en persona. Se le pedirá cambiarla al entrar. Esta contraseña no se vuelve a mostrar.</p>`);reload()}
+function newUserDlg(){if(!sb){toast('Disponible solo con conexión.');return}
+ showMsg('Nuevo usuario',`<form id="nuF"><label for="nuN">Nombre completo</label><input id="nuN" required><label for="nuU">Usuario (sin espacios)</label><input id="nuU" required pattern="[A-Za-z0-9._-]+" autocapitalize="none"><label for="nuP">Perfil</label><select id="nuP">${Object.entries(PERFILES).filter(([k])=>k!=='dir').map(([k,t])=>`<option value="${k}">${t}</option>`).join('')}</select><button class="btn pri" style="width:100%;margin-top:12px">Crear usuario</button></form>`);
+ $('#nuF').onsubmit=async e=>{e.preventDefault();const r=await sb.rpc('far_crear_usuario',{p_token:ME.token,p_nombre:$('#nuN').value,p_usuario:$('#nuU').value,p_perfil:$('#nuP').value});
+  if(r.error){toast(r.error.message.includes('duplicate')?'Ese usuario ya existe.':r.error.message);return}
+  showMsg('Usuario creado',`<p>Usuario <span class="mono">${esc($('#nuU')?.value||'')}</span></p><p class="tmp mono">${esc(r.data)}</p><p class="note">Contraseña temporal. Entréguela en persona; se le pedirá cambiarla al entrar.</p>`);reload()}}
+async function boot(){
+ $('#pgSub').textContent=TODAY.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).replace(/^./,c=>c.toUpperCase())+' · Tacámbaro';
+ RX.cita=ISO(new Date(TODAY.getTime()+7*86400000));
+ document.body.classList.add('locked');setOnline(false,'Conectando…');
+ try{if(!window.supabase)throw new Error('lib');sb=window.supabase.createClient(SB_URL,SB_KEY);DEMO=false}
+ catch(e){sb=null;DEMO=true;$('#lgDemo').hidden=false;lgErr('Sin conexión con el servidor.');setTimeout(()=>$('#lgUser').focus(),50);return}
+ const st=sGet();
+ if(st&&st.token&&new Date(st.expira)>new Date()){try{const r=await sb.rpc('far_sesion',{p_token:st.token});if(r.data){await enter(r.data);return}}catch(e){}}
+ sSet(null);setTimeout(()=>$('#lgUser').focus(),50);
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
 boot();
 </script>
 
