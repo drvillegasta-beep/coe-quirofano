@@ -366,6 +366,9 @@ body.locked .shell{visibility:hidden}
 .me-btns{display:flex;gap:6px;flex-wrap:wrap}
 .me-btns .btn{background:rgba(255,255,255,.06);color:var(--side-hi);border-color:rgba(255,255,255,.14);font-size:12px}
 .dlg.pw{width:min(420px,100%)}
+.pw input,#msgB input,#msgB select{width:100%}
+.kpi b{white-space:nowrap;font-size:clamp(18px,1.7vw,24px)}
+.pinin{font-size:24px;letter-spacing:.4em;text-align:center;font-family:var(--f-mono)}
 .tmp{font-size:24px;font-weight:600;letter-spacing:.06em;background:var(--accent-soft);padding:12px;border-radius:10px;text-align:center;user-select:all}
 @media (max-width:900px){.me,.side-foot .online{display:none}}
 body{margin:0}[hidden]{display:none!important}img{max-width:100%}
@@ -378,7 +381,7 @@ body{margin:0}[hidden]{display:none!important}img{max-width:100%}
   <div class="side-foot">
    <div class="online"><i></i>En línea · sincronizado</div>
    <div class="me" id="meBox"><b id="meName">—</b><small id="mePerf"></small><small id="meClose"></small></div>
-   <div class="me-btns"><button class="btn sm" id="chgPass">Cambiar contraseña</button><button class="btn sm" id="logoutBtn">Cerrar sesión</button></div>
+   <div class="me-btns"><button class="btn sm" id="chgPass">Contraseña</button><button class="btn sm" id="chgPin">PIN</button><button class="btn sm" id="logoutBtn">Cerrar sesión</button></div>
   </div>
  </aside>
  <div class="content">
@@ -406,6 +409,14 @@ body{margin:0}[hidden]{display:none!important}img{max-width:100%}
  <label for="pwN">Nueva contraseña (mínimo 8 caracteres)</label><input id="pwN" type="password" autocomplete="new-password" minlength="8" required>
  <label for="pwN2">Repita la nueva contraseña</label><input id="pwN2" type="password" autocomplete="new-password" minlength="8" required>
  <p class="lerr" id="pwErr" hidden></p><button class="btn pri" type="submit" style="width:100%;margin-top:12px">Guardar contraseña</button></div></form></div>
+<div class="ovl" id="pinOvl" hidden><form class="dlg pw" id="pinForm"><div class="dlg-h"><div><h3 id="pinT">Cree su PIN de firma</h3><div class="cur" id="pinSub"></div></div><button class="icon-btn" type="button" id="pinX" aria-label="Cerrar">✕</button></div>
+ <div class="dlg-b"><div id="pinPassWrap"><label for="pinPass">Contraseña actual</label><input id="pinPass" type="password" autocomplete="current-password"></div>
+ <label for="pinA">PIN nuevo (4 a 6 números)</label><input id="pinA" class="pinin" type="password" inputmode="numeric" autocomplete="off" pattern="[0-9]{4,6}" maxlength="6" required>
+ <label for="pinB">Repita el PIN</label><input id="pinB" class="pinin" type="password" inputmode="numeric" autocomplete="off" pattern="[0-9]{4,6}" maxlength="6" required>
+ <p class="lerr" id="pinErr" hidden></p><button class="btn pri" type="submit" style="width:100%;margin-top:12px">Guardar PIN</button></div></form></div>
+<div class="ovl" id="signOvl" hidden><form class="dlg pw" id="signForm"><div class="dlg-h"><div><h3>Firmar con PIN</h3><div class="cur" id="signSub"></div></div><button class="icon-btn" type="button" id="signX" aria-label="Cancelar">✕</button></div>
+ <div class="dlg-b"><label for="signPin">Su PIN</label><input id="signPin" class="pinin" type="password" inputmode="numeric" autocomplete="off" maxlength="6" required>
+ <p class="lerr" id="signErr" hidden></p><button class="btn pri" type="submit" style="width:100%;margin-top:12px">Firmar</button></div></form></div>
 <div class="ovl" id="msgOvl" hidden><div class="dlg pw"><div class="dlg-h"><div><h3 id="msgT"></h3></div><button class="icon-btn" type="button" id="msgX" aria-label="Cerrar">✕</button></div><div class="dlg-b" id="msgB"></div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
@@ -502,7 +513,7 @@ let PERMS={dir:{resumen:1,dash:1,inv:1,conteo:1,alert:1,ped:1,rx:1,costos:1,entr
  fin:{resumen:1,dash:1,inv:1,ped:1,costos:1,autorizar:1},
  med:{dash:1,inv:1,rx:1,recetar:1}};
 let USERS=[{n:'Dr. José Antonio Villegas Ávila',u:'jvillegas',p:'dir',a:1},{n:'Dra. Mónica A. Rivera Bustos',u:'mrivera',p:'dra',a:1},{n:'Mostrador Farmacia (turno matutino)',u:'farmacia1',p:'mos',a:1},{n:'Mostrador Farmacia (turno vespertino)',u:'farmacia2',p:'mos',a:1},{n:'Contadora',u:'contabilidad',p:'fin',a:1},{n:'Médico general',u:'medico1',p:'med',a:1}];
-let viewAs=null;
+let viewAs=null;const PERM_DIRTY=new Set();
 const eff=()=>viewAs||role;
 const can=k=>!!PERMS[eff()][k];
 const tabsFor=()=>{const t=ACC_TABS.map(x=>x[0]).filter(can);if(eff()==='dir')t.push('acc');return t.length?t:['dash']};
@@ -760,10 +771,10 @@ function vAcc(){
  return `<h2>Accesos por perfil</h2><p class="note">Marque qué pantallas y acciones tiene cada perfil. Con “Ver como” revisa exactamente lo que le aparece a esa persona. Los cambios se firman con su PIN y quedan en la bitácora.</p>
  <div class="panel tbl"><table class="acc"><thead><tr><th>Permiso</th><th class="c">Director</th>${cols.map(c=>`<th class="c">${PERFILES[c]}<div style="margin-top:6px"><button class="btn sm" data-as="${c}">Ver como</button></div></th>`).join('')}</tr></thead><tbody>
  <tr class="grp"><td colspan="6">Pantallas</td></tr>${ACC_TABS.map(row).join('')}<tr class="grp"><td colspan="6">Acciones</td></tr>${ACC_ACT.map(row).join('')}</tbody></table></div>
- <div class="toolbar" style="justify-content:flex-end;margin-top:12px"><button class="btn pri" data-demo="Guardar los accesos con el PIN del Director; el cambio queda en la bitácora">Guardar con PIN</button></div>
+ <div class="toolbar" style="justify-content:flex-end;margin-top:12px"><button class="btn pri" id="savePerm" ${PERM_DIRTY.size?'':'disabled'}>${PERM_DIRTY.size?'Guardar cambios con PIN':'Sin cambios por guardar'}</button></div>
  <h2 style="margin-top:22px">Usuarios</h2><div class="panel tbl"><table><thead><tr><th>Nombre</th><th>Perfil</th><th>Estado</th><th></th></tr></thead><tbody>
- ${USERS.map((u,i)=>`<tr><td><b>${esc(u.n)}</b><div class="note mono">${esc(u.u)}</div></td><td><select id="up${i}" data-up="${i}" ${u.dbid===ME?.id?'disabled':''}>${Object.entries(PERFILES).map(([k,t])=>`<option value="${k}" ${u.p===k?'selected':''}>${t}</option>`).join('')}</select></td><td>${u.a?chip(['ok','Activo']):chip(['mute','Baja'])}${u.dc?' '+chip(['warn','Contraseña temporal']):''}${u.ua?`<div class="note">Último acceso ${new Date(u.ua).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
-  <td style="white-space:nowrap">${u.dbid===ME?.id?'<span class="note">Usted</span>':`<button class="btn sm" data-as="${u.p}">Ver como</button> <button class="btn sm" data-rp="${i}">Nueva contraseña</button> <button class="btn sm" data-ua="${i}">${u.a?'Dar de baja':'Reactivar'}</button>`}</td></tr>`).join('')}
+ ${USERS.map((u,i)=>`<tr><td><b>${esc(u.n)}</b><div class="note mono">${esc(u.u)}</div></td><td><select id="up${i}" data-up="${i}" ${u.dbid===ME?.id?'disabled':''}>${Object.entries(PERFILES).map(([k,t])=>`<option value="${k}" ${u.p===k?'selected':''}>${t}</option>`).join('')}</select></td><td>${u.a?chip(['ok','Activo']):chip(['mute','Baja'])}${u.dc?' '+chip(['warn','Contraseña temporal']):''}${u.dp?' '+chip(['info','PIN pendiente']):''}${u.ua?`<div class="note">Último acceso ${new Date(u.ua).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
+  <td style="white-space:nowrap">${u.dbid===ME?.id?'<span class="note">Usted</span>':`<button class="btn sm" data-as="${u.p}">Ver como</button> <button class="btn sm" data-rp="${i}">Nueva contraseña</button> <button class="btn sm" data-rpin="${i}">Nuevo PIN</button> <button class="btn sm" data-ua="${i}">${u.a?'Dar de baja':'Reactivar'}</button>`}</td></tr>`).join('')}
  </tbody></table></div><div class="toolbar" style="margin-top:10px"><button class="btn" id="newUser">+ Nuevo usuario</button></div>`;
 }
 function toast(t){const d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;z-index:50;max-width:90vw;font-size:14px';document.body.appendChild(d);setTimeout(()=>d.remove(),3000)}
@@ -781,7 +792,7 @@ function bind(){
  const f=$('#invF');if(f)f.onchange=e=>{invFilter=e.target.value;render()};
  M.querySelectorAll('[data-cnt]').forEach(c=>c.onchange=()=>{CONTEO[+c.dataset.cnt]=Math.max(0,+c.value||0);render()});
  M.querySelectorAll('[data-just]').forEach(c=>c.oninput=()=>{JUST[+c.dataset.just]=c.value});
- const cu=$('#cuadrar');if(cu)cu.onclick=()=>{const pend=PROD.filter(p=>CONTEO[p.id]!==sistema(p)&&!(JUST[p.id]||'').trim());if(pend.length){toast(`Falta explicar la diferencia de: ${pend.map(p=>p.nm).join(', ')}.`);render();return}if(sb){const rows=PROD.map(p=>({producto_id:p.id,conteo:CONTEO[p.id],existencia:sistema(p),explicacion:JUST[p.id]||null,firmado_por:ME?ME.nombre:PERFILES[eff()]}));db(sb.from('far_conteos').insert(rows),'Conteo').then(d=>{if(d!==null){logDb('conteo_firmado',{productos:rows.length});toast('Conteo guardado y firmado. Los ajustes quedan pendientes de autorización del Director.')}});return}toast('Conteo firmado por el mostrador. Los ajustes quedan pendientes de autorización del Director.')};
+ const cu=$('#cuadrar');if(cu)cu.onclick=()=>{const pend=PROD.filter(p=>CONTEO[p.id]!==sistema(p)&&!(JUST[p.id]||'').trim());if(pend.length){toast(`Falta explicar la diferencia de: ${pend.map(p=>p.nm).join(', ')}.`);render();return}if(sb){askPin('Firma del conteo físico').then(ok=>{if(!ok)return;const rows=PROD.map(p=>({producto_id:p.id,conteo:CONTEO[p.id],existencia:sistema(p),explicacion:JUST[p.id]||null,firmado_por:ME?ME.nombre:PERFILES[eff()]}));db(sb.from('far_conteos').insert(rows),'Conteo').then(d=>{if(d!==null){logDb('conteo_firmado',{productos:rows.length});toast('Conteo guardado y firmado. Los ajustes quedan pendientes de autorización del Director.')}})});return}toast('Conteo firmado por el mostrador. Los ajustes quedan pendientes de autorización del Director.')};
  const pa=$('#pAdd');if(pa)pa.onclick=()=>{if(!$('#pNew').value.trim()){toast('Escriba el nombre del medicamento que hace falta.');return}addPedido(null,+$('#pQty').value||1,$('#pPrio').value);render()};
  M.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>loadTpl(b.dataset.tpl));
  [['rxMed','med'],['rxSede','sede'],['rxPac','pac'],['rxEdad','edad'],['rxCita','cita'],['rxDx','dx']].forEach(([id,k])=>{const el=$('#'+id);if(el)el.onchange=()=>{RX[k]=el.value;render()}});
@@ -791,12 +802,14 @@ function bind(){
  M.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{RX.meds.splice(+b.dataset.del,1);render()});
  M.querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>{const[i,pid]=b.dataset.sub.split(':');RX.meds[+i].pid=+pid;toast('Medicamento sustituido. La decisión queda registrada con su usuario.');render()});
  M.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{RX.view=b.dataset.view;render()});
- M.querySelectorAll('[data-pm]').forEach(c=>c.onchange=()=>{const[p,k]=c.dataset.pm.split(':');PERMS[p][k]=c.checked?1:0;if(sb)db(sb.from('far_permisos').upsert({perfil:p,permisos:PERMS[p],updated_at:new Date().toISOString()}),'Permisos').then(()=>logDb('permiso',{perfil:p,permiso:k,valor:c.checked}));toast(`${PERFILES[p]}: ${c.checked?'puede':'ya no puede'} ${(ACC_TABS.concat(ACC_ACT).find(x=>x[0]===k)||[])[1].toLowerCase()}.`)});
+ M.querySelectorAll('[data-pm]').forEach(c=>c.onchange=()=>{const[p,k]=c.dataset.pm.split(':');PERMS[p][k]=c.checked?1:0;PERM_DIRTY.add(p);const sp=$('#savePerm');if(sp){sp.disabled=false;sp.textContent='Guardar cambios con PIN'}});
  M.querySelectorAll('[data-as]').forEach(b=>b.onclick=()=>{viewAs=b.dataset.as;tab='dash';renderTabs();render();window.scrollTo({top:0})});
  M.querySelectorAll('[data-up]').forEach(s=>s.onchange=()=>{const u=USERS[+s.dataset.up];u.p=s.value;render();if(sb&&u.dbid)db(sb.from('far_usuarios').update({perfil:u.p}).eq('id',u.dbid),'Usuario')});
  M.querySelectorAll('[data-ua]').forEach(b=>b.onclick=()=>{const u=USERS[+b.dataset.ua];u.a=u.a?0:1;if(sb&&u.dbid)db(sb.from('far_usuarios').update({activo:!!u.a}).eq('id',u.dbid),'Usuario');toast(`${u.n}: ${u.a?'reactivado':'dado de baja'}.`);render()});
  const ab=$('#asBack');if(ab)ab.onclick=()=>{viewAs=null;tab='acc';renderTabs();render()};
  M.querySelectorAll('[data-rp]').forEach(b=>b.onclick=()=>resetPass(USERS[+b.dataset.rp]));
+ M.querySelectorAll('[data-rpin]').forEach(b=>b.onclick=async()=>{const u=USERS[+b.dataset.rpin];if(!sb||!u.dbid){toast('Disponible solo con conexión.');return}const r=await sb.rpc('far_reset_pin',{p_token:ME.token,p_usuario_id:u.dbid});if(r.error){toast(r.error.message);return}toast(u.n+': deberá crear un PIN nuevo al entrar.');reload()});
+ const sp=$('#savePerm');if(sp)sp.onclick=async()=>{if(!PERM_DIRTY.size)return;if(sb){if(!await askPin('Cambio de accesos por perfil'))return;for(const p of PERM_DIRTY){const d=await db(sb.from('far_permisos').upsert({perfil:p,permisos:PERMS[p],updated_at:new Date().toISOString()}),'Permisos');if(d===null)return}logDb('permisos',{perfiles:[...PERM_DIRTY]})}PERM_DIRTY.clear();toast('Accesos guardados y firmados.');render()};
  const nu=$('#newUser');if(nu)nu.onclick=newUserDlg;
  const sv=$('#saveRx');if(sv)sv.onclick=saveRx;
  const am=$('#addMed');if(am)am.onclick=()=>{if(RX.meds.length>=4){toast('Máximo 4 medicamentos para que la receta quepa en una hoja.');return}MODAL={add:1,q:''};render()};
@@ -823,7 +836,7 @@ const logDb=(accion,detalle)=>sb?sb.from('far_log').insert({accion,detalle,usuar
 function setOnline(ok,txt){const o=document.querySelector('.side-foot .online');if(o){o.innerHTML='<i></i>'+txt;o.classList.toggle('off',!ok)}}
 const OLDCL=Object.fromEntries(PROD.map(p=>[p.id,p.cl]));
 async function loadAll(){
- const R=await Promise.all([sb.from('far_productos').select('*').eq('activo',true).order('nombre'),sb.from('far_lotes').select('*'),sb.from('far_pedidos').select('*').order('created_at',{ascending:false}).limit(200),sb.from('far_permisos').select('*'),sb.from('far_alertas_atendidas').select('alerta_id'),sb.from('far_usuarios').select('id,nombre,usuario,perfil,activo,debe_cambiar,ultimo_acceso').order('id'),sb.from('rec_recetas').select('folio,paciente,estado,created_at').gte('created_at',new Date(TODAY.getFullYear(),TODAY.getMonth(),TODAY.getDate()).toISOString()).order('created_at',{ascending:false})]);
+ const R=await Promise.all([sb.from('far_productos').select('*').eq('activo',true).order('nombre'),sb.from('far_lotes').select('*'),sb.from('far_pedidos').select('*').order('created_at',{ascending:false}).limit(200),sb.from('far_permisos').select('*'),sb.from('far_alertas_atendidas').select('alerta_id'),sb.from('far_usuarios').select('id,nombre,usuario,perfil,activo,debe_cambiar,debe_pin,ultimo_acceso').order('id'),sb.from('rec_recetas').select('folio,paciente,estado,created_at').gte('created_at',new Date(TODAY.getFullYear(),TODAY.getMonth(),TODAY.getDate()).toISOString()).order('created_at',{ascending:false})]);
  for(const r of R)if(r.error)throw r.error;
  const [p,l,pe,pm,at,us,rh]=R.map(r=>r.data);RXHOY=rh;
  if(!p.length)throw new Error('vacio');
@@ -831,7 +844,7 @@ async function loadAll(){
  PEDIDOS=pe.map(r=>({id:r.folio,dbid:r.id,items:r.items,monto:+r.monto,prio:r.prioridad,est:r.estado,por:r.solicitante||'',fecha:r.created_at.slice(0,10)}));
  pm.forEach(r=>{PERMS[r.perfil]=r.permisos});
  ATENDIDAS=new Set(at.map(r=>r.alerta_id));
- if(us.length)USERS=us.map(r=>({dbid:r.id,n:r.nombre,u:r.usuario,p:r.perfil,a:r.activo?1:0,dc:r.debe_cambiar,ua:r.ultimo_acceso}));
+ if(us.length)USERS=us.map(r=>({dbid:r.id,n:r.nombre,u:r.usuario,p:r.perfil,a:r.activo?1:0,dc:r.debe_cambiar,dp:r.debe_pin,ua:r.ultimo_acceso}));
  PROD.forEach(p=>{if(!(p.id in CONTEO))CONTEO[p.id]=sistema(p)});
 }
 function remap(){const byCl=Object.fromEntries(PROD.map(p=>[p.cl,p.id]));const fix=id=>byCl[OLDCL[id]]??PROD.find(RXABLE).id;
@@ -869,7 +882,7 @@ async function enter(sess){
  ME=sess;sSet(sess);role=sess.perfil;viewAs=null;tab='dash';
  $('#login').hidden=true;document.body.classList.remove('locked');paintMe();clearInterval(closeT);closeT=setInterval(tick,20000);tick();
  if(!DEMO&&!LOADED){await startData()}else{renderTabs();render()}
- if(sess.debe_cambiar)openPw(true);
+ nextStep();
 }
 let LOADED=false;
 async function startData(){
@@ -887,13 +900,31 @@ $('#pwForm').onsubmit=async e=>{e.preventDefault();const er=$('#pwErr'),a=$('#pw
  if(n.length<8)return bad('La nueva contraseña debe tener al menos 8 caracteres.');if(n!==n2)return bad('Las dos contraseñas nuevas no coinciden.');if(n===a)return bad('La nueva contraseña debe ser distinta a la actual.');
  const r=await sb.rpc('far_cambiar_pass',{p_token:ME.token,p_actual:a,p_nueva:n});
  if(r.error)return bad(r.error.message);if(!r.data)return bad('La contraseña actual no es correcta.');
- ME.debe_cambiar=false;sSet(ME);$('#pwOvl').hidden=true;toast('Contraseña actualizada.');reload()};
+ ME.debe_cambiar=false;sSet(ME);$('#pwOvl').hidden=true;toast('Contraseña actualizada.');reload();nextStep()};
 $('#loginForm').onsubmit=async e=>{e.preventDefault();lgErr('');const u=$('#lgUser').value.trim(),p=$('#lgPass').value;if(!sb){lgErr('Sin conexión con el servidor.');return}
  const b=$('#lgBtn');b.disabled=true;b.textContent='Entrando…';
  try{const r=await sb.rpc('far_login',{p_usuario:u,p_pass:p});if(r.error)throw r.error;if(!r.data){lgErr('Usuario o contraseña incorrectos.');$('#lgPass').select();return}await enter(r.data)}
  catch(err){lgErr('No se pudo entrar: '+(err.message||'sin conexión')+'.')}
  finally{b.disabled=false;b.textContent='Entrar'}};
 $('#lgDemo').onclick=()=>{DEMO=true;sb=null;setOnline(false,'Modo demostración');enter({id:0,nombre:'Demostración',perfil:'dir',token:null,expira:nextCut().toISOString(),debe_cambiar:false})};
+function nextStep(){if(!ME||DEMO)return;if(ME.debe_cambiar){openPw(true);return}if(ME.debe_pin)openPin(true)}
+function openPin(first){$('#pinT').textContent=first?'Cree su PIN de firma':'Cambiar PIN';
+ $('#pinSub').textContent=first?'Lo usará para firmar conteos, pedidos y cambios importantes. Es personal: no lo comparta.':'Confirme con su contraseña y escriba el PIN nuevo.';
+ $('#pinPassWrap').hidden=!!first;$('#pinPass').required=!first;$('#pinX').hidden=!!first;$('#pinErr').hidden=true;['pinPass','pinA','pinB'].forEach(k=>$('#'+k).value='');$('#pinOvl').hidden=false;setTimeout(()=>(first?$('#pinA'):$('#pinPass')).focus(),50)}
+$('#pinX').onclick=()=>{$('#pinOvl').hidden=true};
+$('#chgPin').onclick=()=>{if(DEMO){toast('En modo demostración no hay PIN.');return}openPin(!!ME.debe_pin)};
+$('#pinForm').onsubmit=async e=>{e.preventDefault();const er=$('#pinErr'),a=$('#pinA').value,b=$('#pinB').value;const bad=t=>{er.textContent=t;er.hidden=false};
+ if(!/^[0-9]{4,6}$/.test(a))return bad('El PIN debe tener de 4 a 6 números.');if(a!==b)return bad('Los dos PIN no coinciden.');
+ const r=await sb.rpc('far_fijar_pin',{p_token:ME.token,p_pass:ME.debe_pin?null:$('#pinPass').value,p_pin:a});
+ if(r.error)return bad(r.error.message);if(!r.data)return bad(ME.debe_pin?'La sesión expiró. Vuelva a entrar.':'La contraseña no es correcta.');
+ ME.debe_pin=false;sSet(ME);$('#pinOvl').hidden=true;toast('PIN guardado.');reload()};
+let signRes=null;
+function askPin(motivo){if(DEMO||!sb)return Promise.resolve(true);if(ME.debe_pin){openPin(true);return Promise.resolve(false)}
+ return new Promise(res=>{signRes=res;$('#signSub').textContent=motivo;$('#signErr').hidden=true;$('#signPin').value='';$('#signOvl').hidden=false;setTimeout(()=>$('#signPin').focus(),50)})}
+$('#signX').onclick=()=>{$('#signOvl').hidden=true;signRes&&signRes(false);signRes=null};
+$('#signForm').onsubmit=async e=>{e.preventDefault();const r=await sb.rpc('far_verificar_pin',{p_token:ME.token,p_pin:$('#signPin').value,p_motivo:$('#signSub').textContent});
+ if(r.error||!r.data){const er=$('#signErr');er.textContent='PIN incorrecto.';er.hidden=false;$('#signPin').select();return}
+ $('#signOvl').hidden=true;signRes&&signRes(true);signRes=null};
 async function resetPass(u){if(!sb||!u.dbid){toast('Disponible solo con conexión.');return}
  const r=await sb.rpc('far_reset_pass',{p_token:ME.token,p_usuario_id:u.dbid});if(r.error){toast(r.error.message);return}
  showMsg('Nueva contraseña temporal',`<p><b>${esc(u.n)}</b> · usuario <span class="mono">${esc(u.u)}</span></p><p class="tmp mono">${esc(r.data)}</p><p class="note">Entréguela en persona. Se le pedirá cambiarla al entrar. Esta contraseña no se vuelve a mostrar.</p>`);reload()}
