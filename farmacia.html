@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>COE Farmacia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky summary strip + tabs; one working pane. Receta = form left, live letter-size preview right. */
+:root{
+  --bg:#f2f4f5; --surface:#ffffff; --ink:#1a1a1a; --muted:#5e666c; --line:#d5dadd;
+  --accent:#2c4a5e; --accent-soft:#e3eaef;
+  --ok:#1f7a45; --ok-soft:#e2f3e8; --warn:#a86400; --warn-soft:#fbefd9;
+  --crit:#b3261e; --crit-soft:#fbe3e1; --dead:#2b2b2b; --dead-soft:#e4e4e4;
+  --red:#c0392b; --shadow:0 1px 2px rgba(20,32,44,.06),0 6px 20px rgba(20,32,44,.05); --overlay:rgba(14,22,30,.45);
+  --f-body:"Atkinson Hyperlegible",Verdana,system-ui,sans-serif;
+  --f-serif:"Cormorant Garamond",Georgia,"Times New Roman",serif;
+  --f-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --side:#122029; --side-ink:#c3cfd8; --side-hi:#ffffff; --side-act:rgba(255,255,255,.09);
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --red:#ff7b6b; --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.25); --overlay:rgba(0,0,0,.6);
+  --bg:#111518; --surface:#1a2025; --ink:#e8ecee; --muted:#9aa5ac; --line:#2c353c;
+  --accent:#8fb6cf; --accent-soft:#1d3140;
+  --ok:#5cc58a; --ok-soft:#173527; --warn:#f0b04a; --warn-soft:#3a2b10;
+  --crit:#ff8a80; --crit-soft:#41191a; --dead:#e0e0e0; --dead-soft:#333; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --red:#ff7b6b; --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.25); --overlay:rgba(0,0,0,.6);
+  --bg:#111518; --surface:#1a2025; --ink:#e8ecee; --muted:#9aa5ac; --line:#2c353c;
+  --accent:#8fb6cf; --accent-soft:#1d3140;
+  --ok:#5cc58a; --ok-soft:#173527; --warn:#f0b04a; --warn-soft:#3a2b10;
+  --crit:#ff8a80; --crit-soft:#41191a; --dead:#e0e0e0; --dead-soft:#333; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:16px}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--surface);border-bottom:1px solid var(--line)}
+.hrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-block:10px}
+.logo{display:flex;align-items:center;gap:10px;min-width:0}
+.logo .iso{width:34px;height:34px;flex:none;background:var(--ink);-webkit-mask:var(--iso) center/contain no-repeat;mask:var(--iso) center/contain no-repeat}
+.logo b{display:block;font-size:16px}
+.logo small{color:var(--muted);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.spacer{flex:1}
+.online{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ok)}
+.online i{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.role{display:flex;align-items:center;gap:6px;font-size:13px}
+.role select{padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.bell{position:relative;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 10px}
+.bell span{position:absolute;top:-7px;right:-7px;background:var(--crit);color:#fff;border-radius:10px;font-size:11px;padding:1px 6px}
+
+.strip{display:flex;gap:8px;overflow-x:auto;padding-block:8px;scrollbar-width:thin}
+.kpi{flex:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--bg);text-align:left;min-width:108px}
+.kpi b{display:block;font-size:20px;font-family:var(--f-mono)}
+.kpi small{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.kpi.crit{border-color:var(--crit);background:var(--crit-soft)} .kpi.crit b{color:var(--crit)}
+.kpi.warn{border-color:var(--warn);background:var(--warn-soft)} .kpi.warn b{color:var(--warn)}
+.kpi.dead{border-color:var(--dead);background:var(--dead-soft)}
+.kpi.ok b{color:var(--ok)}
+nav.tabs{display:flex;gap:2px;overflow-x:auto}
+nav.tabs button{border:0;background:none;padding:10px 14px;border-bottom:3px solid transparent;color:var(--muted);font-weight:700;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+
+main{padding-block:18px 60px}
+h2{font-size:20px;margin:0 0 12px;text-wrap:balance}
+h3{font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.note{font-size:13px;color:var(--muted)}
+.proto{background:var(--accent-soft);border:1px dashed var(--accent);border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:14px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.c-ok{background:var(--ok-soft);color:var(--ok)} .c-warn{background:var(--warn-soft);color:var(--warn)}
+.c-crit{background:var(--crit-soft);color:var(--crit)} .c-dead{background:var(--dead);color:var(--bg)}
+.c-info{background:var(--accent-soft);color:var(--accent)} .c-mute{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:760px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:var(--bg)}
+td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.desc{font-size:13px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:7px 12px;font-weight:700;font-size:14px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn.sm{padding:4px 9px;font-size:12px}
+input[type=text],input[type=number],input[type=search],select,textarea{border:1px solid var(--line);border-radius:7px;padding:7px 9px;background:var(--surface);width:100%}
+.cnt{width:70px!important;text-align:right;font-family:var(--f-mono)}
+.diff0{color:var(--ok);font-weight:700} .diffn{color:var(--crit);font-weight:700} .diffp{color:var(--warn);font-weight:700}
+.totals{display:grid;grid-template-columns:auto auto auto auto;gap:4px 18px;justify-content:end;font-size:14px;margin-top:12px}
+.totals b{font-family:var(--f-mono);text-align:right}
+.import{display:flex;gap:10px;flex-wrap:wrap;align-items:center;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px}
+
+.alert{display:grid;grid-template-columns:6px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.acc td.c,.acc th.c{text-align:center;vertical-align:middle}.acc th.c{font-size:11px}.acc tr.grp td{background:var(--bg);font-weight:700;text-transform:uppercase;font-size:12px;letter-spacing:.05em;color:var(--muted)}.acc input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
+.asbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--warn-soft);border:2px solid var(--warn);border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:14px}
+.alert+.alert{margin-top:8px}
+.alert .bar{align-self:stretch;border-radius:3px}
+.alert p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.steps{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.steps span{font-size:11px;padding:2px 7px;border-radius:4px;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.steps span.on{background:var(--accent);color:var(--surface);border-color:var(--accent)}
+.bars{display:grid;gap:6px}
+.bars div{display:grid;grid-template-columns:160px 1fr 30px;gap:8px;align-items:center;font-size:13px}
+.bars i{display:block;height:12px;border-radius:3px;background:var(--accent)}
+
+.rx{display:grid;grid-template-columns:minmax(0,480px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.rx{grid-template-columns:1fr}}
+.field{display:grid;gap:4px;margin-bottom:10px}
+.field label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.medcard{border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:10px;background:var(--bg)}
+.medcard .hd{display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+.sugg{margin-top:8px;border:1px solid var(--warn);background:var(--warn-soft);border-radius:6px;padding:7px 9px;font-size:13px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sugg.crit{border-color:var(--crit);background:var(--crit-soft)}
+.tpls{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:7px 14px;font-weight:700}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+.eyeseg{display:flex;gap:4px}
+.eyeseg button{flex:1;border:2px solid var(--line);background:var(--surface);border-radius:6px;padding:5px 0;font-weight:700}
+.eyeseg button[aria-pressed="true"]{border-color:var(--ink)}
+
+/* ===== hoja impresa: siempre blanco y negro ===== */
+.paperwrap{overflow-x:auto;background:var(--line);border-radius:10px;padding:14px}
+.paper{width:816px;min-height:1056px;margin:0 auto;background:#fff;color:#111;padding:44px 52px 36px;font-family:var(--f-body);box-shadow:0 2px 10px rgba(0,0,0,.18);display:flex;flex-direction:column}
+.p-head{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center}
+.p-iso{width:62px;height:63px;background:#111;-webkit-mask:var(--iso) center/contain no-repeat;mask:var(--iso) center/contain no-repeat}
+.p-brand{font-size:12.5px;letter-spacing:.24em;text-transform:uppercase;line-height:1.5}
+.p-brand span{display:block;letter-spacing:.32em;color:#555;font-size:10.5px;margin-top:2px}
+.p-doc{text-align:right}
+.p-doc .nm{font-family:var(--f-serif);font-size:24px;font-weight:600;line-height:1.1}
+.p-doc .es{font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin-top:3px}
+.p-doc .ce{font-size:11.5px;color:#333;margin-top:2px;font-variant-numeric:tabular-nums}
+.p-rule{border:0;border-top:1.5px solid #111;margin:16px 0 0}
+.p-rule.thin{border-top:.75px solid #111;margin-top:3px}
+.p-pat{display:grid;grid-template-columns:2.6fr .8fr 1.2fr 1.2fr;gap:6px 22px;margin:16px 0 4px}
+.p-lab{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#555;display:block;margin-bottom:2px}
+.p-val{font-size:18px;font-weight:700}
+.p-dx{margin:10px 0 0;padding:10px 0;border-top:.75px solid #999;border-bottom:.75px solid #999}
+.p-rp{font-family:var(--f-serif);font-style:italic;font-weight:600;font-size:40px;line-height:1;margin:16px 0 6px}
+.p-med{display:grid;grid-template-columns:44px 1fr;gap:2px 10px;padding:12px 0 14px;border-bottom:.75px solid #bbb}
+.p-med .n{font-family:var(--f-serif);font-size:34px;font-weight:600;line-height:1;grid-row:span 3}
+.p-med .nm{font-size:25px;font-weight:700;line-height:1.15}
+.p-med .nm small{font-size:15px;font-weight:400;color:#333}
+.p-med .how{font-size:20px;line-height:1.4}
+.p-eye{display:inline-block;border:2.5px solid #111;padding:1px 10px;font-weight:700;letter-spacing:.06em;margin-right:8px}
+.p-gen{font-size:15px;line-height:1.5;margin-top:14px}
+.p-gen b{letter-spacing:.06em}
+.p-foot{margin-top:auto;padding-top:18px;display:grid;grid-template-columns:1fr 260px auto;gap:18px;align-items:end}
+.p-next .p-val{font-size:17px}
+.p-sign{border-top:1px solid #111;padding-top:5px;text-align:center;font-size:12px;line-height:1.35}
+.p-sign b{font-family:var(--f-serif);font-size:16px;font-weight:600}
+.qrbox{text-align:center;font-size:9.5px;line-height:1.25;color:#333}
+.p-addr{margin-top:14px;padding-top:7px;border-top:.75px solid #111;font-size:10px;letter-spacing:0;color:#333;text-align:center}
+
+/* ilustrada */
+.il-intro{font-size:13px;color:#333;margin:14px 0 10px}
+.il-card{border:3px solid #111;border-radius:18px;padding:12px 14px;margin-bottom:12px;display:grid;grid-template-columns:92px 104px 1fr 96px;gap:10px;align-items:center}
+.il-stk{width:92px;height:92px;border-radius:50%;border:4px solid #111;display:grid;place-items:center;font-size:58px;line-height:1;background:#fff}
+.il-face{display:grid;justify-items:center}
+.il-times{display:flex;gap:6px;justify-content:center}
+.il-t{display:grid;justify-items:center;gap:4px;padding:6px 4px 8px;border:2px solid #111;border-radius:12px;min-width:0;flex:1;max-width:96px}.il-t svg{max-width:100%}
+.il-drops{display:flex;gap:2px}
+.il-cal{display:grid;justify-items:center}
+.il-fam{font-size:12.5px;color:#333;grid-column:1/-1;border-top:1px dashed #999;padding-top:6px}
+
+/* ===== refinamiento visual ===== */
+body{background:var(--bg)}
+header.top{box-shadow:var(--shadow);border-bottom:0}
+.logo b{font-size:17px;letter-spacing:.01em}
+.panel{border-color:transparent;box-shadow:var(--shadow);border-radius:14px}
+.kpi{background:var(--surface);border-color:var(--line);border-radius:12px;padding:8px 12px;min-width:116px;transition:transform .12s,box-shadow .12s}
+.kpi:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+.kpi.crit,.kpi.warn,.kpi.dead{background:var(--surface)}
+.kpi small{display:flex;align-items:center;gap:6px}
+.kpi.crit small::before,.kpi.warn small::before,.kpi.dead small::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.kpi.crit small{color:var(--crit)} .kpi.warn small{color:var(--warn)} .kpi.dead small{color:var(--dead)}
+nav.tabs{gap:4px;padding-block:4px 8px}
+nav.tabs button{border:0;border-radius:999px;padding:8px 16px;color:var(--muted)}
+nav.tabs button:hover{background:var(--bg);color:var(--ink)}
+nav.tabs button[aria-selected="true"]{background:var(--accent);color:var(--surface);border:0}
+.btn{border-radius:9px;transition:background .12s,border-color .12s}
+.btn:hover{border-color:var(--accent)}
+.btn.pri:hover{filter:brightness(1.08)}
+input[type=text],input[type=number],input[type=search],input[type=date],select,textarea{border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface);width:100%;font-size:16px;transition:border-color .12s,box-shadow .12s}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.rxform .field label{font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:700}
+.req{font-weight:400;color:var(--crit);font-size:12px;margin-left:4px}
+.sec-h{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:18px 0 10px;display:flex;align-items:center;gap:10px}
+.sec-h::after{content:"";flex:1;border-top:1px solid var(--line)}
+.lbl{font-size:12px;font-weight:700;color:var(--muted);display:block;min-width:46px}
+.top2{display:flex;gap:16px;flex-wrap:wrap}
+.top2 .lbl{margin-bottom:4px}
+.seg2{display:inline-flex;background:var(--bg);border-radius:10px;padding:3px;gap:3px;flex-wrap:wrap}
+.seg2 button{border:0;background:none;border-radius:8px;padding:6px 12px;font-weight:700;display:grid;justify-items:center;line-height:1.15;color:var(--muted)}
+.seg2 button small{font-weight:400;font-size:11px}
+.seg2 button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.seg2.sm button{padding:6px 12px;font-size:14px}
+.tplgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tpl{display:flex;align-items:center;gap:10px;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;color:var(--ink);transition:border-color .12s,transform .12s}
+.tpl:hover{border-color:var(--accent);transform:translateY(-1px)}
+.tpl svg{flex:none;color:var(--ink)}
+.tpl span{display:grid;min-width:0}
+.tpl b{font-size:14px;line-height:1.2}
+.tpl small{color:var(--muted);font-size:12px}
+.inp-ic{position:relative}
+.inp-ic svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.inp-ic input{padding-left:38px}
+.stepper{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.stepper button{border:0;background:var(--bg);width:38px;height:40px;font-size:20px;font-weight:700}
+.stepper button:hover{background:var(--accent-soft)}
+.stepper span{padding:0 12px;font-weight:700;white-space:nowrap}
+.stepper.wide{display:flex}
+.stepper.wide input{border:0;border-radius:0;text-align:center;width:100%;min-width:0;padding:8px 4px;box-shadow:none}
+.stepper .unit{font-weight:400;color:var(--muted);padding:0 8px 0 0}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips.sm{margin-top:8px}
+.chips button{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:700;color:var(--muted)}
+.chips.sm button{font-size:12.5px;padding:4px 10px;font-weight:400}
+.chips button:hover{border-color:var(--accent);color:var(--ink)}
+.chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.medcard{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;gap:10px}
+.mc-h{display:flex;align-items:center;gap:8px}
+.pat2{grid-template-columns:150px minmax(0,1fr)}
+.stepper.wide{height:46px}.stepper.wide button{height:100%}
+.mc-h .num{width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--surface);display:grid;place-items:center;font-weight:700;font-size:14px;flex:none}
+.mc-n{flex:1;min-width:0;display:grid}
+.mc-n small .chip{font-size:11px;padding:1px 7px}
+.mc-n b{font-size:17px}
+.mc-n small{color:var(--muted);font-size:12.5px}
+.mc-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.icon-btn{border:0;background:none;width:32px;height:32px;border-radius:8px;color:var(--muted);font-size:16px}
+.icon-btn:hover{background:var(--bg);color:var(--ink)}
+.sw{display:inline-flex;align-items:center;gap:8px;font-size:13px;margin-left:auto;cursor:pointer}
+.sw input{position:absolute;opacity:0;width:1px;height:1px}
+.sw .tr{width:36px;height:20px;border-radius:999px;background:var(--line);position:relative;transition:background .15s}
+.sw .tr::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--surface);transition:transform .15s}
+.sw input:checked+.tr{background:var(--accent)}
+.sw input:checked+.tr::after{transform:translateX(16px)}
+.sw input:focus-visible+.tr{outline:3px solid var(--accent);outline-offset:2px}
+.hint{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-radius:10px;padding:8px 10px;font-size:13px}
+.hint span{flex:1;min-width:160px}
+.hint.warn{background:var(--warn-soft)} .hint.crit{background:var(--crit-soft)} .hint.info{background:var(--accent-soft)}
+.addmed{width:100%;border:1.5px dashed var(--line);background:none;border-radius:14px;padding:12px;font-weight:700;color:var(--accent);margin-top:2px}
+.addmed:hover{border-color:var(--accent);background:var(--accent-soft)}
+.rxform .medcard{margin-bottom:10px}
+.ovl{position:fixed;inset:0;background:var(--overlay);z-index:40;display:grid;place-items:center;padding:16px}
+.dlg{background:var(--surface);color:var(--ink);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:min(620px,100%);max-height:min(86vh,760px);display:flex;flex-direction:column;overflow:hidden}
+.dlg-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.dlg-h h3{margin:0 0 4px;font-size:18px;text-transform:none;letter-spacing:0;color:var(--ink)}
+.cur{font-size:13px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.dlg-b{padding:14px 18px 18px;overflow-y:auto}
+.dlg .sec{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
+.opt{display:flex;width:100%;gap:10px;align-items:center;justify-content:space-between;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;margin-bottom:8px;color:var(--ink)}
+.opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+.opt.rec{border-color:var(--accent);border-width:2px}
+.o-main{display:grid;min-width:0;gap:1px}
+.o-main small{color:var(--muted);font-size:12.5px}
+.o-main em{font-style:normal;font-size:12.5px;color:var(--ink)}
+.o-side{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;flex:none}
+.optlist{margin-top:10px}
+@media (max-width:520px){.tplgrid{grid-template-columns:1fr}.sw{margin-left:0}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ===== interfaz profesional: barra lateral ===== */
+:root{--bg:#eef1f4;--line:#dde3e8;--accent:#1d5873;--accent-soft:#e3eef3;--muted:#5d6a74;--ink:#15212a}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0e1419;--line:#26323b;--accent:#7fbad6;--accent-soft:#16303d;--muted:#94a3ae;--ink:#e6ecf0;--side:#0a1217}}
+:root[data-theme="dark"]{--bg:#0e1419;--line:#26323b;--accent:#7fbad6;--accent-soft:#16303d;--muted:#94a3ae;--ink:#e6ecf0;--side:#0a1217}
+body{font-family:var(--f-ui);font-size:14.5px;background:var(--bg)}
+button,select,input,textarea{font-family:var(--f-ui)}
+.shell{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100vh}
+.side{background:var(--side);color:var(--side-ink);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:20px 14px calc(16px + env(safe-area-inset-bottom,0px))}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 8px 22px}
+.brand .iso{width:34px;height:34px;flex:none;background:var(--side-hi);-webkit-mask:var(--iso) center/contain no-repeat;mask:var(--iso) center/contain no-repeat}
+.brand b{display:block;color:var(--side-hi);font-size:16px;font-weight:600;letter-spacing:.01em}
+.brand small{display:block;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--side-ink);opacity:.75;margin-top:2px}
+.side nav.tabs{display:flex;flex-direction:column;gap:2px;padding:0;overflow:visible}
+.side nav.tabs button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-radius:8px;padding:10px 12px;color:var(--side-ink);background:none;font-weight:500;font-size:14px}
+.side nav.tabs button:hover{background:var(--side-act);color:var(--side-hi)}
+.side nav.tabs button[aria-selected="true"]{background:var(--side-act);color:var(--side-hi);font-weight:600}
+.side nav.tabs button[aria-selected="true"] svg{color:#8fd0ec}
+.side-foot{margin-top:auto;display:grid;gap:8px;padding:14px 6px 0;border-top:1px solid rgba(255,255,255,.08)}
+.side-foot .online{color:#7fd6a3;font-size:12px}
+.side-foot .online.off{color:#f0b04a}.side-foot .online.off i{background:#f0b04a;box-shadow:none}
+.side-foot .online i{background:#7fd6a3;box-shadow:0 0 0 3px rgba(127,214,163,.18)}
+.side-foot .who{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.7}
+.side-foot select{background:rgba(255,255,255,.06);color:var(--side-hi);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px 10px;font-size:13px}
+.side-foot select option{color:#111}
+.content{min-width:0;display:flex;flex-direction:column;padding-inline:28px;padding-block:0 40px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);box-shadow:none;display:flex;align-items:center;gap:12px;padding:20px 0 14px;border-bottom:0}
+.ttl h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+.ttl span{font-size:12.5px;color:var(--muted)}
+.bell{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:0}
+.bell span{top:-6px;right:-6px;font-size:10.5px;font-weight:600}
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:0;padding:0;background:var(--surface);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:18px}
+.kpi,.kpi.crit,.kpi.warn,.kpi.dead{border:0;border-right:1px solid var(--line);border-radius:0;background:var(--surface);padding:12px 16px;min-width:0;display:flex;flex-direction:column;gap:4px;transform:none}
+.kpi:last-child{border-right:0}
+.kpi:hover{transform:none;box-shadow:none;background:var(--bg)}
+.kpi small{font-size:11px;letter-spacing:.04em;font-weight:500;color:var(--muted);text-transform:none}
+.kpi b{font-family:var(--f-ui);font-size:24px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi.crit b{color:var(--crit)} .kpi.warn b{color:var(--warn)} .kpi.ok b{color:var(--ok)}
+.kpi.crit small,.kpi.warn small,.kpi.dead small{color:var(--muted)}
+.kpi.crit small::before{background:var(--crit)} .kpi.warn small::before{background:var(--warn)} .kpi.dead small::before{background:var(--dead)}
+main{padding:0}
+#main > h2:first-of-type{display:none}
+#main > .asbar + h2{display:none}
+h2{font-weight:600;font-size:18px}
+h3{font-weight:600;font-size:11.5px;letter-spacing:.08em}
+.panel{border-radius:12px;padding:18px 20px}
+th{background:transparent;border-bottom:1px solid var(--line);font-weight:600;font-size:11px}
+tbody tr:hover td{background:var(--bg)}
+.chip{font-weight:600;font-size:11.5px}
+.btn{font-weight:600;font-size:13.5px}
+.btn.pri{background:var(--accent);border-color:var(--accent)}
+.alert{border:0;box-shadow:inset 0 0 0 1px var(--line)}
+.proto{border-style:solid;border-width:0 0 0 0;background:var(--accent-soft);color:var(--ink);border-radius:10px}
+.paperwrap{background:#d9dee3;border-radius:12px;overflow:hidden}
+.paper,.paper button{font-family:var(--f-body)}
+.seg{border-radius:10px;background:var(--surface)}
+.seg button{font-weight:600}
+.dashgrid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+.dashgrid > :first-child{grid-row:span 3}
+@media (max-width:1100px){.dashgrid{grid-template-columns:1fr}.dashgrid > :first-child{grid-row:auto}}
+.kpi small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand small{letter-spacing:.1em}
+.side,.content{min-width:0}
+@media (max-width:600px){.alert{grid-template-columns:4px 1fr}.alert > div:last-child{grid-column:2;justify-content:flex-start}}
+@media (max-width:900px){
+ .shell{grid-template-columns:minmax(0,1fr)}
+ .side nav.tabs{max-width:100%}
+ .side{position:sticky;top:0;z-index:20;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 16px 6px;padding-top:calc(10px + env(safe-area-inset-top,0px))}
+ .brand{padding:0;flex:1}
+ .brand small{display:none}
+ .side nav.tabs{order:3;flex-direction:row;overflow-x:auto;width:100%;gap:2px;padding-bottom:4px}
+ .side nav.tabs button{width:auto;white-space:nowrap;padding:8px 10px}
+ .side-foot{margin:0;border:0;padding:0;display:flex;align-items:center;gap:8px}
+ .side-foot .online,.side-foot .who{display:none}
+ .side-foot select{max-width:170px}
+ .content{padding-inline:16px}
+ header.top{position:static;padding:14px 0 10px}
+}
+body{margin:0}[hidden]{display:none!important}img{max-width:100%}
+</style>
+
+<div class="shell">
+ <aside class="side">
+  <div class="brand"><div class="iso"></div><div><b>COE Farmacia</b><small>Centro Ocular Especializado</small></div></div>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Secciones"></nav>
+  <div class="side-foot">
+   <div class="online"><i></i>En línea · sincronizado</div>
+   <label for="roleSel" class="who">Sesión</label>
+   <select id="roleSel">
+    <option value="dir">Dr. Villegas · Director General</option>
+    <option value="dra">Dra. Rivera · Dirección</option>
+    <option value="mos">Mostrador de Farmacia</option>
+    <option value="fin">Finanzas · Contadora</option>
+    <option value="med">Médico</option>
+   </select>
+  </div>
+ </aside>
+ <div class="content">
+  <header class="top"><div class="ttl"><h1 id="pgTitle">Panel</h1><span id="pgSub"></span></div><div class="spacer"></div>
+   <button class="bell" id="bellBtn" aria-label="Alertas"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><span id="bellCount">0</span></button></header>
+  <div class="strip" id="strip"></div>
+  <main id="main"></main>
+ </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+document.documentElement.style.setProperty('--iso','url("data:image/png;base64,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")');
+const TODAY=(()=>{const d=new Date();d.setHours(12,0,0,0);return d})();
+const ISO=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const days=d=>Math.round((new Date(d+'T12:00:00')-TODAY)/86400000);
+const fmtD=d=>new Date(d+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+const money=n=>'$'+n.toLocaleString('es-MX');
+
+const GRUPOS={antibiotico:'Antibiótico','ab+est':'Antibiótico + esteroide',esteroide:'Esteroide',aine:'AINE',antialergico:'Antialérgico',
+ lubricante:'Lubricante',prostaglandina:'Hipotensor · prostaglandina',combinacion:'Hipotensor · combinación fija',midriatico:'Ciclopléjico / atropina',
+ inmuno:'Inmunomodulador',antimicotico:'Antimicótico',oral:'Oral / sistémico',higiene:'Higiene palpebral',insumo:'Insumo',servicio:'Servicio',
+ sc:'Sin clasificar'};
+const CAT={col:'Colirios oftálmicos',med:'Medicamentos oftálmicos',var:'Varios'};
+/* Claves y descripciones tal como vienen del reporte de eOptics. Lotes, caducidades, mínimos y precios: EJEMPLO. */
+const L=(l,cad,q)=>({l,cad,q});
+let PROD=[
+ {id:1,cl:'008400000026',d:'ACETAZOLAMIDA/ACETADIAZOL',nm:'Acetadiazol',pa:'acetazolamida',g:'oral',cat:'med',min:2,cri:1,c:45,v:110,lotes:[L('AZ2609','2028-03-01',3)],sal:2},
+ {id:2,cl:'008400000460',d:'PREMID SOL. OFTALMICA PREDNISOLA SULFACETAMIDA',nm:'Premid',pa:'prednisolona/sulfacetamida',g:'ab+est',cat:'col',min:3,cri:1,c:95,v:205,lotes:[L('PM2507','2027-07-01',6)],sal:4},
+ {id:3,cl:'008400003218',d:'OBRYDEX (TOBRAMICINA/DEXAMETASONA 3MG/1ML)',nm:'Obrydex',pa:'tobramicina/dexametasona',g:'ab+est',cat:'col',min:6,cri:3,c:110,v:235,lotes:[L('OB2504','2027-04-20',11)],sal:14},
+ {id:4,cl:'008400004277',d:'CONFORGEL (CARBOMERO GEL 2MG TUBO)',nm:'Conforgel',pa:'carbómero gel',g:'lubricante',cat:'med',min:3,cri:1,c:85,v:180,lotes:[L('CF2412','2026-12-28',4)],sal:3},
+ {id:5,cl:'008400005823',d:'TOBRAMICINA / DEXAMETASONA 3 MG / ML',nm:'Tobramicina/Dexametasona',pa:'tobramicina/dexametasona',g:'ab+est',cat:'col',min:2,cri:1,c:70,v:150,lotes:[L('TD2411','2026-11-03',3)],sal:2},
+ {id:6,cl:'00840000924',d:'NOXAVIL SOLUCION OFTALMICA 5ML',nm:'Noxavil',pa:'—',g:'sc',cat:'col',min:3,cri:1,c:90,v:190,lotes:[L('NX2506','2027-06-15',10)],sal:5},
+ {id:7,cl:'008400009418',d:'RIBOTRIPSIN (TRIPSINA/QUIMIIOTRIPSINA) TABLETAS',nm:'Ribotripsin',pa:'tripsina/quimiotripsina',g:'oral',cat:'med',min:3,cri:1,c:60,v:140,lotes:[L('RB2508','2027-08-01',9)],sal:6},
+ {id:8,cl:'0300651507966',d:'SYSTANE ULTRA SP SOLUCION OFTALMICA 10 ML',nm:'Systane Ultra',pa:'lubricante',g:'lubricante',cat:'col',min:8,cri:4,c:150,v:290,lotes:[L('SY2505','2027-05-12',16)],sal:20},
+ {id:9,cl:'158',d:'ENVIO PAQUETERIA',nm:'Envío paquetería',pa:'',g:'servicio',cat:'var',min:0,cri:0,c:0,v:120,lotes:[L('—','2099-01-01',4)],sal:0,srv:1},
+ {id:10,cl:'696859241383',d:'MACUHEALTH CAPSULAS FRASCO CON 90 CAP',nm:'MacuHealth',pa:'suplemento macular',g:'oral',cat:'med',min:2,cri:1,c:780,v:1250,lotes:[L('MH2603','2028-03-01',2)],sal:1},
+ {id:11,cl:'736085400489',d:'SOPHIPREN OFTENO',nm:'Sophipren Ofteno',pa:'prednisolona',g:'esteroide',cat:'col',min:3,cri:1,c:120,v:250,lotes:[L('SP2410','2026-10-02',1)],sal:6},
+ {id:12,cl:'736085402346',d:'GAAP OFTENO SOLUCION',nm:'Gaap Ofteno',pa:'latanoprost',g:'prostaglandina',cat:'col',min:3,cri:1,c:260,v:480,lotes:[L('GA2501','2027-01-15',2)],sal:4},
+ {id:13,cl:'736085410600',d:'ZEBESTEN (BROMFENACO0.9MG/DL) SOLUCION OFTALMICA',nm:'Zebesten',pa:'bromfenaco 0.09%',g:'aine',cat:'col',min:3,cri:1,c:280,v:520,lotes:[L('ZB2503','2027-03-10',1)],sal:7},
+ {id:14,cl:'736085419009',d:'ALLEANCE SOL OFTALMICA (SULFATO DE ATROPINA 0.01%)',nm:'Alleance',pa:'atropina 0.01%',g:'midriatico',cat:'col',min:2,cri:1,c:340,v:620,lotes:[L('AL2502','2027-02-01',1)],sal:1},
+ {id:15,cl:'736085905373',d:'KRYTAN TEK DORZOLAMIDA/TIMOLOL/BRIMONIDINA SOL OFTALMICA',nm:'Krytantek Ofteno',pa:'dorzolamida/timolol/brimonidina',g:'combinacion',cat:'col',min:2,cri:1,c:390,v:690,lotes:[L('KT2411','2026-11-25',2)],sal:3},
+ {id:16,cl:'7501075721096',d:'PREGABALINA 75 MG CAPSO / ANIERNV',nm:'Pregabalina 75 mg',pa:'pregabalina',g:'oral',cat:'med',min:2,cri:1,c:120,v:260,lotes:[L('PG2605','2028-05-01',2)],sal:1},
+ {id:17,cl:'7501095452505',d:'TEMPRA FORTE 650 MG TABLETAS',nm:'Tempra Forte 650 mg',pa:'paracetamol',g:'oral',cat:'med',min:2,cri:1,c:55,v:110,lotes:[L('TP2609','2028-09-01',2)],sal:3},
+ {id:18,cl:'7502231320627',d:'OLOFCON OLOPATADINA 1% 5ML',nm:'Olofcon',pa:'olopatadina',g:'antialergico',cat:'col',min:3,cri:1,c:140,v:290,lotes:[L('OL2506','2027-06-01',7)],sal:5},
+ {id:19,cl:'7503014492043',d:'NETEX SIFI',nm:'Netex',pa:'—',g:'sc',cat:'col',min:2,cri:1,c:180,v:340,lotes:[L('NT2508','2027-08-01',5)],sal:2},
+ {id:20,cl:'7503014492135',d:'KLIMI MED (TOALLITAS CON CLORHEXIDRINA) CAJA',nm:'Klimi Med toallitas',pa:'clorhexidina',g:'higiene',cat:'med',min:2,cri:1,c:160,v:310,lotes:[L('KL2604','2028-04-01',3)],sal:2},
+ {id:21,cl:'7503014492173',d:'NETIRA SOL OFTALMICA (NETILMICINA) FRASCO 5ML',nm:'Netira',pa:'netilmicina',g:'antibiotico',cat:'col',min:2,cri:1,c:120,v:240,lotes:[L('NE2507','2027-07-01',3)],sal:2},
+ {id:22,cl:'75041144',d:'ISENIA (TOBRAMICINA) SOL. OFTALMICA 5 ML',nm:'Isenia',pa:'tobramicina',g:'antibiotico',cat:'col',min:2,cri:1,c:80,v:170,lotes:[L('IS2412','2026-12-10',4)],sal:3},
+ {id:23,cl:'803878031868',d:'AUROFORT (ACETATO DE PREDNISOLONA 1%) SUSPENSION OFTALMICA FRASCO 5 ML',nm:'Aurofort',pa:'prednisolona',g:'esteroide',cat:'col',min:6,cri:3,c:95,v:210,lotes:[L('AF2505','2027-05-20',10)],sal:12},
+ {id:24,cl:'803878032490',d:'VOZOLE (VORICONAZOL POLVO 1% ) PARA GOTAS OFTALMICAS',nm:'Vozole',pa:'voriconazol 1%',g:'antimicotico',cat:'col',min:1,cri:0,c:650,v:1100,lotes:[L('VZ2604','2027-04-01',1)],sal:0},
+ {id:25,cl:'8699525610010',d:'DAEQOS (CICLOSPORINA EMULSION 0.05%)',nm:'Daeqos',pa:'ciclosporina 0.05%',g:'inmuno',cat:'col',min:2,cri:1,c:520,v:890,lotes:[L('DQ2602','2027-02-28',2)],sal:2},
+ {id:26,cl:'8699525610034',d:'FUHBAR (Acido Fusidico 1%)',nm:'Fuhbar',pa:'ácido fusídico 1%',g:'antibiotico',cat:'col',min:2,cri:1,c:150,v:290,lotes:[L('FU2509','2027-09-01',3)],sal:2},
+ {id:27,cl:'8699525610119',d:'AVELUX (MOXIFLOXACINO 0.5%) SOLUCION OFTALMICA',nm:'Avelux',pa:'moxifloxacino 0.5%',g:'antibiotico',cat:'col',min:4,cri:2,c:130,v:260,lotes:[L('AV2502','2027-02-15',5)],sal:9},
+ {id:28,cl:'r98547449',d:'LENTE DE CONTACTO TERAPEUTICO',nm:'Lente de contacto terapéutico',pa:'',g:'insumo',cat:'var',min:2,cri:1,c:180,v:400,lotes:[L('LC2701','2028-01-01',1)],sal:1},
+];
+const sistema=p=>p.lotes.reduce((a,l)=>a+l.q,0);
+const stock=p=>p.lotes.filter(l=>days(l.cad)>=0).reduce((a,l)=>a+l.q,0);
+const firstLot=p=>p.lotes.filter(l=>days(l.cad)>=0&&l.q>0).sort((a,b)=>a.cad.localeCompare(b.cad))[0];
+function stockState(p){if(p.srv) return ['mute','Servicio'];const s=stock(p);if(s===0)return['dead','Agotado'];if(s<=p.cri)return['crit','Crítico'];if(s<=p.min)return['warn','Mínimo'];return['ok','Suficiente']}
+function cadState(d){const n=days(d);if(n<0)return['dead','Vencido'];if(n<=30)return['crit',n+' días'];if(n<=90)return['warn',n+' días'];if(n<=180)return['info',n+' días'];return['ok','Vigente']}
+const chip=([k,t])=>`<span class="chip c-${k}">${esc(t)}</span>`;
+const RXABLE=p=>!p.srv&&!['insumo','servicio'].includes(p.g);
+
+/* conteo del lunes, prellenado como el reporte de eOptics */
+let CONTEO=Object.fromEntries(PROD.map(p=>[p.id,sistema(p)])); CONTEO[9]=0; CONTEO[18]=8;
+let JUST={9:'Es un servicio, no un producto físico; excluir del conteo.'};
+
+let PEDIDOS=[
+ {id:'PF-0041',items:'Zebesten × 4',monto:1120,prio:'Urgente',est:2,por:'Mostrador',fecha:'2026-10-09'},
+ {id:'PF-0040',items:'Daeqos × 3',monto:1560,prio:'Normal',est:1,por:'Mostrador',fecha:'2026-10-08'},
+ {id:'PF-0038',items:'Systane Ultra × 12, Aurofort × 6',monto:2370,prio:'Normal',est:3,por:'Mostrador',fecha:'2026-10-02'},
+];
+const PSTEPS=['Enviado','Autorizado','Pedido al proveedor','Recibido'];
+let ATENDIDAS=new Set();
+
+function alerts(){
+ const a=[];
+ PROD.filter(p=>!p.srv).forEach(p=>{
+  const[k]=stockState(p);
+  if(k==='dead')a.push({id:'s'+p.id,k:'dead',t:`${p.nm}: agotado`,d:'Sin existencia vigente. Bloqueado en receta; se sugiere alternativa del mismo grupo.',p});
+  else if(k==='crit')a.push({id:'s'+p.id,k:'crit',t:`${p.nm}: existencia crítica`,d:`Quedan ${stock(p)} (crítico ≤ ${p.cri}).`,p});
+  else if(k==='warn')a.push({id:'s'+p.id,k:'warn',t:`${p.nm}: en mínimo`,d:`Quedan ${stock(p)} (mínimo ${p.min}).`,p});
+  p.lotes.forEach(l=>{const[ck,ct]=cadState(l.cad);
+   if(ck==='dead')a.push({id:'c'+l.l,k:'dead',t:`${p.nm} lote ${l.l}: vencido`,d:`${l.q} pza caducó el ${fmtD(l.cad)}. Retirar del anaquel y dar de baja con doble PIN.`,p,cad:1});
+   else if(ck==='crit'||ck==='warn')a.push({id:'c'+l.l,k:ck,t:`${p.nm} lote ${l.l}: caduca en ${ct}`,d:`${l.q} pzas · ${fmtD(l.cad)}. Se sugiere primero en recetas.`,p,cad:1});
+  });
+ });
+ const sc=PROD.filter(p=>p.g==='sc');
+ if(sc.length)a.push({id:'sc',k:'info',t:`${sc.length} productos sin clasificar`,d:`${sc.map(p=>p.nm).join(', ')}: asigne principio activo y grupo para que aparezcan en sugerencias de receta.`,p:null});
+ a.push({id:'inv',k:'info',t:'Inventario del lunes 12 oct',d:'Recordatorio: conteo físico semanal mañana. Último completado el 5 oct.',p:null});
+ const o={dead:0,crit:1,warn:2,info:3};return a.sort((x,y)=>o[x.k]-o[y.k]);
+}
+
+const ACC_TABS=[['dash','Panel'],['inv','Inventario'],['conteo','Conteo del lunes'],['alert','Alertas'],['ped','Pedidos a Finanzas'],['rx','Receta']];
+const ACC_ACT=[['resumen','Ver barra de resumen superior'],['costos','Ver costos y valor del inventario'],['entrada','Registrar entradas e importar eOptics'],['pedir','Generar pedidos a Finanzas'],['autorizar','Autorizar y avanzar pedidos'],['ajuste','Autorizar ajustes de conteo y bajas por caducidad'],['recetar','Emitir y modificar recetas'],['surtir','Surtir recetas en mostrador']];
+const PERFILES={dir:'Director General',dra:'Dirección',mos:'Mostrador de Farmacia',fin:'Finanzas · Contadora',med:'Médico'};
+let PERMS={dir:{resumen:1,dash:1,inv:1,conteo:1,alert:1,ped:1,rx:1,costos:1,entrada:1,pedir:1,autorizar:1,ajuste:1,recetar:1,surtir:1},
+ dra:{resumen:1,dash:1,inv:1,alert:1,ped:1,rx:1,costos:1,pedir:1,autorizar:1,recetar:1},
+ mos:{resumen:1,dash:1,inv:1,conteo:1,alert:1,ped:1,rx:1,costos:1,entrada:1,pedir:1,surtir:1},
+ fin:{resumen:1,dash:1,inv:1,ped:1,costos:1,autorizar:1},
+ med:{dash:1,inv:1,rx:1,recetar:1}};
+let USERS=[{n:'Dr. José Antonio Villegas Ávila',u:'jvillegas',p:'dir',a:1},{n:'Dra. Mónica A. Rivera Bustos',u:'mrivera',p:'dra',a:1},{n:'Mostrador Farmacia (turno matutino)',u:'farmacia1',p:'mos',a:1},{n:'Mostrador Farmacia (turno vespertino)',u:'farmacia2',p:'mos',a:1},{n:'Contadora',u:'contabilidad',p:'fin',a:1},{n:'Médico general',u:'medico1',p:'med',a:1}];
+let viewAs=null;
+const eff=()=>viewAs||role;
+const can=k=>!!PERMS[eff()][k];
+const tabsFor=()=>{const t=ACC_TABS.map(x=>x[0]).filter(can);if(eff()==='dir')t.push('acc');return t.length?t:['dash']};
+const TABN={dash:'Panel',inv:'Inventario',conteo:'Conteo del lunes',alert:'Alertas',ped:'Pedidos a Finanzas',rx:'Receta',acc:'Accesos'};
+let role='dir',tab='dash';
+
+function renderStrip(){
+ $('#strip').hidden=!can('resumen'); $('#bellBtn').hidden=!tabsFor().includes('alert');
+ const al=alerts(),PR=PROD.filter(p=>!p.srv);
+ const crit=PR.filter(p=>stockState(p)[0]==='crit').length,minc=PR.filter(p=>stockState(p)[0]==='warn').length,ago=PR.filter(p=>stock(p)===0).length;
+ const lots=PR.flatMap(p=>p.lotes);
+ const c30=lots.filter(l=>{const n=days(l.cad);return n>=0&&n<=30}).length,c90=lots.filter(l=>{const n=days(l.cad);return n>30&&n<=90}).length,venc=lots.filter(l=>days(l.cad)<0).length;
+ const val=PR.reduce((a,p)=>a+stock(p)*p.c,0),open=PEDIDOS.filter(p=>p.est<3).length,pend=al.filter(a=>!ATENDIDAS.has(a.id)).length;
+ $('#bellCount').textContent=pend;
+ $('#strip').innerHTML=`
+  <button class="kpi crit" data-go="inv" data-f="crit"><small>Críticos</small><b>${crit}</b></button>
+  <button class="kpi warn" data-go="inv" data-f="warn"><small>En mínimo</small><b>${minc}</b></button>
+  <button class="kpi dead" data-go="inv" data-f="dead"><small>Agotados</small><b>${ago}</b></button>
+  <button class="kpi crit" data-go="inv" data-f="c30"><small>Caducan ≤30 días</small><b>${c30}</b></button>
+  <button class="kpi warn" data-go="inv" data-f="c90"><small>Caducan 31–90</small><b>${c90}</b></button>
+  <button class="kpi dead" data-go="inv" data-f="venc"><small>Vencidos</small><b>${venc}</b></button>
+  <button class="kpi" data-go="ped"><small>Pedidos</small><b>${open}</b></button>
+  ${!can('costos')?'':`<div class="kpi ok"><small>Valor a costo</small><b>${money(val)}</b></div>`}
+  <div class="kpi"><small>Inventario</small><b>Lun 12</b></div>`;
+ $('#strip').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{if(!tabsFor().includes(b.dataset.go))return;invFilter=b.dataset.f||'all';go(b.dataset.go)});
+}
+const TABIC={dash:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+ inv:'<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>',
+ conteo:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 13l2 2 4-4"/>',
+ alert:'<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+ ped:'<path d="M3 5h11v11H3z"/><path d="M14 9h4l3 3v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+ rx:'<path d="M6 3h9l4 4v14H6z"/><path d="M9 10h3a2 2 0 0 1 0 4H9v-4zm0 4v3m3-3l3 3"/>',
+ acc:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>'};
+function renderTabs(){$('#pgTitle').textContent=TABN[tab];$('#tabs').innerHTML=tabsFor().map(t=>`<button role="tab" aria-selected="${t===tab}" data-t="${t}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TABIC[t]}</svg><span>${TABN[t]}</span></button>`).join('');$('#tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>go(b.dataset.t))}
+function go(t){tab=t;renderTabs();render();window.scrollTo({top:0})}
+
+function vDash(){
+ const al=alerts().filter(a=>!ATENDIDAS.has(a.id)).slice(0,6);
+ const top=PROD.filter(p=>!p.srv).sort((a,b)=>b.sal-a.sal).slice(0,8),mx=top[0].sal;
+ const sinMov=PROD.filter(p=>p.sal===0&&!p.srv);
+ return `<div class="proto">${DEMO?'<b>Modo demostración:</b> no hay conexión con la base de datos de farmacia; los datos no se guardan.':'<b>Conectado a Supabase.</b> Claves y descripciones del reporte de eOptics. Lotes, caducidades, mínimos y precios están cargados como ejemplo hasta que capture los reales.'} Cambie la <b>Sesión</b> (abajo a la izquierda) para ver qué ve cada rol.</div>
+ <div class="dashgrid">
+  <section class="panel"><h3>Atender primero</h3>${al.map(alertRow).join('')||'<p class="note">Sin alertas pendientes.</p>'}</section>
+  <section class="panel"><h3>Más vendidos · últimas 4 semanas</h3><div class="bars">${top.map(p=>`<div><span>${esc(p.nm)}</span><i style="width:${p.sal/mx*100}%"></i><span class="mono">${p.sal}</span></div>`).join('')}</div>
+   <p class="note" style="margin-top:10px">Sin movimiento en 60 días: ${sinMov.map(p=>esc(p.nm)).join(', ')||'ninguno'}.</p></section>
+  <section class="panel"><h3>Recetas de hoy</h3>
+   <div style="display:flex;gap:22px;flex-wrap:wrap"><div><b class="mono" style="font-size:28px">14</b><div class="note">emitidas</div></div><div><b class="mono" style="font-size:28px;color:var(--ok)">11</b><div class="note">surtidas en COE</div></div><div><b class="mono" style="font-size:28px">79%</b><div class="note">captura de farmacia</div></div></div>
+   <p class="note">3 no surtidas: 2 por agotado (Sophipren), 1 por decisión del paciente.</p></section>
+  <section class="panel"><h3>Pedidos a Finanzas</h3>${PEDIDOS.map(pedRow).join('')}</section>
+ </div>`;
+}
+function alertRow(a){
+ const col={dead:'var(--dead)',crit:'var(--crit)',warn:'var(--warn)',info:'var(--accent)'}[a.k];
+ const canPed=a.p&&!a.cad&&can('pedir');
+ return `<div class="alert"><span class="bar" style="background:${col}"></span><div><b>${esc(a.t)}</b><p>${esc(a.d)}</p></div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${canPed?`<button class="btn sm pri" data-ped="${a.p.id}">Generar pedido</button>`:''}
+  ${ATENDIDAS.has(a.id)?'<span class="chip c-ok">Atendida</span>':`<button class="btn sm" data-ok="${a.id}">Marcar atendida</button>`}</div></div>`;
+}
+function pedRow(p){
+ return `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b class="mono">${p.id}</b><span>${p.prio==='Urgente'?'<span class="chip c-crit">Urgente</span>':''} <span class="mono">${money(p.monto)}</span></span></div>
+  <div>${esc(p.items)}</div><div class="note">${fmtD(p.fecha)} · ${esc(p.por)} · ${p.monto>3000?'Autoriza Director':'Autoriza Director o Dra. Rivera'}</div>
+  <div class="steps">${PSTEPS.map((s,i)=>`<span class="${i<=p.est?'on':''}">${s}</span>`).join('')}</div>
+  ${can('autorizar')&&p.est<3?`<button class="btn sm" style="margin-top:6px" data-adv="${p.id}">Avanzar a “${PSTEPS[p.est+1]}”</button>`:''}</div>`;
+}
+
+let invFilter='all',invQ='';
+function vInv(){
+ const canE=can('entrada');
+ let rows=PROD.filter(p=>!invQ||(p.cl+p.d+p.nm+p.pa+GRUPOS[p.g]).toLowerCase().includes(invQ.toLowerCase()));
+ const f=invFilter;
+ if(['crit','warn','dead'].includes(f))rows=rows.filter(p=>!p.srv&&stockState(p)[0]===f);
+ if(f==='c30')rows=rows.filter(p=>p.lotes.some(l=>{const n=days(l.cad);return n>=0&&n<=30}));
+ if(f==='c90')rows=rows.filter(p=>p.lotes.some(l=>{const n=days(l.cad);return n>30&&n<=90}));
+ if(f==='venc')rows=rows.filter(p=>p.lotes.some(l=>days(l.cad)<0));
+ if(f==='sc')rows=rows.filter(p=>p.g==='sc');
+ return `<h2>Inventario de Farmacia</h2>
+ ${canE?`<div class="import"><b>Último reporte de eOptics:</b><span>11 oct 2026 · 28 claves</span><span class="chip c-mute">1 servicio excluido (Envío paquetería)</span><span class="chip c-info">2 sin clasificar</span><span class="spacer"></span><button class="btn sm" data-demo="Subir el Excel/PDF de toma de inventario de eOptics: se leen Clave, Descripción y Existencia; las claves nuevas piden grupo, lote y caducidad">Importar reporte de eOptics</button></div>`:''}
+ <div class="toolbar"><input type="search" id="invQ" placeholder="Buscar por clave, nombre o principio activo" value="${esc(invQ)}" style="max-width:340px">
+  <select id="invF" style="max-width:210px">${[['all','Todos'],['crit','Críticos'],['warn','En mínimo'],['dead','Agotados'],['c30','Caducan ≤30 d'],['c90','Caducan 31–90 d'],['venc','Con lote vencido'],['sc','Sin clasificar']].map(([v,t])=>`<option value="${v}" ${v===f?'selected':''}>${t}</option>`).join('')}</select>
+  <span class="spacer"></span>
+  ${canE?`<button class="btn" data-demo="Escanear el código de barras (es la misma Clave de eOptics)">Escanear</button><button class="btn pri" data-demo="Entrada de mercancía: clave, cantidad, lote, caducidad y factura">+ Entrada</button>`:'<span class="note">Solo lectura para este usuario.</span>'}
+ </div>
+ <div class="panel tbl"><table><thead><tr><th>Clave</th><th>Descripción (eOptics)</th><th>Grupo</th><th class="num">Exist.</th><th>Estado</th><th>Lote / caducidad</th>${!can('costos')?'':'<th class="num">Costo</th><th class="num">Venta</th>'}</tr></thead><tbody>
+ ${rows.map(p=>{const ls=[...p.lotes].sort((a,b)=>a.cad.localeCompare(b.cad));return `<tr><td class="mono" style="font-size:12px">${esc(p.cl)}</td><td class="desc"><b>${esc(p.d)}</b>${p.pa&&p.pa!=='—'?`<div class="note">${esc(p.pa)}</div>`:''}</td><td>${p.g==='sc'?chip(['info','Sin clasificar']):esc(GRUPOS[p.g])}</td><td class="num"><b>${p.srv?'—':stock(p)}</b></td><td>${chip(stockState(p))}</td>
+  <td>${p.srv?'—':ls.map(l=>`<div><span class="mono" style="font-size:12px">${l.l}</span> · ${l.q} · ${chip(cadState(l.cad))}</div>`).join('')}</td>${!can('costos')?'':`<td class="num">${p.srv?'—':money(p.c)}</td><td class="num">${money(p.v)}</td>`}</tr>`}).join('')}
+ </tbody></table></div><p class="note">Las salidas descuentan del lote que caduca primero. Un lote vencido no cuenta como existencia aunque siga en eOptics.</p>`;
+}
+
+function vConteo(){
+ const cats={col:[0,0],med:[0,0],var:[0,0]};
+ PROD.forEach(p=>{cats[p.cat][0]+=CONTEO[p.id];cats[p.cat][1]+=sistema(p)});
+ const pending=PROD.filter(p=>CONTEO[p.id]!==sistema(p)&&!(JUST[p.id]||'').trim()).length;
+ return `<h2>Conteo del lunes · toma de inventario</h2>
+ <p class="note">Mismo formato que el reporte de eOptics: Clave, Descripción, Conteo, Existencia y Diferencia. Toda diferencia pide una explicación antes de cuadrar.</p>
+ <div class="panel tbl"><table><thead><tr><th>Clave</th><th>Descripción</th><th class="num">Conteo</th><th class="num">Existencia</th><th class="num">Diferencia</th><th>Explicación</th></tr></thead><tbody>
+ ${PROD.map(p=>{const s=sistema(p),c=CONTEO[p.id],df=c-s,venc=p.lotes.filter(l=>days(l.cad)<0).reduce((a,l)=>a+l.q,0);
+  return `<tr><td class="mono" style="font-size:12px">${esc(p.cl)}</td><td class="desc">${esc(p.d)}${venc?`<div>${chip(['dead',venc+' vencida · apartar'])}</div>`:''}</td>
+  <td class="num"><input class="cnt" type="number" min="0" id="cnt${p.id}" data-cnt="${p.id}" value="${c}"></td><td class="num">${s}</td>
+  <td class="num ${df===0?'diff0':df<0?'diffn':'diffp'}">${df>0?'+':''}${df}</td>
+  <td>${df!==0?`<input type="text" id="just${p.id}" data-just="${p.id}" value="${esc(JUST[p.id]||'')}" placeholder="¿Por qué no cuadra?">`:''}</td></tr>`}).join('')}
+ </tbody></table></div>
+ <div class="totals"><span></span><span class="note">Conteo</span><span class="note">Existencia</span><span class="note">Diferencia</span>
+ ${Object.entries(cats).map(([k,[c,s]])=>`<span>${CAT[k]}</span><b>${c}</b><b>${s}</b><b class="${c-s===0?'diff0':c-s<0?'diffn':'diffp'}">${c-s>0?'+':''}${c-s}</b>`).join('')}</div>
+ <div class="toolbar" style="margin-top:16px;justify-content:flex-end"><span class="note">${pending?`Faltan ${pending} explicaciones.`:'Listo para firmar.'}</span><button class="btn pri" id="cuadrar">Cuadrar inventario · firmar con PIN</button></div>`;
+}
+function vAlert(){return `<h2>Alertas</h2><p class="note">Llegan a la app, por correo al mostrador y a Finanzas, y en resumen diario a las 9:00. WhatsApp queda preparado y apagado.</p>${alerts().map(alertRow).join('')}`}
+function vPed(){
+ const canP=can('pedir');
+ return `<h2>Pedidos a Finanzas</h2>
+ ${canP?`<div class="panel" style="margin-bottom:14px"><h3>Pedir medicamento que no tenemos</h3><div class="row2"><input type="text" id="pNew" placeholder="Ej. Nepafenaco 0.1% (no está en catálogo)"><div style="display:flex;gap:6px"><input type="number" id="pQty" value="3" min="1" style="max-width:90px"><select id="pPrio" style="max-width:130px"><option>Normal</option><option>Urgente</option></select><button class="btn pri" id="pAdd">Enviar</button></div></div><p class="note">Más de $3,000 lo autoriza el Director; hasta $3,000 también la Dra. Rivera.</p></div>`:''}
+ <div class="panel">${PEDIDOS.map(pedRow).join('')}</div>`;
+}
+
+/* ===== receta ===== */
+const DX=['Catarata senil OD','Catarata senil OI','Postoperatorio de facoemulsificación','Glaucoma primario de ángulo abierto','Conjuntivitis bacteriana','Conjuntivitis alérgica','Síndrome de ojo seco','Blefaritis','Uveítis anterior'];
+const FREQ={1:'una vez al día',2:'cada 12 horas',3:'cada 8 horas',4:'cada 6 horas',6:'cada 4 horas'};
+const HOURS={1:['8 am'],2:['8 am','8 pm'],3:['6 am','2 pm','10 pm'],4:['8 am','2 pm','8 pm','2 am'],6:['7 am','11 am','3 pm','7 pm','11 pm','3 am']};
+const SYMS=['★','●','▲','■','♥','◆'];
+const TPL={
+ 'Postop. catarata':{dx:'Postoperatorio de facoemulsificación',m:[[3,'OD',1,4,7,0],[11,'OD',1,4,28,1],[13,'OD',1,2,21,0]]},
+ 'Conjuntivitis bacteriana':{dx:'Conjuntivitis bacteriana',m:[[27,'AO',1,4,7,0],[8,'AO',1,4,14,0]]},
+ 'Glaucoma':{dx:'Glaucoma primario de ángulo abierto',m:[[12,'AO',1,1,0,0],[15,'AO',1,2,0,0]]},
+ 'Ojo seco':{dx:'Síndrome de ojo seco',m:[[8,'AO',1,4,0,0],[25,'AO',1,2,0,0]]},
+};
+const rxHash=()=>JSON.stringify([RX.pac,RX.edad,RX.dx,RX.med,RX.sede,RX.cita,RX.meds.map(m=>[m.pid,m.eye,m.dose,m.f,m.d,m.taper])]);
+const rxFolio=()=>RX.folio&&RX.saved===rxHash()?RX.folio:'SIN GUARDAR';
+let RX={folio:null,saved:null,pac:'María Guadalupe Hernández Ruiz',edad:72,dx:'',med:'vil',sede:'tac',cita:'2026-10-18',meds:[],view:'std'};
+function loadTpl(k){const t=TPL[k];RX.dx=t.dx;RX.meds=t.m.map(([pid,eye,dose,f,d,taper])=>({pid,eye,dose,f,d,taper}));render()}
+TPL['Postop. catarata'].m.forEach(()=>{});RX.dx=TPL['Postop. catarata'].dx;RX.meds=TPL['Postop. catarata'].m.map(([pid,eye,dose,f,d,taper])=>({pid,eye,dose,f,d,taper}));
+
+const samePa=(a,b)=>a.pa&&b.pa&&a.pa!=='—'&&b.pa!=='—'&&a.pa.split(' ')[0]===b.pa.split(' ')[0];
+function alts(p){
+ if(p.g==='sc')return [];
+ return PROD.filter(x=>x.id!==p.id&&RXABLE(x)&&stock(x)>0&&(samePa(x,p)||x.g===p.g)).map(x=>{const fl=firstLot(x);return {x,fl,same:samePa(x,p),d:days(fl.cad)}}).sort((a,b)=>(b.same-a.same)||a.d-b.d);
+}
+function hint(m){
+ const p=PROD.find(x=>x.id===m.pid),s=stock(p),fl=firstLot(p),A=alts(p);
+ if(p.g==='sc')return {k:'info',t:'Producto sin clasificar: aún no tiene equivalentes sugeridos.'};
+ if(s===0)return {k:'crit',t:`Sin existencia vigente${p.lotes.some(l=>days(l.cad)<0)?' (lote vencido)':''}. ${A.length?A.length+' opción(es) del mismo mecanismo en farmacia.':'No hay equivalentes en farmacia.'}`,btn:A.length?'Ver opciones':null,ped:1};
+ const b=A.find(a=>a.d<=90&&(!fl||a.fl.cad<fl.cad));
+ if(b)return {k:'warn',t:`${b.x.nm} (${b.same?'mismo principio activo':'mismo mecanismo'}) caduca en ${b.d} días.`,btn:'Ver opciones'};
+ return null;
+}
+const SVGA='viewBox="0 0 40 40" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+const EYEPATH='<path d="M3 20s6-10 17-10 17 10 17 10-6 10-17 10S3 20 3 20z"/>';
+const TPLICON={
+ 'Postop. catarata':`<svg ${SVGA}>${EYEPATH}<circle cx="20" cy="20" r="6"/><path d="M15.5 20h9" stroke="var(--accent)"/><path d="M31 4v6M28 7h6" stroke="var(--accent)"/></svg>`,
+ 'Conjuntivitis bacteriana':`<svg ${SVGA}>${EYEPATH}<circle cx="20" cy="20" r="4.5" fill="currentColor"/><path d="M6.5 17.5l5 1.5M7 23l5-1.5M33.5 17.5l-5 1.5M33 23l-5-1.5" stroke="var(--red)"/></svg>`,
+ 'Glaucoma':`<svg ${SVGA}><path d="M6 29a14 14 0 1 1 28 0"/><path d="M20 27l7-9" stroke="var(--accent)"/><circle cx="20" cy="27" r="2.2" fill="currentColor"/><path d="M9 33h22"/></svg>`,
+ 'Ojo seco':`<svg ${SVGA}><path d="M20 4c-5 9-10 14-10 21a10 10 0 0 0 20 0c0-7-5-12-10-21z"/><path d="M17 19l3.5 4-2.5 5" stroke="var(--accent)"/></svg>`,
+};
+const IC_USER='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.5-7 8-7s7 2.5 8 7"/></svg>';
+let MODAL=null;
+const addDays=n=>{const d=new Date(TODAY);d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+function vRx(){
+ const ro=!can('recetar');
+ return `<div class="rx">
+  <section class="panel rxform">${ro?`<p class="note" style="margin-top:0"><b>Solo consulta.</b> Este perfil puede ver y surtir la receta, no modificarla.</p>`:''}<fieldset style="border:0;padding:0;margin:0;min-width:0" ${ro?'disabled':''}>
+   <div class="top2">
+    <div><span class="lbl">Firma</span><div class="seg2 sm">${[['vil','Dr. Villegas'],['riv','Dra. Rivera']].map(([k,t])=>`<button data-firm="${k}" aria-pressed="${RX.med===k}">${t}</button>`).join('')}</div></div>
+    <div><span class="lbl">Sede</span><div class="seg2 sm">${[['tac','Tacámbaro'],['mor','Morelia']].map(([k,t])=>`<button data-sede="${k}" aria-pressed="${RX.sede===k}">${t}</button>`).join('')}</div></div>
+   </div>
+   <div class="sec-h">Cargar plantilla</div>
+   <div class="tplgrid">${Object.entries(TPL).map(([k,t])=>`<button class="tpl" data-tpl="${esc(k)}">${TPLICON[k]}<span><b>${esc(k)}</b><small>${t.m.length} medicamentos</small></span></button>`).join('')}</div>
+   <div class="sec-h">Paciente</div>
+   <div class="field"><label for="rxPac">Nombre completo</label><div class="inp-ic">${IC_USER}<input type="text" id="rxPac" value="${esc(RX.pac)}" placeholder="Nombre y apellidos" autocomplete="off"></div></div>
+   <div class="row2 pat2">
+    <div class="field"><label for="rxEdad">Edad</label><div class="stepper wide"><button data-age="-1" aria-label="Restar un año">−</button><input type="number" id="rxEdad" value="${esc(RX.edad)}" min="0" max="120"><span class="unit">años</span><button data-age="1" aria-label="Sumar un año">+</button></div></div>
+    <div class="field"><label for="rxCita">Próxima cita</label><input type="date" id="rxCita" value="${RX.cita}"><div class="chips sm">${[[7,'1 sem'],[14,'2 sem'],[30,'1 mes'],[90,'3 meses']].map(([d,t])=>`<button data-cita="${d}" aria-pressed="${RX.cita===addDays(d)}">${t}</button>`).join('')}</div></div>
+   </div>
+   <div class="field"><label for="rxDx">Diagnóstico <span class="req">obligatorio</span></label><input type="text" id="rxDx" list="dxl" value="${esc(RX.dx)}" placeholder="Escriba o elija uno frecuente"><datalist id="dxl">${DX.map(d=>`<option value="${esc(d)}">`).join('')}</datalist>
+    <div class="chips sm">${DX.slice(0,5).map(d=>`<button data-dx="${esc(d)}" aria-pressed="${RX.dx===d}">${esc(d)}</button>`).join('')}</div></div>
+   <div class="sec-h">Medicamentos</div>
+   ${RX.meds.map((m,i)=>{const p=PROD.find(x=>x.id===m.pid),h=hint(m);return `<div class="medcard">
+    <div class="mc-h"><span class="num">${i+1}</span><div class="mc-n"><b>${esc(p.nm)}</b><small>${esc(p.pa&&p.pa!=='—'?p.pa:GRUPOS[p.g])} · ${chip(stockState(p))}</small></div><button class="btn sm" data-chg="${i}">Cambiar</button><button class="icon-btn" data-del="${i}" aria-label="Quitar ${esc(p.nm)}">✕</button></div>
+    <div class="mc-row"><span class="lbl">Ojo</span><div class="seg2">${['OD','OI','AO'].map(e=>`<button data-e="${e}" data-eye="${i}" aria-pressed="${m.eye===e}"><b>${e}</b><small>${{OD:'Derecho',OI:'Izquierdo',AO:'Ambos'}[e]}</small></button>`).join('')}</div></div>
+    <div class="mc-row"><span class="lbl">Dosis</span><div class="stepper"><button data-dose="${i}:-1" aria-label="Menos gotas">−</button><span>${m.dose} gota${m.dose>1?'s':''}</span><button data-dose="${i}:1" aria-label="Más gotas">+</button></div>
+     <label class="sw"><input type="checkbox" id="mr${i}" data-taper="${i}" ${m.taper?'checked':''}><span class="tr"></span>Reducción semanal</label></div>
+    ${m.taper?`<div class="mc-row"><span class="lbl"></span><span class="note">4 veces → 3 → 2 → 1 vez al día, una semana cada una.</span></div>`:`<div class="mc-row"><span class="lbl">Cada</span><div class="chips">${[[1,'24 h'],[2,'12 h'],[3,'8 h'],[4,'6 h'],[6,'4 h']].map(([k,t])=>`<button data-fq="${i}:${k}" aria-pressed="${m.f==k}">${t}</button>`).join('')}</div></div>
+    <div class="mc-row"><span class="lbl">Días</span><div class="chips">${[[5,'5'],[7,'7'],[14,'14'],[21,'21'],[28,'28'],[0,'Continuo']].map(([k,t])=>`<button data-du="${i}:${k}" aria-pressed="${m.d==k}">${t}</button>`).join('')}</div></div>`}
+    ${h?`<div class="hint ${h.k}"><span>${h.t}</span>${h.btn?`<button class="btn sm pri" data-chg="${i}">${h.btn}</button>`:''}${h.ped?`<button class="btn sm" data-pedp="${p.id}">Pedir a Finanzas</button>`:''}</div>`:''}
+   </div>`}).join('')}
+   <button class="addmed" id="addMed">+ Agregar medicamento</button>
+  </fieldset></section>
+  <section style="min-width:0">
+   <div class="toolbar"><div class="seg"><button aria-pressed="${RX.view==='std'}" data-view="std">Receta</button><button aria-pressed="${RX.view==='il'}" data-view="il">Receta ilustrada</button></div>
+    <span class="note">Vista previa tamaño carta.</span><span class="spacer"></span>${rxFolio()==="SIN GUARDAR"?`<button class="btn pri" id="saveRx">Guardar receta</button>`:`<span class="chip c-ok">Guardada · ${RX.folio}</span>`}</div>
+   <div class="paperwrap">${RX.view==='std'?paperStd():paperIl()}</div>
+  </section></div>${vModal()}`;
+}
+function vModal(){
+ if(!MODAL)return '';
+ const cur=MODAL.add?null:PROD.find(x=>x.id===RX.meds[MODAL.i].pid);
+ const A=cur?alts(cur):[],q=(MODAL.q||'').toLowerCase();
+ const all=PROD.filter(RXABLE).filter(x=>!cur||x.id!==cur.id).filter(x=>!q||(x.nm+' '+x.pa+' '+GRUPOS[x.g]).toLowerCase().includes(q)).sort((a,b)=>a.nm.localeCompare(b.nm));
+ const row=(x,reason,rec)=>{const fl=firstLot(x);return `<button class="opt${rec?' rec':''}" data-pick="${x.id}"><span class="o-main"><b>${esc(x.nm)}${rec?' <span class="chip c-info">Recomendado</span>':''}</b><small>${esc(x.pa&&x.pa!=='—'?x.pa+' · ':'')}${esc(GRUPOS[x.g])}</small>${reason?`<em>${reason}</em>`:''}</span><span class="o-side">${chip(stockState(x))}${fl?chip(cadState(fl.cad)):''}</span></button>`};
+ return `<div class="ovl" id="ovl"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT">
+  <div class="dlg-h"><div><h3 id="dlgT">${MODAL.add?'Agregar medicamento':'Cambiar medicamento '+(MODAL.i+1)}</h3>${cur?`<div class="cur">Actual: <b>${esc(cur.nm)}</b> ${chip(stockState(cur))} ${firstLot(cur)?chip(cadState(firstLot(cur).cad)):''}</div>`:''}</div><button class="icon-btn" id="dlgX" aria-label="Cerrar">✕</button></div>
+  <div class="dlg-b">
+  ${cur?(A.length?`<div class="sec">Mismo mecanismo de acción · primero el que caduca antes</div>${A.map((a,j)=>row(a.x,`${a.same?'Mismo principio activo':'Mismo grupo'} · ${stock(a.x)} en farmacia · lote ${a.fl.l} vence ${fmtD(a.fl.cad)}`,j===0)).join('')}`:`<div class="sec">Mismo mecanismo de acción</div><p class="note">No hay equivalentes con existencia.</p><button class="btn" data-pedp="${cur.id}">Pedir ${esc(cur.nm)} a Finanzas</button>`):''}
+  <div class="sec" style="margin-top:14px">Todo el catálogo</div>
+  <input type="search" id="dlgQ" placeholder="Buscar por nombre, principio activo o grupo" value="${esc(MODAL.q||'')}">
+  <div class="optlist">${all.map(x=>row(x,'',0)).join('')||'<p class="note">Sin resultados.</p>'}</div>
+  </div></div></div>`;
+}
+const DOCS={vil:{n:'Dr. José Antonio Villegas Ávila',c:'Céd. Prof. 7256707 · Céd. Esp. 9457035'},riv:{n:'Dra. Mónica Araceli Rivera Bustos',c:'Céd. Prof. ________ · Céd. Esp. ________'}};
+const SEDES={tac:'Av. Luis Donaldo Colosio 151, Col. La Purísima, Tacámbaro, Mich. · Tel. (443) 465 6645 · (459) 596 2268 · WhatsApp (459) 134 55 29',mor:'Hospital Victoria, Consultorio 1206, Piso 12 · Av. Acueducto 2800, Morelia, Mich.'};
+const EYE={OD:'OJO DERECHO',OI:'OJO IZQUIERDO',AO:'AMBOS OJOS'};
+function head(){const d=DOCS[RX.med];return `<div class="p-head"><div class="p-iso" role="img" aria-label="Logo COE"></div><div class="p-brand">Centro Ocular Especializado<span>Oftalmología</span></div><div class="p-doc"><div class="nm">${esc(d.n)}</div><div class="es">Médico Oftalmólogo</div><div class="ce">${d.c}</div></div></div><hr class="p-rule"><hr class="p-rule thin">`}
+function qr(){let s=97,cells='';const N=21;
+ const fin=(x,y)=>{for(const[a,b]of[[0,0],[14,0],[0,14]])if(x>=a&&x<a+7&&y>=b&&y<b+7){const dx=x-a,dy=y-b;return(dx===0||dx===6||dy===0||dy===6||(dx>=2&&dx<=4&&dy>=2&&dy<=4))?1:0}return -1};
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){let v=fin(x,y);if(v<0){s=(s*9301+49297)%233280;v=s/233280>.5?1:0}if(v)cells+=`<rect x="${x}" y="${y}" width="1" height="1"/>`}
+ return `<div class="qrbox"><svg width="86" height="86" viewBox="-1 -1 23 23" fill="#000" style="background:#fff">${cells}</svg><div>Verifique esta receta<br><span class="mono">${rxFolio()}</span></div></div>`}
+function paperStd(){
+ return `<div class="paper">${head()}
+  <div class="p-pat"><div><span class="p-lab">Paciente</span><span class="p-val">${esc(RX.pac)}</span></div><div><span class="p-lab">Edad</span><span class="p-val">${esc(RX.edad)} años</span></div><div><span class="p-lab">Fecha</span><span class="p-val">${fmtD('2026-10-11')}</span></div><div><span class="p-lab">Folio</span><span class="p-val mono" style="font-size:15px">${rxFolio()}</span></div></div>
+  <div class="p-dx"><span class="p-lab">Diagnóstico</span><span class="p-val">${esc(RX.dx)||'—'}</span></div>
+  <div class="p-rp">Rp.</div>
+  ${RX.meds.map((m,i)=>{const p=PROD.find(x=>x.id===m.pid);
+   const dur=m.taper?'Reducir cada semana: <b>4 veces → 3 → 2 → 1 vez al día</b>, después suspender':(m.d?`Durante <b>${m.d} días</b>`:'<b>No suspender</b> hasta nueva indicación');
+   return `<div class="p-med"><div class="n">${i+1}</div><div class="nm">${esc(p.nm)} ${p.pa&&p.pa!=='—'?`<small>(${esc(p.pa)})</small>`:''}</div>
+    <div class="how"><span class="p-eye">${EYE[m.eye]}</span><b>${m.dose} gota${m.dose>1?'s':''}</b>${m.taper?'':` <b>${FREQ[m.f]}</b>`}</div>
+    <div class="how">${m.taper?'':`Horario: ${HOURS[m.f].join(' · ')}. `}${dur}.</div></div>`}).join('')}
+  <div class="p-gen"><b>INDICACIONES:</b> Espere 5 minutos entre una gota y otra. No toque el ojo con la punta del gotero. Agite las suspensiones antes de usar. Lávese las manos antes de aplicar.</div>
+  <div class="p-foot"><div class="p-next"><span class="p-lab">Próxima cita</span><span class="p-val">${fmtD(RX.cita)}</span></div><div class="p-sign"><b>${esc(DOCS[RX.med].n)}</b><br>${DOCS[RX.med].c}</div>${qr()}</div>
+  <div class="p-addr">${esc(SEDES[RX.sede])}</div></div>`;
+}
+/* ===== ilustrada: una tarjeta por medicina, solo lo indispensable ===== */
+const ICON={
+ man:`<svg width="64" height="54" viewBox="0 0 64 54"><path d="M6 44h52" stroke="#111" stroke-width="4"/><path d="M16 44a16 16 0 0 1 32 0z" fill="#f6b300" stroke="#111" stroke-width="3"/><g stroke="#111" stroke-width="3.5" stroke-linecap="round"><path d="M32 6v9M11 16l6 6M53 16l-6 6"/></g></svg>`,
+ com:`<svg width="64" height="54" viewBox="0 0 64 54"><circle cx="32" cy="18" r="11" fill="#f6b300" stroke="#111" stroke-width="3"/><ellipse cx="32" cy="45" rx="24" ry="6" fill="#fff" stroke="#111" stroke-width="3.5"/><path d="M18 43c4-9 24-9 28 0" fill="#c8742b" stroke="#111" stroke-width="2.5"/></svg>`,
+ tar:`<svg width="64" height="54" viewBox="0 0 64 54"><path d="M6 40h52" stroke="#111" stroke-width="4"/><path d="M18 40a14 14 0 0 1 28 0z" fill="#e8622c" stroke="#111" stroke-width="3"/><path d="M14 48h36" stroke="#111" stroke-width="3"/></svg>`,
+ noc:`<svg width="64" height="54" viewBox="0 0 64 54"><rect x="1" y="1" width="62" height="52" rx="8" fill="#1d2a44"/><path d="M38 9a18 18 0 1 0 14 28A15 15 0 0 1 38 9z" fill="#ffe27a" stroke="#111" stroke-width="2"/><circle cx="14" cy="14" r="2.2" fill="#fff"/><circle cx="20" cy="40" r="1.8" fill="#fff"/></svg>`,
+};
+const SLOTS={1:['man'],2:['man','noc'],3:['man','tar','noc'],4:['man','com','tar','noc'],6:['man','com','tar','noc']};
+function face(eye){const mark=x=>`<circle cx="${x}" cy="44" r="15" fill="none" stroke="#d00" stroke-width="6"/>`;
+ return `<svg width="100" height="100" viewBox="0 0 112 112"><circle cx="56" cy="56" r="50" fill="#ffe0bd" stroke="#111" stroke-width="4"/><circle cx="36" cy="44" r="6" fill="#111"/><circle cx="76" cy="44" r="6" fill="#111"/><path d="M36 78q20 14 40 0" fill="none" stroke="#111" stroke-width="4" stroke-linecap="round"/>${eye!=='OI'?mark(36):''}${eye!=='OD'?mark(76):''}</svg>`}
+const drop=`<svg width="26" height="36" viewBox="0 0 26 36"><path d="M13 2C9 11 3 17 3 24a10 10 0 0 0 20 0c0-7-6-13-10-22z" fill="#1e88e5" stroke="#111" stroke-width="2.5"/></svg>`;
+function cal(n){return n?`<svg width="86" height="86" viewBox="0 0 96 96"><rect x="6" y="14" width="84" height="76" rx="10" fill="#fff" stroke="#111" stroke-width="4"/><rect x="6" y="14" width="84" height="20" rx="10" fill="#111"/><rect x="6" y="26" width="84" height="8" fill="#111"/><path d="M28 6v16M68 6v16" stroke="#111" stroke-width="5" stroke-linecap="round"/><text x="48" y="78" text-anchor="middle" font-family="Atkinson Hyperlegible,Verdana,sans-serif" font-weight="700" font-size="40" fill="#111">${n}</text></svg>`
+ :`<svg width="86" height="86" viewBox="0 0 96 96"><circle cx="48" cy="50" r="30" fill="none" stroke="#111" stroke-width="7"/><path d="M70 12l6 20-20-2" fill="#111" stroke="#111" stroke-width="3" stroke-linejoin="round"/></svg>`}
+function paperIl(){
+ const n=RX.meds.length;
+ return `<div class="paper">${head()}
+  <div class="il-intro">Para el familiar: cada dibujo grande corresponde a la etiqueta pegada en el frasco. La cara muestra en qué ojo va la gota (círculo rojo). Las gotas azules dicen cuántas, y el dibujo de arriba, a qué hora del día.</div>
+  ${RX.meds.map((m,i)=>{const f=m.taper?4:+m.f,sl=SLOTS[f];
+   return `<div class="il-card"><div class="il-stk">${SYMS[i]}</div><div class="il-face">${face(m.eye)}</div>
+    <div class="il-times">${sl.map(k=>`<div class="il-t">${ICON[k]}<div class="il-drops">${Array.from({length:m.dose},()=>drop).join('')}</div></div>`).join('')}</div>
+    <div class="il-cal">${cal(m.taper?28:+m.d)}</div>
+    <div class="il-fam">${esc(PROD.find(x=>x.id===m.pid).nm)} · ${EYE[m.eye].toLowerCase()} · ${m.dose} gota${m.dose>1?'s':''} ${m.taper?'— esta semana 4 veces; cada semana una vez menos (el familiar tacha un dibujo de hora cada lunes)':FREQ[f]+(f===6?' (también a medianoche y madrugada)':'')} · ${m.taper?'28 días':(+m.d?m.d+' días':'no suspender')}</div></div>`}).join('')}
+  <div class="p-foot" style="grid-template-columns:1fr auto"><div class="p-next"><span class="p-lab">Próxima cita</span><span class="p-val">${fmtD(RX.cita)}</span></div>${qr()}</div>
+  <div class="p-addr">${esc(SEDES[RX.sede])}</div></div>`;
+}
+
+function vAcc(){
+ const cols=['dra','mos','fin','med'];
+ const row=([k,t])=>`<tr><td>${t}</td><td class="c"><input type="checkbox" checked disabled aria-label="Director: ${t}"></td>${cols.map(c=>`<td class="c"><input type="checkbox" id="pm-${c}-${k}" data-pm="${c}:${k}" ${PERMS[c][k]?'checked':''} aria-label="${PERFILES[c]}: ${t}"></td>`).join('')}</tr>`;
+ return `<h2>Accesos por perfil</h2><p class="note">Marque qué pantallas y acciones tiene cada perfil. Con “Ver como” revisa exactamente lo que le aparece a esa persona. Los cambios se firman con su PIN y quedan en la bitácora.</p>
+ <div class="panel tbl"><table class="acc"><thead><tr><th>Permiso</th><th class="c">Director</th>${cols.map(c=>`<th class="c">${PERFILES[c]}<div style="margin-top:6px"><button class="btn sm" data-as="${c}">Ver como</button></div></th>`).join('')}</tr></thead><tbody>
+ <tr class="grp"><td colspan="6">Pantallas</td></tr>${ACC_TABS.map(row).join('')}<tr class="grp"><td colspan="6">Acciones</td></tr>${ACC_ACT.map(row).join('')}</tbody></table></div>
+ <div class="toolbar" style="justify-content:flex-end;margin-top:12px"><button class="btn pri" data-demo="Guardar los accesos con el PIN del Director; el cambio queda en la bitácora">Guardar con PIN</button></div>
+ <h2 style="margin-top:22px">Usuarios</h2><div class="panel tbl"><table><thead><tr><th>Nombre</th><th>Perfil</th><th>Estado</th><th></th></tr></thead><tbody>
+ ${USERS.map((u,i)=>`<tr><td><b>${esc(u.n)}</b><div class="note mono">${esc(u.u)}</div></td><td><select id="up${i}" data-up="${i}" ${u.p==='dir'?'disabled':''}>${Object.entries(PERFILES).map(([k,t])=>`<option value="${k}" ${u.p===k?'selected':''}>${t}</option>`).join('')}</select></td><td>${u.a?chip(['ok','Activo']):chip(['mute','Baja'])}</td>
+  <td style="white-space:nowrap">${u.p==='dir'?'':`<button class="btn sm" data-as="${u.p}">Ver como</button> <button class="btn sm" data-demo="Contraseña temporal generada; se le pedirá cambiarla al entrar">Contraseña</button> <button class="btn sm" data-demo="PIN temporal generado">PIN</button> <button class="btn sm" data-ua="${i}">${u.a?'Dar de baja':'Reactivar'}</button>`}</td></tr>`).join('')}
+ </tbody></table></div><div class="toolbar" style="margin-top:10px"><button class="btn" data-demo="Alta de usuario: nombre, usuario, perfil, contraseña y PIN temporales">+ Nuevo usuario</button></div>`;
+}
+function toast(t){const d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;z-index:50;max-width:90vw;font-size:14px';document.body.appendChild(d);setTimeout(()=>d.remove(),3000)}
+async function addPedido(p,qty,prio){const items=(p?p.nm:($('#pNew')?.value||'Medicamento'))+' × '+qty,monto0=p?p.c*qty:qty*300,por0=PERFILES[eff()];if(sb){const d=await db(sb.from('far_pedidos').insert({producto_id:p?p.id:null,items,monto:monto0,prioridad:prio,solicitante:por0}).select().single(),'Pedido');if(!d)return;await logDb('pedido_creado',{folio:d.folio,items});await reload();toast(`Pedido ${d.folio} enviado a Finanzas.`);return}const n='PF-00'+(42+PEDIDOS.length-3);const monto=p?p.c*qty:qty*300;PEDIDOS.unshift({id:n,items:(p?p.nm:($('#pNew')?.value||'Medicamento'))+' × '+qty,monto,prio,est:0,por:{dir:'Director',dra:'Dra. Rivera',mos:'Mostrador',med:'Médico'}[eff()]||'Mostrador',fecha:ISO(TODAY)});toast(`Pedido ${n} enviado a Finanzas. Se avisó al mostrador y a Finanzas.`)}
+function render(){if(!tabsFor().includes(tab))tab=tabsFor()[0];$('#pgTitle').textContent=TABN[tab];$('#main').innerHTML=(viewAs?`<div class="asbar"><span>Vista previa: así le aparece la app a <b>${PERFILES[viewAs]}</b>. Puede navegar sus pestañas.</span><button class="btn sm" id="asBack">Volver a mi vista de Director</button></div>`:'')+{dash:vDash,inv:vInv,conteo:vConteo,alert:vAlert,ped:vPed,rx:vRx,acc:vAcc}[tab]();renderStrip();bind();fitPaper()}
+function fitPaper(){const w=document.querySelector('.paperwrap'),p=w&&w.querySelector('.paper');if(!p)return;p.style.zoom='';const z=Math.min(1,(w.clientWidth-28)/816);p.style.zoom=z<1?z.toFixed(3):''}
+window.addEventListener('resize',fitPaper);
+function bind(){
+ const M=$('#main');
+ M.querySelectorAll('[data-ok]').forEach(b=>b.onclick=async()=>{ATENDIDAS.add(b.dataset.ok);render();if(sb)await db(sb.from('far_alertas_atendidas').upsert({alerta_id:b.dataset.ok,atendida_por:PERFILES[eff()]}),'Alerta')});
+ M.querySelectorAll('[data-ped],[data-pedp]').forEach(b=>b.onclick=()=>{MODAL=null;const p=PROD.find(x=>x.id==(b.dataset.ped||b.dataset.pedp));addPedido(p,Math.max(p.min*2-stock(p),2),stock(p)===0?'Urgente':'Normal');render()});
+ M.querySelectorAll('[data-adv]').forEach(b=>b.onclick=async()=>{const p=PEDIDOS.find(x=>x.id===b.dataset.adv);p.est++;if(sb){await db(sb.from('far_pedidos').update({estado:p.est,updated_at:new Date().toISOString()}).eq('id',p.dbid),'Pedido');await logDb('pedido_estado',{folio:p.id,estado:PSTEPS[p.est]})}toast(`${p.id}: ${PSTEPS[p.est]}. Se avisó al mostrador.`);render()});
+ M.querySelectorAll('[data-demo]').forEach(b=>b.onclick=()=>toast('En la app final: '+b.dataset.demo));
+ const q=$('#invQ');if(q)q.oninput=e=>{invQ=e.target.value;const pos=e.target.selectionStart;render();const n=$('#invQ');n.focus();n.setSelectionRange(pos,pos)};
+ const f=$('#invF');if(f)f.onchange=e=>{invFilter=e.target.value;render()};
+ M.querySelectorAll('[data-cnt]').forEach(c=>c.onchange=()=>{CONTEO[+c.dataset.cnt]=Math.max(0,+c.value||0);render()});
+ M.querySelectorAll('[data-just]').forEach(c=>c.oninput=()=>{JUST[+c.dataset.just]=c.value});
+ const cu=$('#cuadrar');if(cu)cu.onclick=()=>{const pend=PROD.filter(p=>CONTEO[p.id]!==sistema(p)&&!(JUST[p.id]||'').trim());if(pend.length){toast(`Falta explicar la diferencia de: ${pend.map(p=>p.nm).join(', ')}.`);render();return}if(sb){const rows=PROD.map(p=>({producto_id:p.id,conteo:CONTEO[p.id],existencia:sistema(p),explicacion:JUST[p.id]||null,firmado_por:PERFILES[eff()]}));db(sb.from('far_conteos').insert(rows),'Conteo').then(d=>{if(d!==null){logDb('conteo_firmado',{productos:rows.length});toast('Conteo guardado y firmado. Los ajustes quedan pendientes de autorización del Director.')}});return}toast('Conteo firmado por el mostrador. Los ajustes quedan pendientes de autorización del Director.')};
+ const pa=$('#pAdd');if(pa)pa.onclick=()=>{if(!$('#pNew').value.trim()){toast('Escriba el nombre del medicamento que hace falta.');return}addPedido(null,+$('#pQty').value||1,$('#pPrio').value);render()};
+ M.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>loadTpl(b.dataset.tpl));
+ [['rxMed','med'],['rxSede','sede'],['rxPac','pac'],['rxEdad','edad'],['rxCita','cita'],['rxDx','dx']].forEach(([id,k])=>{const el=$('#'+id);if(el)el.onchange=()=>{RX[k]=el.value;render()}});
+ M.querySelectorAll('[data-mf]').forEach(s=>s.onchange=()=>{RX.meds[+s.dataset.i][s.dataset.mf]=+s.value;render()});
+ M.querySelectorAll('[data-eye]').forEach(b=>b.onclick=()=>{RX.meds[+b.dataset.eye].eye=b.dataset.e;render()});
+ M.querySelectorAll('[data-taper]').forEach(c=>c.onchange=()=>{RX.meds[+c.dataset.taper].taper=c.checked?1:0;render()});
+ M.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{RX.meds.splice(+b.dataset.del,1);render()});
+ M.querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>{const[i,pid]=b.dataset.sub.split(':');RX.meds[+i].pid=+pid;toast('Medicamento sustituido. La decisión queda registrada con su usuario.');render()});
+ M.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{RX.view=b.dataset.view;render()});
+ M.querySelectorAll('[data-pm]').forEach(c=>c.onchange=()=>{const[p,k]=c.dataset.pm.split(':');PERMS[p][k]=c.checked?1:0;if(sb)db(sb.from('far_permisos').upsert({perfil:p,permisos:PERMS[p],updated_at:new Date().toISOString()}),'Permisos').then(()=>logDb('permiso',{perfil:p,permiso:k,valor:c.checked}));toast(`${PERFILES[p]}: ${c.checked?'puede':'ya no puede'} ${(ACC_TABS.concat(ACC_ACT).find(x=>x[0]===k)||[])[1].toLowerCase()}.`)});
+ M.querySelectorAll('[data-as]').forEach(b=>b.onclick=()=>{viewAs=b.dataset.as;tab='dash';renderTabs();render();window.scrollTo({top:0})});
+ M.querySelectorAll('[data-up]').forEach(s=>s.onchange=()=>{const u=USERS[+s.dataset.up];u.p=s.value;render();if(sb&&u.dbid)db(sb.from('far_usuarios').update({perfil:u.p}).eq('id',u.dbid),'Usuario')});
+ M.querySelectorAll('[data-ua]').forEach(b=>b.onclick=()=>{const u=USERS[+b.dataset.ua];u.a=u.a?0:1;if(sb&&u.dbid)db(sb.from('far_usuarios').update({activo:!!u.a}).eq('id',u.dbid),'Usuario');toast(`${u.n}: ${u.a?'reactivado':'dado de baja'}.`);render()});
+ const ab=$('#asBack');if(ab)ab.onclick=()=>{viewAs=null;tab='acc';renderTabs();render()};
+ const sv=$('#saveRx');if(sv)sv.onclick=saveRx;
+ const am=$('#addMed');if(am)am.onclick=()=>{if(RX.meds.length>=4){toast('Máximo 4 medicamentos para que la receta quepa en una hoja.');return}MODAL={add:1,q:''};render()};
+ M.querySelectorAll('[data-chg]').forEach(b=>b.onclick=()=>{MODAL={i:+b.dataset.chg,q:''};render()});
+ M.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{const pid=+b.dataset.pick,nm=PROD.find(x=>x.id===pid).nm;if(MODAL.add){RX.meds.push({pid,eye:'AO',dose:1,f:2,d:7,taper:0});toast(nm+' agregado.')}else{RX.meds[MODAL.i].pid=pid;toast('Cambiado a '+nm+'. Queda registrado con su usuario.')}MODAL=null;render()});
+ const dx=$('#dlgX');if(dx)dx.onclick=()=>{MODAL=null;render()};
+ const ov=$('#ovl');if(ov){ov.onclick=e=>{if(e.target===ov){MODAL=null;render()}};const dq=$('#dlgQ');dq.oninput=()=>{MODAL.q=dq.value;const p=dq.selectionStart;render();const n=$('#dlgQ');n.focus();n.setSelectionRange(p,p)}}
+ M.querySelectorAll('[data-firm]').forEach(b=>b.onclick=()=>{RX.med=b.dataset.firm;render()});
+ M.querySelectorAll('[data-sede]').forEach(b=>b.onclick=()=>{RX.sede=b.dataset.sede;render()});
+ M.querySelectorAll('[data-age]').forEach(b=>b.onclick=()=>{RX.edad=Math.max(0,(+RX.edad||0)+(+b.dataset.age));render()});
+ M.querySelectorAll('[data-cita]').forEach(b=>b.onclick=()=>{RX.cita=addDays(+b.dataset.cita);render()});
+ M.querySelectorAll('[data-dx]').forEach(b=>b.onclick=()=>{RX.dx=b.dataset.dx;render()});
+ M.querySelectorAll('[data-dose]').forEach(b=>b.onclick=()=>{const[i,d]=b.dataset.dose.split(':');const m=RX.meds[+i];m.dose=Math.min(3,Math.max(1,m.dose+(+d)));render()});
+ M.querySelectorAll('[data-fq]').forEach(b=>b.onclick=()=>{const[i,v]=b.dataset.fq.split(':');RX.meds[+i].f=+v;render()});
+ M.querySelectorAll('[data-du]').forEach(b=>b.onclick=()=>{const[i,v]=b.dataset.du.split(':');RX.meds[+i].d=+v;render()});
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&MODAL){MODAL=null;render()}});
+$('#roleSel').onchange=e=>{role=e.target.value;viewAs=null;renderTabs();render()};
+$('#bellBtn').onclick=()=>{if(tabsFor().includes('alert'))go('alert');else toast('Este usuario recibe solo las alertas de pedidos.')};
+/* ===== conexión con Supabase ===== */
+const SB_URL='https://ckjkdenwqicdjvodflba.supabase.co',SB_KEY='sb_publishable_6kfSTYsmi2KxAeX0AMwymQ_dWPTAxYz';
+let sb=null,DEMO=true;
+async function db(q,que){try{const r=await q;if(r.error){toast(`${que}: no se guardó (${r.error.message}).`);return null}return r.data??true}catch(e){toast(`${que}: sin conexión, no se guardó.`);return null}}
+const logDb=(accion,detalle)=>sb?sb.from('far_log').insert({accion,detalle,usuario:PERFILES[eff()]}).then(()=>{}):null;
+function setOnline(ok,txt){const o=document.querySelector('.side-foot .online');if(o){o.innerHTML='<i></i>'+txt;o.classList.toggle('off',!ok)}}
+const OLDCL=Object.fromEntries(PROD.map(p=>[p.id,p.cl]));
+async function loadAll(){
+ const R=await Promise.all([sb.from('far_productos').select('*').eq('activo',true).order('nombre'),sb.from('far_lotes').select('*'),sb.from('far_pedidos').select('*').order('created_at',{ascending:false}).limit(200),sb.from('far_permisos').select('*'),sb.from('far_alertas_atendidas').select('alerta_id'),sb.from('far_usuarios').select('*').order('id')]);
+ for(const r of R)if(r.error)throw r.error;
+ const [p,l,pe,pm,at,us]=R.map(r=>r.data);
+ if(!p.length)throw new Error('vacio');
+ PROD=p.map(r=>({id:r.id,cl:r.clave,d:r.descripcion,nm:r.nombre,pa:r.principio||'',g:r.grupo,cat:r.categoria,min:r.minimo,cri:r.critico,c:+r.costo,v:+r.venta,sal:r.ventas_4s||0,srv:r.servicio,lotes:l.filter(x=>x.producto_id===r.id).map(x=>({l:x.lote,cad:x.caducidad,q:x.cantidad}))}));
+ PEDIDOS=pe.map(r=>({id:r.folio,dbid:r.id,items:r.items,monto:+r.monto,prio:r.prioridad,est:r.estado,por:r.solicitante||'',fecha:r.created_at.slice(0,10)}));
+ pm.forEach(r=>{PERMS[r.perfil]=r.permisos});
+ ATENDIDAS=new Set(at.map(r=>r.alerta_id));
+ if(us.length)USERS=us.map(r=>({dbid:r.id,n:r.nombre,u:r.usuario,p:r.perfil,a:r.activo?1:0}));
+ PROD.forEach(p=>{if(!(p.id in CONTEO))CONTEO[p.id]=sistema(p)});
+}
+function remap(){const byCl=Object.fromEntries(PROD.map(p=>[p.cl,p.id]));const fix=id=>byCl[OLDCL[id]]??PROD.find(RXABLE).id;
+ Object.values(TPL).forEach(t=>t.m.forEach(m=>{m[0]=fix(m[0])}));RX.meds.forEach(m=>{m.pid=fix(m.pid)});
+ CONTEO=Object.fromEntries(PROD.map(p=>[p.id,sistema(p)]));JUST={};}
+let rlT=null;
+async function reload(){try{await loadAll();const typing=MODAL||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName);if(typing)renderStrip();else render()}catch(e){setOnline(false,'Reconectando…')}}
+async function saveRx(){
+ if(!RX.dx.trim()){toast('Falta el diagnóstico.');$('#rxDx')?.focus();return}
+ if(!RX.pac.trim()){toast('Falta el nombre del paciente.');return}
+ if(!RX.meds.length){toast('Agregue al menos un medicamento.');return}
+ if(!sb){RX.folio='DEMO-'+String(Date.now()).slice(-5);RX.saved=rxHash();toast('Modo demostración: la receta no se guardó en la base de datos.');render();return}
+ const meds=RX.meds.map(m=>{const p=PROD.find(x=>x.id===m.pid);return{clave:p.cl,producto:p.nm,principio:p.pa,ojo:m.eye,gotas:m.dose,veces_dia:m.taper?null:m.f,dias:m.taper?28:m.d,reduccion:!!m.taper}});
+ const d=await db(sb.from('rec_recetas').insert({paciente:RX.pac,edad:+RX.edad||null,diagnostico:RX.dx,medico:DOCS[RX.med].n,sede:RX.sede==='tac'?'Tacámbaro':'Morelia',proxima_cita:RX.cita||null,medicamentos:meds,creada_por:PERFILES[eff()]}).select().single(),'Receta');
+ if(!d)return;RX.folio=d.folio;RX.saved=rxHash();logDb('receta_emitida',{folio:d.folio});toast(`Receta ${d.folio} guardada.`);render();
+}
+async function boot(){
+ $('#pgSub').textContent=TODAY.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).replace(/^./,c=>c.toUpperCase())+' · Tacámbaro';
+ RX.cita=ISO(new Date(TODAY.getTime()+7*86400000));
+ renderTabs();render();setOnline(false,'Conectando…');
+ try{
+  if(!window.supabase)throw new Error('lib');
+  sb=window.supabase.createClient(SB_URL,SB_KEY);
+  await loadAll();DEMO=false;remap();setOnline(true,'En línea · sincronizado');renderTabs();render();
+  const ch=sb.channel('coe-farmacia');
+  ['far_productos','far_lotes','far_pedidos','far_alertas_atendidas','far_permisos','far_usuarios'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{clearTimeout(rlT);rlT=setTimeout(reload,500)}));
+  ch.subscribe();
+ }catch(e){
+  sb=null;DEMO=true;setOnline(false,'Modo demostración');render();
+  const falta=/far_|relation|schema cache|vacio/i.test(String(e.message||e));
+  toast(falta?'Las tablas de farmacia aún no están instaladas en Supabase: se muestran datos de ejemplo.':'Sin conexión con Supabase: se muestran datos de ejemplo.');
+ }
+}
+boot();
+</script>
+
+</html>
