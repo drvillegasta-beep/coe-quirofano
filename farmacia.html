@@ -438,7 +438,7 @@ let PEDIDOS=[
  {id:'PF-0038',items:'Systane Ultra × 12, Aurofort × 6',monto:2370,prio:'Normal',est:3,por:'Mostrador',fecha:'2026-10-02'},
 ];
 const PSTEPS=['Enviado','Autorizado','Pedido al proveedor','Recibido'];
-let ATENDIDAS=new Set();
+let ATENDIDAS=new Set();let RXHOY=[];
 
 function alerts(){
  const a=[];
@@ -513,9 +513,7 @@ function vDash(){
   <section class="panel"><h3>Atender primero</h3>${al.map(alertRow).join('')||'<p class="note">Sin alertas pendientes.</p>'}</section>
   <section class="panel"><h3>Más vendidos · últimas 4 semanas</h3><div class="bars">${top.map(p=>`<div><span>${esc(p.nm)}</span><i style="width:${p.sal/mx*100}%"></i><span class="mono">${p.sal}</span></div>`).join('')}</div>
    <p class="note" style="margin-top:10px">Sin movimiento en 60 días: ${sinMov.map(p=>esc(p.nm)).join(', ')||'ninguno'}.</p></section>
-  <section class="panel"><h3>Recetas de hoy</h3>
-   <div style="display:flex;gap:22px;flex-wrap:wrap"><div><b class="mono" style="font-size:28px">14</b><div class="note">emitidas</div></div><div><b class="mono" style="font-size:28px;color:var(--ok)">11</b><div class="note">surtidas en COE</div></div><div><b class="mono" style="font-size:28px">79%</b><div class="note">captura de farmacia</div></div></div>
-   <p class="note">3 no surtidas: 2 por agotado (Sophipren), 1 por decisión del paciente.</p></section>
+  <section class="panel"><h3>Recetas de hoy</h3>${(()=>{const e=RXHOY.length,su=RXHOY.filter(r=>r.estado==="surtida").length;return `<div style="display:flex;gap:22px;flex-wrap:wrap"><div><b class="mono" style="font-size:28px">${e}</b><div class="note">emitidas</div></div><div><b class="mono" style="font-size:28px;color:var(--ok)">${su}</b><div class="note">surtidas en COE</div></div><div><b class="mono" style="font-size:28px">${e?Math.round(su/e*100)+"%":"—"}</b><div class="note">captura de farmacia</div></div></div><p class="note">${e?RXHOY.slice(0,4).map(r=>esc(r.folio)+" · "+esc(r.paciente)).join("<br>"):"Aún no hay recetas guardadas hoy."}</p>`})()}</section>
   <section class="panel"><h3>Pedidos a Finanzas</h3>${PEDIDOS.map(pedRow).join('')}</section>
  </div>`;
 }
@@ -789,9 +787,9 @@ const logDb=(accion,detalle)=>sb?sb.from('far_log').insert({accion,detalle,usuar
 function setOnline(ok,txt){const o=document.querySelector('.side-foot .online');if(o){o.innerHTML='<i></i>'+txt;o.classList.toggle('off',!ok)}}
 const OLDCL=Object.fromEntries(PROD.map(p=>[p.id,p.cl]));
 async function loadAll(){
- const R=await Promise.all([sb.from('far_productos').select('*').eq('activo',true).order('nombre'),sb.from('far_lotes').select('*'),sb.from('far_pedidos').select('*').order('created_at',{ascending:false}).limit(200),sb.from('far_permisos').select('*'),sb.from('far_alertas_atendidas').select('alerta_id'),sb.from('far_usuarios').select('*').order('id')]);
+ const R=await Promise.all([sb.from('far_productos').select('*').eq('activo',true).order('nombre'),sb.from('far_lotes').select('*'),sb.from('far_pedidos').select('*').order('created_at',{ascending:false}).limit(200),sb.from('far_permisos').select('*'),sb.from('far_alertas_atendidas').select('alerta_id'),sb.from('far_usuarios').select('*').order('id'),sb.from('rec_recetas').select('folio,paciente,estado,created_at').gte('created_at',new Date(TODAY.getFullYear(),TODAY.getMonth(),TODAY.getDate()).toISOString()).order('created_at',{ascending:false})]);
  for(const r of R)if(r.error)throw r.error;
- const [p,l,pe,pm,at,us]=R.map(r=>r.data);
+ const [p,l,pe,pm,at,us,rh]=R.map(r=>r.data);RXHOY=rh;
  if(!p.length)throw new Error('vacio');
  PROD=p.map(r=>({id:r.id,cl:r.clave,d:r.descripcion,nm:r.nombre,pa:r.principio||'',g:r.grupo,cat:r.categoria,min:r.minimo,cri:r.critico,c:+r.costo,v:+r.venta,sal:r.ventas_4s||0,srv:r.servicio,lotes:l.filter(x=>x.producto_id===r.id).map(x=>({l:x.lote,cad:x.caducidad,q:x.cantidad}))}));
  PEDIDOS=pe.map(r=>({id:r.folio,dbid:r.id,items:r.items,monto:+r.monto,prio:r.prioridad,est:r.estado,por:r.solicitante||'',fecha:r.created_at.slice(0,10)}));
@@ -812,7 +810,7 @@ async function saveRx(){
  if(!sb){RX.folio='DEMO-'+String(Date.now()).slice(-5);RX.saved=rxHash();toast('Modo demostración: la receta no se guardó en la base de datos.');render();return}
  const meds=RX.meds.map(m=>{const p=PROD.find(x=>x.id===m.pid);return{clave:p.cl,producto:p.nm,principio:p.pa,ojo:m.eye,gotas:m.dose,veces_dia:m.taper?null:m.f,dias:m.taper?28:m.d,reduccion:!!m.taper}});
  const d=await db(sb.from('rec_recetas').insert({paciente:RX.pac,edad:+RX.edad||null,diagnostico:RX.dx,medico:DOCS[RX.med].n,sede:RX.sede==='tac'?'Tacámbaro':'Morelia',proxima_cita:RX.cita||null,medicamentos:meds,creada_por:PERFILES[eff()]}).select().single(),'Receta');
- if(!d)return;RX.folio=d.folio;RX.saved=rxHash();logDb('receta_emitida',{folio:d.folio});toast(`Receta ${d.folio} guardada.`);render();
+ if(!d)return;RX.folio=d.folio;RX.saved=rxHash();RXHOY.unshift(d);logDb('receta_emitida',{folio:d.folio});toast(`Receta ${d.folio} guardada.`);render();
 }
 async function boot(){
  $('#pgSub').textContent=TODAY.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).replace(/^./,c=>c.toUpperCase())+' · Tacámbaro';
@@ -823,7 +821,7 @@ async function boot(){
   sb=window.supabase.createClient(SB_URL,SB_KEY);
   await loadAll();DEMO=false;remap();setOnline(true,'En línea · sincronizado');renderTabs();render();
   const ch=sb.channel('coe-farmacia');
-  ['far_productos','far_lotes','far_pedidos','far_alertas_atendidas','far_permisos','far_usuarios'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{clearTimeout(rlT);rlT=setTimeout(reload,500)}));
+  ['far_productos','far_lotes','far_pedidos','far_alertas_atendidas','far_permisos','far_usuarios','rec_recetas'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{clearTimeout(rlT);rlT=setTimeout(reload,500)}));
   ch.subscribe();
  }catch(e){
   sb=null;DEMO=true;setOnline(false,'Modo demostración');render();
