@@ -391,6 +391,17 @@ body.locked .shell{visibility:hidden}
 .pinin{font-size:24px;letter-spacing:.4em;text-align:center;font-family:var(--f-mono)}
 .tmp{font-size:24px;font-weight:600;letter-spacing:.06em;background:var(--accent-soft);padding:12px;border-radius:10px;text-align:center;user-select:all}
 @media (max-width:900px){.me,.side-foot .online{display:none}}
+
+.printbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%;margin-top:6px}
+#printArea{display:none}
+@page{size:letter;margin:0}
+@media print{
+ html,body{background:#fff!important;padding:0!important;margin:0!important}
+ body>*:not(#printArea){display:none!important}
+ #printArea{display:block!important}
+ #printArea .paper{width:215.9mm;min-height:0;height:279.4mm;margin:0;box-shadow:none;zoom:1!important;page-break-after:always;break-after:page;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ #printArea .paper:last-child{page-break-after:auto;break-after:auto}
+}
 body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 </style>
 
@@ -412,6 +423,7 @@ body{margin:0}[hidden]{display:none!important}img{max-width:100%}
  </div>
 </div>
 
+<div id="printArea" aria-hidden="true"></div>
 <div class="login" id="login">
  <form class="lcard" id="loginForm" autocomplete="on">
   <div class="liso"></div>
@@ -718,7 +730,7 @@ function vRx(){
   </fieldset></section>
   <section style="min-width:0">
    <div class="toolbar"><div class="seg"><button aria-pressed="${RX.view==='std'}" data-view="std">Receta</button><button aria-pressed="${RX.view==='il'}" data-view="il">Receta ilustrada</button></div>
-    <span class="note">Vista previa tamaño carta.</span><span class="spacer"></span>${rxFolio()==="SIN GUARDAR"?`<button class="btn pri" id="saveRx">Guardar receta</button>`:`<span class="chip c-ok">Guardada · ${RX.folio}</span>`}</div>
+    <span class="note">Vista previa tamaño carta.</span><span class="spacer"></span>${rxFolio()==="SIN GUARDAR"?`<button class="btn pri" id="saveRx">Guardar receta</button>`:`<span class="chip c-ok">Guardada · ${RX.folio}</span>`}<div class="printbar"><span class="note">Imprimir:</span><button type="button" class="btn pri" data-print="std">🖨️ Receta</button><button type="button" class="btn" data-print="il">🖨️ Ilustrada</button><button type="button" class="btn" data-print="both">🖨️ Ambas</button></div></div>
    <div class="paperwrap">${RX.view==='std'?paperStd():paperIl()}</div>
   </section></div>${vModal()}`;
 }
@@ -859,6 +871,7 @@ function bind(){
  const sp=$('#savePerm');if(sp)sp.onclick=async()=>{if(!PERM_DIRTY.size)return;if(sb){if(!await askPin('Cambio de accesos por perfil'))return;for(const p of PERM_DIRTY){const d=await db(sb.from('far_permisos').upsert({perfil:p,permisos:PERMS[p],updated_at:new Date().toISOString()}),'Permisos');if(d===null)return}logDb('permisos',{perfiles:[...PERM_DIRTY]})}PERM_DIRTY.clear();toast('Accesos guardados y firmados.');render()};
  const nu=$('#newUser');if(nu)nu.onclick=newUserDlg;
  const sv=$('#saveRx');if(sv)sv.onclick=saveRx;
+ M.querySelectorAll('[data-print]').forEach(b=>b.onclick=()=>printRx(b.dataset.print));
  const am=$('#addMed');if(am)am.onclick=()=>{if(RX.meds.length>=4){toast('Máximo 4 medicamentos para que la receta quepa en una hoja.');return}MODAL={add:1,q:''};render()};
  M.querySelectorAll('[data-chg]').forEach(b=>b.onclick=()=>{MODAL={i:+b.dataset.chg,q:''};render()});
  M.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{const pid=+b.dataset.pick,nm=PROD.find(x=>x.id===pid).nm;if(MODAL.add){RX.meds.push({pid,eye:'AO',dose:1,f:2,d:7,taper:0});toast(nm+' agregado.')}else{RX.meds[MODAL.i].pid=pid;toast('Cambiado a '+nm+'. Queda registrado con su usuario.')}MODAL=null;render()});
@@ -899,6 +912,13 @@ function remap(){const byCl=Object.fromEntries(PROD.map(p=>[p.cl,p.id]));const f
  CONTEO=Object.fromEntries(PROD.map(p=>[p.id,sistema(p)]));JUST={};}
 let rlT=null;
 async function reload(){try{await loadAll();const typing=MODAL||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName);if(typing)renderStrip();else render()}catch(e){setOnline(false,'Reconectando…')}}
+async function printRx(mode){
+ if(rxFolio()==='SIN GUARDAR'){if(sb&&!DEMO){await saveRx();if(rxFolio()==='SIN GUARDAR')return}}
+ const pa=$('#printArea');pa.innerHTML=(mode==='il'?'':paperStd())+(mode==='std'?'':paperIl());
+ logDb('receta_impresa',{folio:RX.folio,tipo:mode});
+ setTimeout(()=>{window.print();},150);
+}
+window.addEventListener('afterprint',()=>{const pa=$('#printArea');if(pa)pa.innerHTML=''});
 async function saveRx(){
  if(!RX.dx.trim()){toast('Falta el diagnóstico.');$('#rxDx')?.focus();return}
  if(!RX.pac.trim()){toast('Falta el nombre del paciente.');return}
