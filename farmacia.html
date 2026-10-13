@@ -404,6 +404,18 @@ body.locked .shell{visibility:hidden}
  #printArea .paper:last-child{page-break-after:auto;break-after:auto}
 }
 .verbar{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:80;background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;display:flex;gap:10px;align-items:center;font-size:14px;box-shadow:var(--shadow)}
+.sec-act{display:flex;gap:6px;order:2}
+.sec-h .sec-act .btn{text-transform:none;letter-spacing:0}
+.dlg.pw.wide{width:min(760px,100%)}
+.ted-top{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ted-meds{display:grid;gap:8px;margin-top:6px}
+.ted-row{display:grid;grid-template-columns:24px minmax(0,2fr) repeat(4,minmax(0,1fr)) auto auto;gap:6px;align-items:center;background:var(--bg);border-radius:10px;padding:8px}
+.ted-row .num{width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--surface);display:grid;place-items:center;font-size:12px;font-weight:700}
+.ted-row select{font-size:13px;padding:7px 6px}
+.ted-red{grid-column:span 2;font-size:12px}
+.ted-chk{margin:0!important;font-size:12.5px;white-space:nowrap}
+#tedAdd{margin-top:8px}
+@media (max-width:720px){.ted-top{grid-template-columns:1fr}.ted-row{display:flex;flex-wrap:wrap}.ted-row>select{flex:1 1 30%;min-width:0}.ted-row .ted-prod{flex:1 1 calc(100% - 70px)}.ted-row .num{order:-2}.ted-row .icon-btn{order:-1;margin-left:auto}.ted-red{flex:1 1 60%}}
 body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 </style>
 
@@ -707,7 +719,7 @@ function vRx(){
     <div><span class="lbl">Firma</span><div class="seg2 sm">${[['vil','Dr. Villegas'],['riv','Dra. Rivera']].map(([k,t])=>`<button data-firm="${k}" aria-pressed="${RX.med===k}">${t}</button>`).join('')}</div></div>
     <div><span class="lbl">Sede</span><div class="seg2 sm">${[['tac','Tacámbaro'],['mor','Morelia']].map(([k,t])=>`<button data-sede="${k}" aria-pressed="${RX.sede===k}">${t}</button>`).join('')}</div></div>
    </div>
-   <div class="sec-h">Plantillas ${ro?'':`<button type="button" class="lnk sm" id="tplEdit">${TPL_EDIT?'Listo':'Editar'}</button>`}</div>
+   <div class="sec-h">Plantillas ${ro?'':`<span class="sec-act"><button type="button" class="btn sm pri" id="tplNew">+ Nueva plantilla</button><button type="button" class="btn sm" id="tplEdit">${TPL_EDIT?'Listo':'Editar'}</button></span>`}</div>
    <div class="tplgrid${TPL_EDIT?' editing':''}">${TPLS.map(t=>`<div class="tplw"><button type="button" class="tpl" data-tpl="${esc(t.id)}" title="${esc(t.dx||'')}"><span class="emo" aria-hidden="true">${esc(t.icono||'💊')}</span><span><b>${esc(t.nombre)}</b><small>${t.meds.length} medicamento${t.meds.length===1?'':'s'}${t.dx?' · '+esc(t.dx):''}</small></span></button>${TPL_EDIT?`<div class="tpl-act"><button type="button" class="btn sm" data-tpled="${esc(t.id)}">Editar</button><button type="button" class="btn sm" data-tpldel="${esc(t.id)}">Borrar</button></div>`:''}</div>`).join('')||'<p class="note">Aún no hay plantillas. Arme una receta y pulse «Guardar como plantilla».</p>'}</div>
    <div class="sec-h">Paciente</div>
    <div class="field"><label for="rxPac">Nombre completo</label><div class="inp-ic">${IC_USER}<input type="text" id="rxPac" value="${esc(RX.pac)}" placeholder="Nombre y apellidos" autocomplete="off"></div></div>
@@ -737,23 +749,42 @@ function vRx(){
   </section></div>${vModal()}`;
 }
 function curMedsAsTpl(){return RX.meds.map(m=>{const p=PROD.find(x=>x.id===m.pid);return M_(p.cl,m.eye,m.dose,m.f,m.d,m.taper)})}
-function tplDlg(id){const t=id?TPLS.find(x=>String(x.id)===String(id)):null;const ic=t?t.icono:'⭐';
- showMsg(t?'Editar plantilla':'Guardar como plantilla',`<form id="tpF">
-  <label for="tpN">Nombre</label><input id="tpN" required maxlength="40" value="${esc(t?t.nombre:(RX.dx||''))}" placeholder="Ej. Uveítis anterior">
-  <span class="flabel">Ícono</span><div class="emogrid" role="radiogroup" aria-label="Ícono">${EMOJIS.map((e,k)=>`<label class="emo-opt"><input type="radio" name="tpE" id="tpE${k}" value="${e}" ${e===ic?'checked':''}><span>${e}</span></label>`).join('')}</div>
-  <label class="chk"><input type="checkbox" id="tpDx" ${t?(t.dx?'checked':''):(RX.dx?'checked':'')}> Incluir diagnóstico: <b>${esc((t&&t.dx)||RX.dx||'—')}</b></label>
-  ${t?`<label class="chk"><input type="checkbox" id="tpRep"> Reemplazar sus medicamentos por los de la receta actual (${RX.meds.length})</label>`:`<p class="note">Se guardan los ${RX.meds.length} medicamentos de la receta actual con ojo, dosis, frecuencia, días y reducción.</p>`}
-  <button class="btn pri" style="width:100%;margin-top:12px">${t?'Guardar cambios':'Guardar plantilla'}</button></form>`);
- $('#tpF').onsubmit=async e=>{e.preventDefault();const nombre=$('#tpN').value.trim();const icono=(document.querySelector('input[name=tpE]:checked')||{}).value||'💊';
-  const rep=t?$('#tpRep').checked:true;const incDx=$('#tpDx').checked;
-  const row={nombre,icono,diagnostico:incDx?((t&&!rep&&t.dx)||RX.dx||''):'',updated_at:new Date().toISOString()};
-  if(rep){if(!RX.meds.length){toast('La receta no tiene medicamentos.');return}row.medicamentos=curMedsAsTpl()}
-  if(!nombre){toast('Escriba un nombre.');return}
-  if(sb&&!DEMO&&!TPL_DB){toast('Falta instalar la tabla de plantillas en Supabase; por ahora no se pueden guardar.');return}
-  if(sb&&!DEMO){const q=t&&!String(t.id).startsWith('l')?sb.from('rec_plantillas').update(row).eq('id',t.id):sb.from('rec_plantillas').insert({...row,creada_por:ME?ME.nombre:null,orden:100});
-   if(await db(q,'Plantilla')===null)return;logDb(t?'plantilla_editada':'plantilla_creada',{nombre});await reload()}
-  else{if(t)Object.assign(t,{nombre,icono,dx:row.diagnostico,...(rep?{meds:row.medicamentos}:{})});else TPLS.push({id:'l'+Date.now(),nombre,icono,dx:row.diagnostico,meds:row.medicamentos})}
-  $('#msgOvl').hidden=true;toast(t?'Plantilla actualizada.':`Plantilla «${nombre}» guardada.`);render()};}
+let TED=null;
+const VECES=[[1,'24 h'],[2,'12 h'],[3,'8 h'],[4,'6 h'],[6,'4 h']],DIAS=[[5,'5 días'],[7,'7 días'],[10,'10 días'],[14,'14 días'],[21,'21 días'],[28,'28 días'],[0,'Continuo']];
+function tplDlg(id,fromRx){const t=id?TPLS.find(x=>String(x.id)===String(id)):null;
+ TED=t?{id:t.id,nombre:t.nombre,icono:t.icono||'💊',dx:t.dx||'',meds:JSON.parse(JSON.stringify(t.meds||[]))}
+  :fromRx?{id:null,nombre:RX.dx||'',icono:'⭐',dx:RX.dx||'',meds:curMedsAsTpl()}
+  :{id:null,nombre:'',icono:'💊',dx:'',meds:[]};
+ if(!TED.meds.length)TED.meds.push(M_((PROD.find(p=>RXABLE(p)&&p.cat==='col')||PROD.find(RXABLE)).cl,'AO',1,4,7));
+ showMsg(t?'Editar plantilla':'Nueva plantilla','<div id="tedBox"></div>');$('#msgOvl .dlg').classList.add('wide');renderTED();setTimeout(()=>$('#tpN')&&$('#tpN').focus(),50)}
+function renderTED(){const b=$('#tedBox');if(!b||!TED)return;const opts=PROD.filter(RXABLE).map(p=>`<option value="${esc(p.cl)}">${esc(p.nm)}${p.pa&&p.pa!=='—'?' · '+esc(p.pa):''}</option>`).join('');
+ const sel=(arr,v,k,i)=>`<select data-tm="${k}" data-i="${i}" aria-label="${k}">${arr.map(([a,t])=>`<option value="${a}" ${String(a)===String(v)?'selected':''}>${t}</option>`).join('')}</select>`;
+ b.innerHTML=`<form id="tpF"><div class="ted-top"><div><label for="tpN">Nombre de la plantilla</label><input id="tpN" required maxlength="40" value="${esc(TED.nombre)}" placeholder="Ej. Uveítis anterior"></div>
+  <div><label for="tpD">Diagnóstico (opcional)</label><input id="tpD" list="dxl2" value="${esc(TED.dx)}" placeholder="Se carga en la receta"><datalist id="dxl2">${DX.map(d=>`<option value="${esc(d)}">`).join('')}</datalist></div></div>
+  <span class="flabel">Ícono</span><div class="emogrid" role="radiogroup" aria-label="Ícono">${EMOJIS.map((e,k)=>`<label class="emo-opt"><input type="radio" name="tpE" id="tpE${k}" value="${e}" ${e===TED.icono?'checked':''}><span>${e}</span></label>`).join('')}</div>
+  <span class="flabel">Medicamentos</span>
+  <div class="ted-meds">${TED.meds.map((m,i)=>`<div class="ted-row"><span class="num">${i+1}</span>
+   <select data-tm="clave" data-i="${i}" aria-label="Medicamento ${i+1}" class="ted-prod">${opts.replace(`value="${esc(m.clave)}"`,`value="${esc(m.clave)}" selected`)}</select>
+   ${sel([['OD','OD · derecho'],['OI','OI · izquierdo'],['AO','AO · ambos']],m.ojo,'ojo',i)}
+   ${sel([[1,'1 gota'],[2,'2 gotas'],[3,'3 gotas']],m.gotas,'gotas',i)}
+   ${m.reduccion?'<span class="note ted-red">4→3→2→1 al día</span>':sel(VECES,m.veces,'veces',i)+sel(DIAS,m.dias,'dias',i)}
+   <label class="chk ted-chk"><input type="checkbox" data-tm="reduccion" data-i="${i}" ${m.reduccion?'checked':''}> Reducción</label>
+   <button type="button" class="icon-btn" data-tmdel="${i}" aria-label="Quitar medicamento ${i+1}">✕</button></div>`).join('')}</div>
+  <button type="button" class="addmed" id="tedAdd">+ Agregar medicamento</button>
+  <div class="toolbar" style="justify-content:flex-end;margin-top:12px"><button type="button" class="btn" id="tedCancel">Cancelar</button><button class="btn pri">${TED.id?'Guardar cambios':'Guardar plantilla'}</button></div></form>`;
+ const keep=()=>{TED.nombre=$('#tpN').value;TED.dx=$('#tpD').value;const e=document.querySelector('input[name=tpE]:checked');if(e)TED.icono=e.value};
+ b.querySelectorAll('[data-tm]').forEach(el=>el.onchange=()=>{keep();const m=TED.meds[+el.dataset.i],k=el.dataset.tm;
+  if(k==='reduccion'){m.reduccion=el.checked;if(el.checked){m.veces=4;m.dias=28}}else if(k==='clave'||k==='ojo')m[k]=el.value;else m[k]=+el.value;renderTED()});
+ b.querySelectorAll('[data-tmdel]').forEach(el=>el.onclick=()=>{keep();TED.meds.splice(+el.dataset.tmdel,1);renderTED()});
+ $('#tedAdd').onclick=()=>{keep();if(TED.meds.length>=6){toast('Máximo 6 medicamentos por plantilla.');return}TED.meds.push(M_((PROD.find(p=>RXABLE(p)&&p.cat==='col')||PROD.find(RXABLE)).cl,'AO',1,4,7));renderTED()};
+ $('#tedCancel').onclick=()=>{$('#msgOvl').hidden=true;TED=null};
+ $('#tpF').onsubmit=async e=>{e.preventDefault();keep();const nombre=TED.nombre.trim();if(!nombre){toast('Escriba un nombre.');return}if(!TED.meds.length){toast('Agregue al menos un medicamento.');return}
+  const row={nombre,icono:TED.icono,diagnostico:TED.dx.trim(),medicamentos:TED.meds,updated_at:new Date().toISOString()};const isNew=!TED.id||String(TED.id).startsWith('l');
+  if(sb&&!DEMO&&!TPL_DB){toast('Falta instalar la tabla de plantillas en Supabase.');return}
+  if(sb&&!DEMO){const q=isNew?sb.from('rec_plantillas').insert({...row,creada_por:ME?ME.nombre:null,orden:100}):sb.from('rec_plantillas').update(row).eq('id',TED.id);
+   if(await db(q,'Plantilla')===null)return;logDb(isNew?'plantilla_creada':'plantilla_editada',{nombre});await reload()}
+  else{const t=TPLS.find(x=>x.id===TED.id);const o={nombre,icono:TED.icono,dx:row.diagnostico,meds:TED.meds};if(t)Object.assign(t,o);else TPLS.push({id:'l'+Date.now(),...o})}
+  $('#msgOvl').hidden=true;TED=null;toast(isNew?`Plantilla «${nombre}» guardada.`:'Plantilla actualizada.');render()};}
 function tplDel(id){const t=TPLS.find(x=>String(x.id)===String(id));if(!t)return;
  showMsg('Borrar plantilla',`<p>¿Borrar la plantilla <b>${esc(t.icono)} ${esc(t.nombre)}</b>? Ya no aparecerá para ningún médico.</p><div class="toolbar" style="justify-content:flex-end"><button class="btn" id="tdNo">Cancelar</button><button class="btn pri danger" id="tdYes">Borrar</button></div>`);
  $('#tdNo').onclick=()=>{$('#msgOvl').hidden=true};
@@ -855,7 +886,8 @@ function bind(){
  M.querySelectorAll('[data-tpled]').forEach(b=>b.onclick=()=>tplDlg(b.dataset.tpled));
  M.querySelectorAll('[data-tpldel]').forEach(b=>b.onclick=()=>tplDel(b.dataset.tpldel));
  const te=$('#tplEdit');if(te)te.onclick=()=>{TPL_EDIT=!TPL_EDIT;render()};
- const st=$('#saveTpl');if(st)st.onclick=()=>tplDlg(null);
+ const st=$('#saveTpl');if(st)st.onclick=()=>tplDlg(null,true);
+ const tn=$('#tplNew');if(tn)tn.onclick=()=>tplDlg(null,false);
  [['rxMed','med'],['rxSede','sede'],['rxPac','pac'],['rxEdad','edad'],['rxCita','cita'],['rxDx','dx']].forEach(([id,k])=>{const el=$('#'+id);if(el)el.onchange=()=>{RX[k]=el.value;render()}});
  M.querySelectorAll('[data-mf]').forEach(s=>s.onchange=()=>{RX.meds[+s.dataset.i][s.dataset.mf]=+s.value;render()});
  M.querySelectorAll('[data-eye]').forEach(b=>b.onclick=()=>{RX.meds[+b.dataset.eye].eye=b.dataset.e;render()});
@@ -937,8 +969,8 @@ const sGet=()=>{try{return JSON.parse(localStorage.getItem(SKEY)||'null')}catch(
 const sSet=v=>{try{v?localStorage.setItem(SKEY,JSON.stringify(v)):localStorage.removeItem(SKEY)}catch(e){}};
 function nextCut(){const n=new Date(),c=new Date(n);for(const [h,m] of [[14,30],[18,30]]){c.setHours(h,m,0,0);if(c>n)return c}c.setDate(c.getDate()+1);c.setHours(14,30,0,0);return c}
 const hm=d=>d.toLocaleTimeString('es-MX',{hour:'numeric',minute:'2-digit'});
-function showMsg(t,html){$('#msgT').textContent=t;$('#msgB').innerHTML=html;$('#msgOvl').hidden=false}
-$('#msgX').onclick=()=>{$('#msgOvl').hidden=true};
+function showMsg(t,html){document.querySelector('#msgOvl .dlg').classList.remove('wide');$('#msgT').textContent=t;$('#msgB').innerHTML=html;$('#msgOvl').hidden=false}
+$('#msgX').onclick=()=>{$('#msgOvl').hidden=true;TED=null};
 function lgErr(t){const e=$('#lgErr');e.textContent=t;e.hidden=!t}
 function paintMe(){if(!ME)return;$('#meName').textContent=ME.nombre;$('#mePerf').textContent=PERFILES[ME.perfil]||ME.perfil;const exp=new Date(ME.expira);$('#meClose').textContent='Cierre automático '+hm(exp)}
 function tick(){if(!ME)return;const left=new Date(ME.expira)-Date.now();
@@ -1013,7 +1045,7 @@ async function boot(){
  sSet(null);setTimeout(()=>$('#lgUser').focus(),50);
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610131037';
+const APP_VER='202610131042';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
