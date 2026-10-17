@@ -395,12 +395,12 @@ body.locked .shell{visibility:hidden}
 
 .printbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%;margin-top:6px}
 #printArea{display:none}
-@page{size:letter;margin:0}
+@page{size:letter;margin:12mm 10mm}
 @media print{
  html,body{background:#fff!important;padding:0!important;margin:0!important}
  body>*:not(#printArea){display:none!important}
  #printArea{display:block!important}
- #printArea .paper{width:215.9mm;min-height:0;height:279.4mm;margin:0;box-shadow:none;zoom:1!important;page-break-after:always;break-after:page;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ #printArea .paper{zoom:var(--fit,1)!important;width:740px;min-height:0;height:auto;margin:0 auto;padding:22px 34px 14px;box-shadow:none;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
  #printArea .paper:last-child{page-break-after:auto;break-after:auto}
 }
 .verbar{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:80;background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;display:flex;gap:10px;align-items:center;font-size:14px;box-shadow:var(--shadow)}
@@ -425,6 +425,26 @@ body.locked .shell{visibility:hidden}
 .lguser small{color:var(--muted);font-size:12px}
 .lgchosen{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--accent-soft);border-radius:10px;padding:10px 12px;margin:6px 0 2px}
 .lgchosen small{color:var(--muted)}
+.seg2.wrap{flex-wrap:wrap}
+.seg2.wrap button{display:inline-flex;align-items:center}
+.seg2 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px;max-height:220px;overflow-y:auto;padding:2px}
+.slot{border:1.5px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 4px;font-size:13px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.slot:hover:not(:disabled){border-color:var(--accent)}
+.slot[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.slot:disabled{background:repeating-linear-gradient(135deg,var(--bg),var(--bg) 4px,var(--surface) 4px,var(--surface) 8px);color:var(--muted);text-decoration:line-through;cursor:not-allowed;opacity:.7}
+.gcal{width:100%;margin-top:10px;padding:11px}
+.gcal:disabled{opacity:.45;cursor:not-allowed}
+/* bloque de contacto en receta */
+.p-contact{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;padding:12px 14px;border:2px solid #111;border-radius:10px}
+.pc-col{display:grid;gap:2px}
+.pc-big{font-size:27px;font-weight:700;letter-spacing:.01em;display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pc-big .wa{width:28px;height:28px;flex:none}
+.pc-wa{border-left:1.5px solid #111;padding-left:14px}
+.pc-small{font-size:12.5px;color:#222}
+.p-mini{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:11.5px;color:#333;margin-top:8px;padding-bottom:6px;border-bottom:.75px solid #999}
+.p-mini .dxs{flex-basis:100%}
+.p-rp{margin-top:10px!important}
 body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 </style>
 
@@ -605,7 +625,7 @@ const TABIC={dash:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14"
  rx:'<path d="M6 3h9l4 4v14H6z"/><path d="M9 10h3a2 2 0 0 1 0 4H9v-4zm0 4v3m3-3l3 3"/>',
  acc:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>'};
 function renderTabs(){$('#pgTitle').textContent=TABN[tab];$('#tabs').innerHTML=tabsFor().map(t=>`<button role="tab" aria-selected="${t===tab}" data-t="${t}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TABIC[t]}</svg><span>${TABN[t]}</span></button>`).join('');$('#tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>go(b.dataset.t))}
-function go(t){tab=t;renderTabs();render();window.scrollTo({top:0})}
+function go(t){tab=t;renderTabs();render();window.scrollTo({top:0});if(t==='rx')loadBusy()}
 
 function vDash(){
  const al=alerts().filter(a=>!ATENDIDAS.has(a.id)).slice(0,6);
@@ -696,9 +716,9 @@ let TPLS=[
 ];
 const EMOJIS=['👁️','🦠','🎯','💧','🩹','💊','🔥','🤧','🌸','⚡','🩸','🧪','🔬','🛡️','❄️','🌿','☀️','🌙','🧒','👴','⭐','🔴','🟢','🔵'];
 let TPL_EDIT=false,TPL_DB=false;
-const rxHash=()=>JSON.stringify([RX.pac,RX.edad,RX.dx,RX.med,RX.sede,RX.cita,RX.meds.map(m=>[m.pid,m.eye,m.dose,m.f,m.d,m.taper])]);
+const rxHash=()=>JSON.stringify([RX.pac,RX.edad,RX.dx,RX.med,RX.sede,RX.cita,RX.hora,RX.cal,RX.tel,RX.motivo,RX.promos,RX.meds.map(m=>[m.pid,m.eye,m.dose,m.f,m.d,m.taper])]);
 const rxFolio=()=>RX.folio&&RX.saved===rxHash()?RX.folio:'SIN GUARDAR';
-let RX={folio:null,saved:null,pac:'María Guadalupe Hernández Ruiz',edad:72,dx:'',med:'vil',sede:'tac',cita:'2026-10-18',meds:[],view:'std'};
+let RX={hora:null,cal:null,tel:'',motivo:'Subsecuente',promos:false,folio:null,saved:null,pac:'María Guadalupe Hernández Ruiz',edad:72,dx:'',med:'vil',sede:'tac',cita:'2026-10-18',meds:[],view:'std'};
 function tplMeds(t){const miss=[];const meds=t.meds.map(m=>{const p=PROD.find(x=>x.cl===m.clave);if(!p){miss.push(m.clave);return null}return{pid:p.id,eye:m.ojo,dose:m.gotas,f:m.veces||2,d:m.dias||0,taper:m.reduccion?1:0}}).filter(Boolean);return{meds,miss}}
 function loadTpl(id,quiet){const t=TPLS.find(x=>String(x.id)===String(id));if(!t)return;const{meds,miss}=tplMeds(t);RX.dx=t.dx||RX.dx;RX.meds=meds;if(!quiet){toast(miss.length?`Plantilla cargada. ${miss.length} medicamento(s) ya no están en el catálogo.`:`Plantilla «${t.nombre}» cargada.`);render()}}
 loadTpl('l1',true);
@@ -736,7 +756,7 @@ function vRx(){
    <div class="field"><label for="rxPac">Nombre completo</label><div class="inp-ic">${IC_USER}<input type="text" id="rxPac" value="${esc(RX.pac)}" placeholder="Nombre y apellidos" autocomplete="off"></div></div>
    <div class="row2 pat2">
     <div class="field"><label for="rxEdad">Edad</label><div class="stepper wide"><button data-age="-1" aria-label="Restar un año">−</button><input type="number" id="rxEdad" value="${esc(RX.edad)}" min="0" max="120"><span class="unit">años</span><button data-age="1" aria-label="Sumar un año">+</button></div></div>
-    <div class="field"><label for="rxCita">Próxima cita</label><input type="date" id="rxCita" value="${RX.cita}"><div class="chips sm">${[[7,'1 sem'],[14,'2 sem'],[30,'1 mes'],[90,'3 meses']].map(([d,t])=>`<button data-cita="${d}" aria-pressed="${RX.cita===addDays(d)}">${t}</button>`).join('')}</div></div>
+    <div class="field"><label for="rxTel">Teléfono del paciente</label><input type="tel" id="rxTel" value="${esc(RX.tel)}" placeholder="10 dígitos" inputmode="tel" autocomplete="off"></div>
    </div>
    <div class="field"><label for="rxDx">Diagnóstico <span class="req">obligatorio</span></label><input type="text" id="rxDx" list="dxl" value="${esc(RX.dx)}" placeholder="Escriba o elija uno frecuente"><datalist id="dxl">${DX.map(d=>`<option value="${esc(d)}">`).join('')}</datalist>
     <div class="chips sm">${DX.slice(0,5).map(d=>`<button data-dx="${esc(d)}" aria-pressed="${RX.dx===d}">${esc(d)}</button>`).join('')}</div></div>
@@ -752,6 +772,7 @@ function vRx(){
    </div>`}).join('')}
    <button class="addmed" id="addMed">+ Agregar medicamento</button>
    ${RX.meds.length?`<button type="button" class="btn savetpl" id="saveTpl">⭐ Guardar como plantilla</button>`:''}
+   ${vCita()}
   </fieldset></section>
   <section style="min-width:0">
    <div class="toolbar"><div class="seg"><button aria-pressed="${RX.view==='std'}" data-view="std">Receta</button><button aria-pressed="${RX.view==='il'}" data-view="il">Receta ilustrada</button></div>
@@ -801,6 +822,40 @@ function tplDel(id){const t=TPLS.find(x=>String(x.id)===String(id));if(!t)return
  $('#tdNo').onclick=()=>{$('#msgOvl').hidden=true};
  $('#tdYes').onclick=async()=>{if(sb&&!DEMO&&!TPL_DB){toast('Falta instalar la tabla de plantillas en Supabase.');return}if(sb&&!DEMO&&!String(t.id).startsWith('l')){if(await db(sb.from('rec_plantillas').update({activa:false,updated_at:new Date().toISOString()}).eq('id',t.id),'Plantilla')===null)return;logDb('plantilla_borrada',{nombre:t.nombre});await reload()}else TPLS=TPLS.filter(x=>x!==t);
   $('#msgOvl').hidden=true;toast('Plantilla borrada.');render()};}
+let CALS=[],BUSY={},BUSY_AT=0,BUSY_ERR='';
+const MOTIVOS=['Subsecuente','Postoperatorio','Revisión de presión','Revisión de tratamiento','Resultados de estudios'];
+const hm2=t=>{const[h,m]=t.split(':').map(Number);return h*60+m};
+const fmtH=min=>{const h=Math.floor(min/60),m=min%60;return `${((h+11)%12)+1}:${String(m).padStart(2,'0')} ${h<12?'am':'pm'}`};
+function slotDate(dateStr,min){const[y,mo,d]=dateStr.split('-').map(Number);return new Date(y,mo-1,d,Math.floor(min/60),min%60,0)}
+function calSlots(cal,dateStr){if(!cal||!dateStr)return[];const out=[];const a=hm2((cal.hora_inicio||'09:00').slice(0,5)),b=hm2((cal.hora_fin||'19:00').slice(0,5)),st=cal.duracion_min||20;
+ const bz=BUSY[cal.id]||{ocupado:[],dias:[]};const dayBlocked=(bz.dias||[]).includes(dateStr);const now=new Date();
+ for(let m=a;m+st<=b;m+=st){const s=slotDate(dateStr,m),e=new Date(s.getTime()+st*60000);
+  const busy=dayBlocked||(bz.ocupado||[]).some(([x,y])=>new Date(x)<e&&new Date(y)>s);out.push({m,label:fmtH(m),busy,past:s<now})}
+ return out}
+function vCita(){const cal=CALS.find(c=>String(c.id)===String(RX.cal))||null;const sl=calSlots(cal,RX.cita);const bz=cal&&BUSY[cal.id];
+ const dayBlocked=cal&&bz&&(bz.dias||[]).includes(RX.cita);const libres=sl.filter(x=>!x.busy&&!x.past).length;
+ return `<div class="sec-h">Próxima cita</div>
+ <div class="field"><span class="lbl" style="margin-bottom:4px">Agenda</span>${CALS.length?`<div class="seg2 sm wrap">${CALS.filter(c=>c.activo).map(c=>`<button type="button" data-cal="${c.id}" aria-pressed="${String(RX.cal)===String(c.id)}"><span class="dot" style="background:${esc(c.color||'#1d5873')}"></span>${esc(c.nombre)}</button>`).join('')}</div>`:'<p class="note">No hay agendas configuradas. El Director las agrega en Accesos.</p>'}</div>
+ <div class="field"><label for="rxCita">Fecha</label><input type="date" id="rxCita" value="${RX.cita}" min="${ISO(TODAY)}"><div class="chips sm">${[[7,'1 sem'],[14,'2 sem'],[30,'1 mes'],[90,'3 meses']].map(([d,t])=>`<button type="button" data-cita="${d}" aria-pressed="${RX.cita===addDays(d)}">${t}</button>`).join('')}</div></div>
+ ${cal?`<div class="field"><span class="lbl" style="margin-bottom:4px">Hora ${cal.tiene_ical?(BUSY_ERR?`<span class="note">· no se pudo leer la agenda: ${esc(BUSY_ERR)}</span>`:bz&&bz.error?`<span class="note">· ${esc(bz.error)}</span>`:`<span class="note">· ${dayBlocked?'día bloqueado en Google Calendar':libres+' horarios libres'}</span>`):'<span class="note">· sin conexión a Google Calendar: no se ven los bloqueos</span>'}</span>
+   <div class="slots">${sl.map(x=>`<button type="button" class="slot" data-hora="${x.m}" ${x.busy||x.past?'disabled':''} aria-pressed="${RX.hora===x.m}" title="${x.busy?'Ocupado o bloqueado':x.past?'Ya pasó':'Libre'}">${x.label}</button>`).join('')}</div></div>`:''}
+ <div class="field"><span class="lbl" style="margin-bottom:4px">Motivo</span><div class="chips sm">${MOTIVOS.map(m=>`<button type="button" data-motivo="${esc(m)}" aria-pressed="${RX.motivo===m}">${esc(m)}</button>`).join('')}</div><input type="text" id="rxMot" value="${esc(RX.motivo)}" style="margin-top:6px" placeholder="Motivo de la cita"></div>
+ <label class="chk"><input type="checkbox" id="rxPromo" ${RX.promos?'checked':''}> El paciente acepta recibir avisos y promociones de la clínica por WhatsApp</label>
+ <button type="button" class="btn pri gcal" id="gcalBtn" ${cal&&RX.hora!=null?'':'disabled'}>📅 Agendar en Google Calendar${cal?' · '+esc(cal.nombre):''}</button>
+ ${cal&&RX.hora==null?'<p class="note">Elija una hora libre para agendar.</p>':''}`}
+async function loadCals(){if(!sb)return;try{const r=await sb.rpc('far_calendarios_lista');if(r.error)throw r.error;CALS=r.data||[];if(RX.cal==null){const f=CALS.find(c=>c.activo);if(f)RX.cal=f.id}}catch(e){CALS=[]}}
+async function loadBusy(force){if(!sb||!ME||!ME.token)return;if(!force&&Date.now()-BUSY_AT<4*60000)return;if(!CALS.some(c=>c.tiene_ical&&c.activo))return;
+ const d0=new Date(TODAY);d0.setDate(d0.getDate()-1);const d1=new Date(TODAY);d1.setDate(d1.getDate()+65);
+ try{const r=await sb.functions.invoke('cal-ocupado',{body:{token:ME.token,desde:d0.toISOString(),hasta:d1.toISOString()}});if(r.error)throw r.error;BUSY=r.data.calendarios||{};BUSY_ERR='';BUSY_AT=Date.now()}
+ catch(e){BUSY_ERR=(e&&e.message)||'sin conexión'}
+ if(tab==='rx'&&!MODAL&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))render()}
+function gcalUrl(){const cal=CALS.find(c=>String(c.id)===String(RX.cal));if(!cal||RX.hora==null)return null;
+ const s=slotDate(RX.cita,RX.hora),e=new Date(s.getTime()+(cal.duracion_min||20)*60000);
+ const f=d=>`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}00`;
+ const title=[RX.pac.trim().toUpperCase(),(RX.tel||'').replace(/\D/g,''),(RX.motivo||'').toUpperCase()].filter(Boolean).join(' ');
+ const det=[`Motivo: ${RX.motivo||'—'}`,`Teléfono: ${RX.tel||'—'}`,`Diagnóstico: ${RX.dx||'—'}`,`Receta: ${rxFolio()}`,RX.promos?'Acepta avisos por WhatsApp':'',`Agendado desde COE Farmacia por ${ME?ME.nombre:''}`].filter(Boolean).join('\n');
+ const p=new URLSearchParams({action:'TEMPLATE',text:title,dates:f(s)+'/'+f(e),ctz:'America/Mexico_City',details:det,src:cal.calendar_id,location:RX.sede==='tac'?'COE Tacámbaro':'COE Morelia'});
+ return 'https://calendar.google.com/calendar/render?'+p.toString()}
 function vModal(){
  if(!MODAL)return '';
  const cur=MODAL.add?null:PROD.find(x=>x.id===RX.meds[MODAL.i].pid);
@@ -817,8 +872,16 @@ function vModal(){
   </div></div></div>`;
 }
 const DOCS={vil:{n:'Dr. José Antonio Villegas Ávila',c:'Céd. Prof. 7256707 · Céd. Esp. 9457035'},riv:{n:'Dra. Mónica Araceli Rivera Bustos',c:'Céd. Prof. ________ · Céd. Esp. ________'}};
-const SEDES={tac:'Av. Luis Donaldo Colosio 151, Col. La Purísima, Tacámbaro, Mich. · Tel. (443) 465 6645 · (459) 596 2268 · WhatsApp (459) 134 55 29',mor:'Hospital Victoria, Consultorio 1206, Piso 12 · Av. Acueducto 2800, Morelia, Mich.'};
+const SEDES={tac:'Av. Luis Donaldo Colosio 151, Col. La Purísima, Tacámbaro, Michoacán',mor:'Hospital Victoria, Consultorio 1206, Piso 12 · Av. Acueducto 2800, Morelia, Mich.'};
 const EYE={OD:'OJO DERECHO',OI:'OJO IZQUIERDO',AO:'AMBOS OJOS'};
+const WA_SVG='<svg class="wa" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3z" fill="none" stroke="#111" stroke-width="2.6" stroke-linejoin="round"/><path d="M11.5 9.6c.4-.4 1.1-.4 1.4.1l1.3 2.4c.2.4.1.9-.2 1.2l-.9.9c.8 1.9 2.4 3.5 4.3 4.3l.9-.9c.3-.3.8-.4 1.2-.2l2.4 1.3c.5.3.5 1 .1 1.4l-1 1c-.8.8-2 1-3 .6-3.9-1.5-7-4.6-8.5-8.5-.4-1-.2-2.2.6-3z" fill="#111"/></svg>';
+const TEL_SVG='<svg class="wa" viewBox="0 0 32 32" aria-hidden="true"><path d="M9 4.5c.6-.6 1.6-.5 2.1.2l2.6 3.8c.4.6.3 1.4-.2 1.9l-1.7 1.7c1.3 3.1 3.8 5.6 6.9 6.9l1.7-1.7c.5-.5 1.3-.6 1.9-.2l3.8 2.6c.7.5.8 1.5.2 2.1l-2 2c-1.2 1.2-3 1.6-4.6 1-6.2-2.2-11.1-7.1-13.3-13.3-.6-1.6-.2-3.4 1-4.6z" fill="#111"/></svg>';
+function contactBlock(){return `<div class="p-contact">
+  <div class="pc-col"><span class="p-lab">Citas e informes</span><div class="pc-big">${TEL_SVG}(459) 100 0431</div><div class="pc-small">También: (443) 465 6645 · (459) 596 2268</div></div>
+  <div class="pc-col pc-wa"><span class="p-lab">Escríbanos por WhatsApp</span><div class="pc-big">${WA_SVG}(459) 134 55 29</div><div class="pc-small">Óptica, también WhatsApp: (459) 103 5121</div></div>
+ </div>
+ <div class="p-mini"><span><b>Paciente:</b> ${esc(RX.pac)}${RX.edad?` · ${esc(RX.edad)} años`:''}</span><span><b>Fecha:</b> ${fmtD(ISO(TODAY))}</span><span><b>Folio:</b> <span class="mono">${rxFolio()}</span></span><span class="dxs"><b>Dx:</b> ${esc(RX.dx)||'—'}</span></div>`}
+function citaTxt(){if(!RX.cita)return'—';let t=new Date(RX.cita+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});if(RX.hora!=null)t+=' · '+fmtH(RX.hora);return t.charAt(0).toUpperCase()+t.slice(1)}
 function head(){const d=DOCS[RX.med];return `<div class="p-head"><div class="p-iso" role="img" aria-label="Logo COE"></div><div class="p-brand">Centro Ocular Especializado<span>Oftalmología</span></div><div class="p-doc"><div class="nm">${esc(d.n)}</div><div class="es">Médico Oftalmólogo</div><div class="ce">${d.c}</div></div></div><hr class="p-rule"><hr class="p-rule thin">`}
 function qr(){let s=97,cells='';const N=21;
  const fin=(x,y)=>{for(const[a,b]of[[0,0],[14,0],[0,14]])if(x>=a&&x<a+7&&y>=b&&y<b+7){const dx=x-a,dy=y-b;return(dx===0||dx===6||dy===0||dy===6||(dx>=2&&dx<=4&&dy>=2&&dy<=4))?1:0}return -1};
@@ -826,8 +889,7 @@ function qr(){let s=97,cells='';const N=21;
  return `<div class="qrbox"><svg width="86" height="86" viewBox="-1 -1 23 23" fill="#000" style="background:#fff">${cells}</svg><div>Verifique esta receta<br><span class="mono">${rxFolio()}</span></div></div>`}
 function paperStd(){
  return `<div class="paper">${head()}
-  <div class="p-pat"><div><span class="p-lab">Paciente</span><span class="p-val">${esc(RX.pac)}</span></div><div><span class="p-lab">Edad</span><span class="p-val">${esc(RX.edad)} años</span></div><div><span class="p-lab">Fecha</span><span class="p-val">${fmtD('2026-10-11')}</span></div><div><span class="p-lab">Folio</span><span class="p-val mono" style="font-size:15px">${rxFolio()}</span></div></div>
-  <div class="p-dx"><span class="p-lab">Diagnóstico</span><span class="p-val">${esc(RX.dx)||'—'}</span></div>
+  ${contactBlock()}
   <div class="p-rp">Rp.</div>
   ${RX.meds.map((m,i)=>{const p=PROD.find(x=>x.id===m.pid);
    const dur=m.taper?'Reducir cada semana: <b>4 veces → 3 → 2 → 1 vez al día</b>, después suspender':(m.d?`Durante <b>${m.d} días</b>`:'<b>No suspender</b> hasta nueva indicación');
@@ -835,7 +897,7 @@ function paperStd(){
     <div class="how"><span class="p-eye">${EYE[m.eye]}</span><b>${m.dose} gota${m.dose>1?'s':''}</b>${m.taper?'':` <b>${FREQ[m.f]}</b>`}</div>
     <div class="how">${m.taper?'':`Horario: ${HOURS[m.f].join(' · ')}. `}${dur}.</div></div>`}).join('')}
   <div class="p-gen"><b>INDICACIONES:</b> Espere 5 minutos entre una gota y otra. No toque el ojo con la punta del gotero. Agite las suspensiones antes de usar. Lávese las manos antes de aplicar.</div>
-  <div class="p-foot"><div class="p-next"><span class="p-lab">Próxima cita</span><span class="p-val">${fmtD(RX.cita)}</span></div><div class="p-sign"><b>${esc(DOCS[RX.med].n)}</b><br>${DOCS[RX.med].c}</div>${qr()}</div>
+  <div class="p-foot"><div class="p-next"><span class="p-lab">Próxima cita</span><span class="p-val">${citaTxt()}</span></div><div class="p-sign"><b>${esc(DOCS[RX.med].n)}</b><br>${DOCS[RX.med].c}</div>${qr()}</div>
   <div class="p-addr">${esc(SEDES[RX.sede])}</div></div>`;
 }
 /* ===== ilustrada: una tarjeta por medicina, solo lo indispensable ===== */
@@ -854,13 +916,14 @@ function cal(n){return n?`<svg width="86" height="86" viewBox="0 0 96 96"><rect 
 function paperIl(){
  const n=RX.meds.length;
  return `<div class="paper">${head()}
+  ${contactBlock()}
   <div class="il-intro">Para el familiar: cada dibujo grande corresponde a la etiqueta pegada en el frasco. La cara muestra en qué ojo va la gota (círculo rojo). Las gotas azules dicen cuántas, y el dibujo de arriba, a qué hora del día.</div>
   ${RX.meds.map((m,i)=>{const f=m.taper?4:+m.f,sl=SLOTS[f];
    return `<div class="il-card"><div class="il-stk">${SYMS[i]}</div><div class="il-face">${face(m.eye)}</div>
     <div class="il-times">${sl.map(k=>`<div class="il-t">${ICON[k]}<div class="il-drops">${Array.from({length:m.dose},()=>drop).join('')}</div></div>`).join('')}</div>
     <div class="il-cal">${cal(m.taper?28:+m.d)}</div>
     <div class="il-fam">${esc(PROD.find(x=>x.id===m.pid).nm)} · ${EYE[m.eye].toLowerCase()} · ${m.dose} gota${m.dose>1?'s':''} ${m.taper?'— esta semana 4 veces; cada semana una vez menos (el familiar tacha un dibujo de hora cada lunes)':FREQ[f]+(f===6?' (también a medianoche y madrugada)':'')} · ${m.taper?'28 días':(+m.d?m.d+' días':'no suspender')}</div></div>`}).join('')}
-  <div class="p-foot" style="grid-template-columns:1fr auto"><div class="p-next"><span class="p-lab">Próxima cita</span><span class="p-val">${fmtD(RX.cita)}</span></div>${qr()}</div>
+  <div class="p-foot" style="grid-template-columns:1fr auto"><div class="p-next"><span class="p-lab">Próxima cita</span><span class="p-val">${citaTxt()}</span></div>${qr()}</div>
   <div class="p-addr">${esc(SEDES[RX.sede])}</div></div>`;
 }
 
@@ -874,7 +937,11 @@ function vAcc(){
  <h2 style="margin-top:22px">Usuarios</h2><div class="panel tbl"><table><thead><tr><th>Nombre</th><th>Perfil</th><th>Estado</th><th></th></tr></thead><tbody>
  ${USERS.map((u,i)=>`<tr><td><b>${esc(u.n)}</b><div class="note mono">${esc(u.u)}</div></td><td><select id="up${i}" data-up="${i}" ${u.dbid===ME?.id?'disabled':''}>${Object.entries(PERFILES).map(([k,t])=>`<option value="${k}" ${u.p===k?'selected':''}>${t}</option>`).join('')}</select></td><td>${u.a?chip(['ok','Activo']):chip(['mute','Baja'])}${u.dc?' '+chip(['warn','Contraseña temporal']):''}${u.dp?' '+chip(['info','PIN pendiente']):''}${u.ua?`<div class="note">Último acceso ${new Date(u.ua).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
   <td style="white-space:nowrap">${u.dbid===ME?.id?`<span class="chip c-info">Usted</span> <button class="btn sm" data-rn="${i}">Cambiar usuario</button> <button class="btn sm" data-rp="${i}">Nueva contraseña</button> <button class="btn sm" data-rpin="${i}">Nuevo PIN</button>`:`<button class="btn sm" data-as="${u.p}">Ver como</button> <button class="btn sm" data-rn="${i}">Cambiar usuario</button> <button class="btn sm" data-rp="${i}">Nueva contraseña</button> <button class="btn sm" data-rpin="${i}">Nuevo PIN</button> <button class="btn sm" data-ua="${i}">${u.a?'Dar de baja':'Reactivar'}</button>`}</td></tr>`).join('')}
- </tbody></table></div><div class="toolbar" style="margin-top:10px"><button class="btn" id="newUser">+ Nuevo usuario</button></div>`;
+ </tbody></table></div><div class="toolbar" style="margin-top:10px"><button class="btn" id="newUser">+ Nuevo usuario</button></div>
+ <h2 style="margin-top:22px">Agendas de Google Calendar</h2><p class="note">La receta agenda la próxima cita en estas agendas y oculta los horarios que estén ocupados o bloqueados en Google Calendar.</p>
+ <div class="panel tbl"><table><thead><tr><th>Agenda</th><th>Calendario de Google</th><th>Horario</th><th>Bloqueos</th><th></th></tr></thead><tbody>
+ ${CALS.map((c,i)=>`<tr><td><span class="seg2" style="background:none;padding:0"><span class="dot" style="background:${esc(c.color)}"></span></span><b>${esc(c.nombre)}</b>${c.activo?'':' '+chip(['mute','Inactiva'])}</td><td class="mono" style="font-size:12px">${esc(c.calendar_id)}</td><td>${esc((c.hora_inicio||'').slice(0,5))}–${esc((c.hora_fin||'').slice(0,5))} · ${c.duracion_min} min</td><td>${c.tiene_ical?chip(['ok','Conectada']):chip(['warn','Falta dirección iCal'])}</td><td><button class="btn sm" data-caled="${i}">Editar</button></td></tr>`).join('')||'<tr><td colspan="5" class="note">Sin agendas.</td></tr>'}
+ </tbody></table></div><div class="toolbar" style="margin-top:10px"><button class="btn" id="newCal">+ Agregar agenda</button></div>`;
 }
 function toast(t){document.querySelectorAll('.toastx').forEach(x=>x.remove());const d=document.createElement('div');d.className='toastx';d.textContent=t;d.style.cssText='position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;z-index:50;max-width:90vw;font-size:14px';document.body.appendChild(d);setTimeout(()=>d.remove(),3000)}
 async function addPedido(p,qty,prio){const items=(p?p.nm:($('#pNew')?.value||'Medicamento'))+' × '+qty,monto0=p?p.c*qty:qty*300,por0=ME?ME.nombre:PERFILES[eff()];if(sb){const d=await db(sb.from('far_pedidos').insert({producto_id:p?p.id:null,items,monto:monto0,prioridad:prio,solicitante:por0}).select().single(),'Pedido');if(!d)return;await logDb('pedido_creado',{folio:d.folio,items});await reload();toast(`Pedido ${d.folio} enviado a Finanzas.`);return}const n='PF-00'+(42+PEDIDOS.length-3);const monto=p?p.c*qty:qty*300;PEDIDOS.unshift({id:n,items:(p?p.nm:($('#pNew')?.value||'Medicamento'))+' × '+qty,monto,prio,est:0,por:{dir:'Director',dra:'Dra. Rivera',mos:'Mostrador',med:'Médico'}[eff()]||'Mostrador',fecha:ISO(TODAY)});toast(`Pedido ${n} enviado a Finanzas. Se avisó al mostrador y a Finanzas.`)}
@@ -899,7 +966,7 @@ function bind(){
  const te=$('#tplEdit');if(te)te.onclick=()=>{TPL_EDIT=!TPL_EDIT;render()};
  const st=$('#saveTpl');if(st)st.onclick=()=>tplDlg(null,true);
  const tn=$('#tplNew');if(tn)tn.onclick=()=>tplDlg(null,false);
- [['rxMed','med'],['rxSede','sede'],['rxPac','pac'],['rxEdad','edad'],['rxCita','cita'],['rxDx','dx']].forEach(([id,k])=>{const el=$('#'+id);if(el)el.onchange=()=>{RX[k]=el.value;render()}});
+ [['rxMed','med'],['rxSede','sede'],['rxPac','pac'],['rxEdad','edad'],['rxDx','dx']].forEach(([id,k])=>{const el=$('#'+id);if(el)el.onchange=()=>{RX[k]=el.value;render()}});
  M.querySelectorAll('[data-mf]').forEach(s=>s.onchange=()=>{RX.meds[+s.dataset.i][s.dataset.mf]=+s.value;render()});
  M.querySelectorAll('[data-eye]').forEach(b=>b.onclick=()=>{RX.meds[+b.dataset.eye].eye=b.dataset.e;render()});
  M.querySelectorAll('[data-taper]').forEach(c=>c.onchange=()=>{RX.meds[+c.dataset.taper].taper=c.checked?1:0;render()});
@@ -916,6 +983,8 @@ function bind(){
  M.querySelectorAll('[data-rn]').forEach(b=>b.onclick=()=>renameUser(USERS[+b.dataset.rn]));
  const sp=$('#savePerm');if(sp)sp.onclick=async()=>{if(!PERM_DIRTY.size)return;if(sb){if(!await askPin('Cambio de accesos por perfil'))return;for(const p of PERM_DIRTY){const d=await db(sb.from('far_permisos').upsert({perfil:p,permisos:PERMS[p],updated_at:new Date().toISOString()}),'Permisos');if(d===null)return}logDb('permisos',{perfiles:[...PERM_DIRTY]})}PERM_DIRTY.clear();toast('Accesos guardados y firmados.');render()};
  const nu=$('#newUser');if(nu)nu.onclick=newUserDlg;
+ M.querySelectorAll('[data-caled]').forEach(b=>b.onclick=()=>calDlg(CALS[+b.dataset.caled]));
+ const nc=$('#newCal');if(nc)nc.onclick=()=>calDlg(null);
  const sv=$('#saveRx');if(sv)sv.onclick=saveRx;
  M.querySelectorAll('[data-print]').forEach(b=>b.onclick=()=>printRx(b.dataset.print));
  const am=$('#addMed');if(am)am.onclick=()=>{if(RX.meds.length>=4){toast('Máximo 4 medicamentos para que la receta quepa en una hoja.');return}MODAL={add:1,q:''};render()};
@@ -926,7 +995,17 @@ function bind(){
  M.querySelectorAll('[data-firm]').forEach(b=>b.onclick=()=>{RX.med=b.dataset.firm;render()});
  M.querySelectorAll('[data-sede]').forEach(b=>b.onclick=()=>{RX.sede=b.dataset.sede;render()});
  M.querySelectorAll('[data-age]').forEach(b=>b.onclick=()=>{RX.edad=Math.max(0,(+RX.edad||0)+(+b.dataset.age));render()});
- M.querySelectorAll('[data-cita]').forEach(b=>b.onclick=()=>{RX.cita=addDays(+b.dataset.cita);render()});
+ const rc=$('#rxCita');if(rc)rc.onchange=()=>{RX.cita=rc.value;RX.hora=null;render()};
+ M.querySelectorAll('[data-cita]').forEach(b=>b.onclick=()=>{RX.cita=addDays(+b.dataset.cita);RX.hora=null;render()});
+ M.querySelectorAll('[data-cal]').forEach(b=>b.onclick=()=>{RX.cal=+b.dataset.cal;RX.hora=null;render();loadBusy()});
+ M.querySelectorAll('[data-hora]').forEach(b=>b.onclick=()=>{RX.hora=+b.dataset.hora;render()});
+ M.querySelectorAll('[data-motivo]').forEach(b=>b.onclick=()=>{RX.motivo=b.dataset.motivo;render()});
+ const rm=$('#rxMot');if(rm)rm.onchange=()=>{RX.motivo=rm.value.trim();render()};
+ const rt=$('#rxTel');if(rt)rt.onchange=()=>{RX.tel=rt.value.trim();render()};
+ const rp=$('#rxPromo');if(rp)rp.onchange=()=>{RX.promos=rp.checked;render()};
+ const gb=$('#gcalBtn');if(gb)gb.onclick=async()=>{if(!RX.pac.trim()){toast('Falta el nombre del paciente.');return}if(!RX.tel.trim()){toast('Escriba el teléfono del paciente.');$('#rxTel')?.focus();return}
+  if(rxFolio()==='SIN GUARDAR'&&sb&&!DEMO){await saveRx();if(rxFolio()==='SIN GUARDAR')return}
+  const u=gcalUrl();if(!u)return;const w=window.open(u,'_blank','noopener');if(!w)location.href=u;logDb('cita_agendada',{folio:RX.folio,calendario:RX.cal,inicio:slotDate(RX.cita,RX.hora).toISOString()});toast('Revise y pulse «Guardar» en Google Calendar.');setTimeout(()=>loadBusy(true),60000)};
  M.querySelectorAll('[data-dx]').forEach(b=>b.onclick=()=>{RX.dx=b.dataset.dx;render()});
  M.querySelectorAll('[data-dose]').forEach(b=>b.onclick=()=>{const[i,d]=b.dataset.dose.split(':');const m=RX.meds[+i];m.dose=Math.min(3,Math.max(1,m.dose+(+d)));render()});
  M.querySelectorAll('[data-fq]').forEach(b=>b.onclick=()=>{const[i,v]=b.dataset.fq.split(':');RX.meds[+i].f=+v;render()});
@@ -961,6 +1040,10 @@ async function reload(){try{await loadAll();const typing=MODAL||['INPUT','TEXTAR
 async function printRx(mode){
  if(rxFolio()==='SIN GUARDAR'){if(sb&&!DEMO){await saveRx();if(rxFolio()==='SIN GUARDAR')return}}
  const pa=$('#printArea');pa.innerHTML=(mode==='il'?'':paperStd())+(mode==='std'?'':paperIl());
+ // ajustar cada hoja para que quepa en una sola página carta
+ pa.style.cssText='display:block;position:absolute;left:-10000px;top:0;width:740px';
+ pa.querySelectorAll('.paper').forEach(p=>{p.style.cssText='width:740px;min-height:0;height:auto;padding:22px 34px 14px;box-shadow:none';const h=p.scrollHeight,max=930;p.dataset.fit=h>max?(max/h).toFixed(3):'1';p.style.cssText=''});
+ pa.style.cssText='';pa.querySelectorAll('.paper').forEach(p=>{if(p.dataset.fit!=='1')p.style.setProperty('--fit',p.dataset.fit)});
  logDb('receta_impresa',{folio:RX.folio,tipo:mode});
  setTimeout(()=>{window.print();},150);
 }
@@ -971,7 +1054,7 @@ async function saveRx(){
  if(!RX.meds.length){toast('Agregue al menos un medicamento.');return}
  if(!sb){RX.folio='DEMO-'+String(Date.now()).slice(-5);RX.saved=rxHash();toast('Modo demostración: la receta no se guardó en la base de datos.');render();return}
  const meds=RX.meds.map(m=>{const p=PROD.find(x=>x.id===m.pid);return{clave:p.cl,producto:p.nm,principio:p.pa,ojo:m.eye,gotas:m.dose,veces_dia:m.taper?null:m.f,dias:m.taper?28:m.d,reduccion:!!m.taper}});
- const d=await db(sb.from('rec_recetas').insert({paciente:RX.pac,edad:+RX.edad||null,diagnostico:RX.dx,medico:DOCS[RX.med].n,sede:RX.sede==='tac'?'Tacámbaro':'Morelia',proxima_cita:RX.cita||null,medicamentos:meds,creada_por:ME?ME.nombre:PERFILES[eff()]}).select().single(),'Receta');
+ const d=await db(sb.from('rec_recetas').insert({paciente:RX.pac,edad:+RX.edad||null,diagnostico:RX.dx,medico:DOCS[RX.med].n,sede:RX.sede==='tac'?'Tacámbaro':'Morelia',proxima_cita:RX.cita||null,telefono:RX.tel||null,motivo_cita:RX.motivo||null,cita_inicio:RX.hora!=null?slotDate(RX.cita,RX.hora).toISOString():null,cita_calendario:(CALS.find(c=>String(c.id)===String(RX.cal))||{}).nombre||null,acepta_promos:!!RX.promos,medicamentos:meds,creada_por:ME?ME.nombre:PERFILES[eff()]}).select().single(),'Receta');
  if(!d)return;RX.folio=d.folio;RX.saved=rxHash();RXHOY.unshift(d);logDb('receta_emitida',{folio:d.folio});toast(`Receta ${d.folio} guardada.`);render();
 }
 /* ===== sesión: usuario + contraseña, cierres 14:30 y 18:30 ===== */
@@ -999,7 +1082,7 @@ async function enter(sess){
 }
 let LOADED=false;
 async function startData(){
- try{await loadAll();LOADED=true;remap();setOnline(true,'En línea · sincronizado');renderTabs();render();
+ try{await loadAll();await loadCals();LOADED=true;remap();setOnline(true,'En línea · sincronizado');renderTabs();render();loadBusy(true);setInterval(()=>loadBusy(),5*60000);
   const ch=sb.channel('coe-farmacia');
   ['far_productos','far_lotes','far_pedidos','far_alertas_atendidas','far_permisos','far_usuarios','rec_recetas','rec_plantillas'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{clearTimeout(rlT);rlT=setTimeout(reload,500)}));
   ch.subscribe();
@@ -1053,6 +1136,21 @@ function paintLoginUsers(){const last=lsGet(LAST_KEY);const list=[...LOGIN_USERS
  if(last&&LOGIN_USERS.some(u=>u.usuario===last)&&!keep)chooseLogin(last);}
 function chooseLogin(us){const u=LOGIN_USERS.find(x=>x.usuario===us);$('#lgUser').value=us;$('#lgChosenName').innerHTML=u?`<b>${esc(u.nombre)}</b> <small class="mono">${esc(us)}</small>`:esc(us);$('#lgChosen').hidden=false;$('#lgPick').hidden=true;$('#lgUserWrap').hidden=true;lgErr('');setTimeout(()=>$('#lgPass').focus(),30)}
 $('#lgChange').onclick=()=>{$('#lgUser').value='';$('#lgChosen').hidden=true;$('#lgPick').hidden=false;$('#lgUserWrap').hidden=LOGIN_USERS.length>0;$('#lgPass').value=''};
+function calDlg(c){if(!sb){toast('Disponible solo con conexión.');return}
+ const col=['#1d5873','#7a3e9d','#2e7d32','#c0392b','#b8860b','#455a64'];
+ showMsg(c?'Editar agenda':'Agregar agenda',`<form id="calF">
+  <label for="cfN">Nombre que verán en la receta</label><input id="cfN" required value="${esc(c?c.nombre:'')}" placeholder="Ej. D. Visual">
+  <label for="cfC">Correo o ID del calendario de Google</label><input id="cfC" required value="${esc(c?c.calendar_id:'')}" placeholder="ejemplo@gmail.com" autocapitalize="none" spellcheck="false">
+  <label for="cfI">Dirección secreta en formato iCal ${c&&c.tiene_ical?'<span class="note">(ya configurada; deje vacío para conservarla)</span>':''}</label><input id="cfI" type="password" autocomplete="off" placeholder="https://calendar.google.com/calendar/ical/…/private-…/basic.ics">
+  <details class="note" style="margin-top:6px"><summary>¿Dónde la encuentro?</summary>En Google Calendar (computadora): Configuración → elija el calendario → «Integrar el calendario» → copie «Dirección secreta en formato iCal». Con ella la app ve los horarios ocupados y bloqueados, sin mostrar los nombres de las citas.</details>
+  <div class="row2" style="margin-top:6px"><div><label for="cfA">Abre</label><input id="cfA" type="time" value="${esc(c?(c.hora_inicio||'09:00').slice(0,5):'09:00')}"></div><div><label for="cfB">Cierra</label><input id="cfB" type="time" value="${esc(c?(c.hora_fin||'19:00').slice(0,5):'19:00')}"></div></div>
+  <label for="cfD">Duración de cada cita</label><select id="cfD">${[10,15,20,30,40,60].map(m=>`<option value="${m}" ${(c?c.duracion_min:20)===m?'selected':''}>${m} minutos</option>`).join('')}</select>
+  <span class="flabel">Color</span><div class="chips">${col.map(k=>`<label class="emo-opt" style="width:42px"><input type="radio" name="cfK" value="${k}" ${(c?c.color:col[0])===k?'checked':''}><span style="background:${k};height:30px"></span></label>`).join('')}</div>
+  <label class="chk"><input type="checkbox" id="cfAct" ${!c||c.activo?'checked':''}> Agenda activa</label>
+  <button class="btn pri" style="width:100%;margin-top:12px">Guardar agenda</button></form>`);
+ $('#calF').onsubmit=async e=>{e.preventDefault();const ical=$('#cfI').value.trim();if(ical&&!/^https:\/\/calendar\.google\.com\/calendar\/ical\//.test(ical)){toast('La dirección iCal debe empezar con https://calendar.google.com/calendar/ical/');return}
+  const r=await sb.rpc('far_guardar_calendario',{p_token:ME.token,p_id:c?c.id:null,p_nombre:$('#cfN').value.trim(),p_calendar_id:$('#cfC').value.trim(),p_ical_url:ical||null,p_color:(document.querySelector('input[name=cfK]:checked')||{}).value||null,p_duracion:+$('#cfD').value,p_inicio:$('#cfA').value,p_fin:$('#cfB').value,p_activo:$('#cfAct').checked});
+  if(r.error){toast(r.error.message);return}$('#msgOvl').hidden=true;toast('Agenda guardada.');await loadCals();BUSY_AT=0;loadBusy(true);render()}}
 async function resetPass(u){if(!sb||!u.dbid){toast('Disponible solo con conexión.');return}
  const self=u.dbid===ME.id;
  if(self){showMsg('Regenerar mi contraseña',`<p>Se generará una contraseña temporal nueva y se cerrará su sesión en todos los dispositivos. Al volver a entrar con ella, la app le pedirá elegir una propia.</p><div class="toolbar" style="justify-content:flex-end"><button class="btn" id="rsNo">Cancelar</button><button class="btn pri" id="rsYes">Regenerar</button></div>`);
@@ -1078,7 +1176,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610170823';
+const APP_VER='202610170925';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
