@@ -445,6 +445,23 @@ body.locked .shell{visibility:hidden}
 .p-mini{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:11.5px;color:#333;margin-top:8px;padding-bottom:6px;border-bottom:.75px solid #999}
 .p-mini .dxs{flex-basis:100%}
 .p-rp{margin-top:10px!important}
+.esq{background:var(--warn-soft);border-radius:10px;padding:8px 10px;display:grid;gap:6px}
+.esq-h{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.esq-t{display:grid;gap:4px}
+.esq-r{display:grid;grid-template-columns:minmax(0,.9fr) 84px minmax(0,1.6fr) 26px;gap:6px;align-items:center}
+.esq-hd{background:var(--ink);color:var(--surface);border-radius:6px;padding:5px 8px;font-size:12px;font-weight:600}
+.esq-r input,.esq-r select{padding:6px 8px;font-size:13.5px}
+.esq-d{display:flex;align-items:center;gap:3px}.esq-d input{width:50px}.esq-d small{font-size:12px;color:var(--muted)}
+.esq-p{display:grid;grid-template-columns:92px 1fr;gap:4px}
+.esq .lnk.sm{justify-self:start;margin:0}
+@media (max-width:520px){.esq-r{grid-template-columns:1fr 84px 26px}.esq-r>select{grid-column:1/3}.esq-hd span:nth-child(3){display:none}}
+.p-med>*:not(.n){grid-column:2}
+.p-esq{border-collapse:collapse;margin:4px 0 2px;font-size:18px;min-width:0;width:auto}
+.p-esq td{border:1.5px solid #111;padding:3px 10px;text-align:left;background:#fff;color:#111}
+.il-phs{display:grid;gap:4px}
+.il-ph{display:flex;align-items:center;gap:6px}
+.il-phn{width:70px;font-size:12px;font-weight:700;display:grid}.il-phn small{font-weight:400}
+.il-times.sm .il-t{padding:2px 2px 4px;max-width:62px}.il-times.sm svg{max-height:34px}
 body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 </style>
 
@@ -707,7 +724,12 @@ const DX=['Catarata senil OD','Catarata senil OI','Postoperatorio de facoemulsif
 const FREQ={1:'una vez al día',2:'cada 12 horas',3:'cada 8 horas',4:'cada 6 horas',6:'cada 4 horas'};
 const HOURS={1:['8 am'],2:['8 am','8 pm'],3:['6 am','2 pm','10 pm'],4:['8 am','2 pm','8 pm','2 am'],6:['7 am','11 am','3 pm','7 pm','11 pm','3 am']};
 const SYMS=['★','●','▲','■','♥','◆'];
-const M_=(clave,ojo,gotas,veces,dias,reduccion)=>({clave,ojo,gotas,veces,dias,reduccion:!!reduccion});
+const M_=(clave,ojo,gotas,veces,dias,reduccion,fases)=>({clave,ojo,gotas,veces,dias,reduccion:!!reduccion,...(reduccion?{fases:fases||defFases(gotas||1)}:{})});
+function defFases(g){return [[6],[4],[3],[2]].map(([f],k)=>({n:'Semana '+(k+1),d:7,g:g||1,f}))}
+const fasesOf=m=>(m.fases&&m.fases.length?m.fases:defFases(m.dose||m.gotas||1));
+const fasePos=ph=>`${ph.g} gota${ph.g>1?'s':''} ${FREQ[ph.f]}`;
+const fasesDias=m=>fasesOf(m).reduce((a,ph)=>a+(+ph.d||0),0);
+const FASE_FQ=[[6,'cada 4 horas'],[4,'cada 6 horas'],[3,'cada 8 horas'],[2,'cada 12 horas'],[1,'una vez al día']];
 let TPLS=[
  {id:'l1',nombre:'Postop. catarata',icono:'👁️',dx:'Postoperatorio de facoemulsificación',meds:[M_('008400003218','OD',1,4,7),M_('736085400489','OD',1,4,28,1),M_('736085410600','OD',1,2,21)]},
  {id:'l2',nombre:'Conjuntivitis bacteriana',icono:'🦠',dx:'Conjuntivitis bacteriana',meds:[M_('8699525610119','AO',1,4,7),M_('0300651507966','AO',1,4,14)]},
@@ -716,10 +738,10 @@ let TPLS=[
 ];
 const EMOJIS=['👁️','🦠','🎯','💧','🩹','💊','🔥','🤧','🌸','⚡','🩸','🧪','🔬','🛡️','❄️','🌿','☀️','🌙','🧒','👴','⭐','🔴','🟢','🔵'];
 let TPL_EDIT=false,TPL_DB=false;
-const rxHash=()=>JSON.stringify([RX.pac,RX.edad,RX.dx,RX.med,RX.sede,RX.cita,RX.hora,RX.cal,RX.tel,RX.motivo,RX.promos,RX.meds.map(m=>[m.pid,m.eye,m.dose,m.f,m.d,m.taper])]);
+const rxHash=()=>JSON.stringify([RX.pac,RX.edad,RX.dx,RX.med,RX.sede,RX.cita,RX.hora,RX.cal,RX.tel,RX.motivo,RX.promos,RX.meds.map(m=>[m.pid,m.eye,m.dose,m.f,m.d,m.taper,m.taper?fasesOf(m):0])]);
 const rxFolio=()=>RX.folio&&RX.saved===rxHash()?RX.folio:'SIN GUARDAR';
 let RX={hora:null,cal:null,tel:'',motivo:'Subsecuente',promos:false,folio:null,saved:null,pac:'María Guadalupe Hernández Ruiz',edad:72,dx:'',med:'vil',sede:'tac',cita:'2026-10-18',meds:[],view:'std'};
-function tplMeds(t){const miss=[];const meds=t.meds.map(m=>{const p=PROD.find(x=>x.cl===m.clave);if(!p){miss.push(m.clave);return null}return{pid:p.id,eye:m.ojo,dose:m.gotas,f:m.veces||2,d:m.dias||0,taper:m.reduccion?1:0}}).filter(Boolean);return{meds,miss}}
+function tplMeds(t){const miss=[];const meds=t.meds.map(m=>{const p=PROD.find(x=>x.cl===m.clave);if(!p){miss.push(m.clave);return null}return{pid:p.id,eye:m.ojo,dose:m.gotas,f:m.veces||2,d:m.dias||0,taper:m.reduccion?1:0,...(m.reduccion?{fases:JSON.parse(JSON.stringify(m.fases||defFases(m.gotas)))}:{})}}).filter(Boolean);return{meds,miss}}
 function loadTpl(id,quiet){const t=TPLS.find(x=>String(x.id)===String(id));if(!t)return;const{meds,miss}=tplMeds(t);RX.dx=t.dx||RX.dx;RX.meds=meds;if(!quiet){toast(miss.length?`Plantilla cargada. ${miss.length} medicamento(s) ya no están en el catálogo.`:`Plantilla «${t.nombre}» cargada.`);render()}}
 loadTpl('l1',true);
 
@@ -765,8 +787,11 @@ function vRx(){
     <div class="mc-h"><span class="num">${i+1}</span><div class="mc-n"><b>${esc(p.nm)}</b><small>${esc(p.pa&&p.pa!=='—'?p.pa:GRUPOS[p.g])} · ${chip(stockState(p))}</small></div><button class="btn sm" data-chg="${i}">Cambiar</button><button class="icon-btn" data-del="${i}" aria-label="Quitar ${esc(p.nm)}">✕</button></div>
     <div class="mc-row"><span class="lbl">Ojo</span><div class="seg2">${['OD','OI','AO'].map(e=>`<button data-e="${e}" data-eye="${i}" aria-pressed="${m.eye===e}"><b>${e}</b><small>${{OD:'Derecho',OI:'Izquierdo',AO:'Ambos'}[e]}</small></button>`).join('')}</div></div>
     <div class="mc-row"><span class="lbl">Dosis</span><div class="stepper"><button data-dose="${i}:-1" aria-label="Menos gotas">−</button><span>${m.dose} gota${m.dose>1?'s':''}</span><button data-dose="${i}:1" aria-label="Más gotas">+</button></div>
-     <label class="sw"><input type="checkbox" id="mr${i}" data-taper="${i}" ${m.taper?'checked':''}><span class="tr"></span>Reducción semanal</label></div>
-    ${m.taper?`<div class="mc-row"><span class="lbl"></span><span class="note">4 veces → 3 → 2 → 1 vez al día, una semana cada una.</span></div>`:`<div class="mc-row"><span class="lbl">Cada</span><div class="chips">${[[1,'24 h'],[2,'12 h'],[3,'8 h'],[4,'6 h'],[6,'4 h']].map(([k,t])=>`<button data-fq="${i}:${k}" aria-pressed="${m.f==k}">${t}</button>`).join('')}</div></div>
+     <label class="sw"><input type="checkbox" id="mr${i}" data-taper="${i}" ${m.taper?'checked':''}><span class="tr"></span>Esquema decreciente</label></div>
+    ${m.taper?`<div class="esq"><div class="esq-h">📉 Esquema decreciente <span class="note">· ${fasesDias(m)} días en total</span></div>
+     <div class="esq-t"><div class="esq-r esq-hd"><span>Fase</span><span>Duración</span><span>Posología</span><span></span></div>
+     ${fasesOf(m).map((ph,k)=>`<div class="esq-r"><input type="text" id="fn${i}_${k}" data-fx="${i}:${k}:n" value="${esc(ph.n)}" aria-label="Fase ${k+1}"><span class="esq-d"><input type="number" id="fd${i}_${k}" data-fx="${i}:${k}:d" value="${ph.d}" min="1" max="90" aria-label="Días fase ${k+1}"><small>días</small></span><select id="fp${i}_${k}" data-fx="${i}:${k}:p" aria-label="Posología fase ${k+1}">${[1,2].flatMap(g=>FASE_FQ.map(([f,t])=>`<option value="${g}:${f}" ${ph.g==g&&ph.f==f?'selected':''}>${g} gota${g>1?'s':''} ${t}</option>`)).join('')}</select><button type="button" class="icon-btn" data-fdel="${i}:${k}" aria-label="Quitar fase ${k+1}">✕</button></div>`).join('')}</div>
+     <button type="button" class="lnk sm" data-fadd="${i}">+ Agregar fase</button></div>`:`<div class="mc-row"><span class="lbl">Cada</span><div class="chips">${[[1,'24 h'],[2,'12 h'],[3,'8 h'],[4,'6 h'],[6,'4 h']].map(([k,t])=>`<button data-fq="${i}:${k}" aria-pressed="${m.f==k}">${t}</button>`).join('')}</div></div>
     <div class="mc-row"><span class="lbl">Días</span><div class="chips">${[[5,'5'],[7,'7'],[14,'14'],[21,'21'],[28,'28'],[0,'Continuo']].map(([k,t])=>`<button data-du="${i}:${k}" aria-pressed="${m.d==k}">${t}</button>`).join('')}</div></div>`}
     ${h?`<div class="hint ${h.k}"><span>${h.t}</span>${h.btn?`<button class="btn sm pri" data-chg="${i}">${h.btn}</button>`:''}${h.ped?`<button class="btn sm" data-pedp="${p.id}">Pedir a Finanzas</button>`:''}</div>`:''}
    </div>`}).join('')}
@@ -776,11 +801,11 @@ function vRx(){
   </fieldset></section>
   <section style="min-width:0">
    <div class="toolbar"><div class="seg"><button aria-pressed="${RX.view==='std'}" data-view="std">Receta</button><button aria-pressed="${RX.view==='il'}" data-view="il">Receta ilustrada</button></div>
-    <span class="note">Vista previa tamaño carta.</span><span class="spacer"></span>${rxFolio()==="SIN GUARDAR"?`<button class="btn pri" id="saveRx">Guardar receta</button>`:`<span class="chip c-ok">Guardada · ${RX.folio}</span>`}<div class="printbar"><span class="note">Imprimir:</span><button type="button" class="btn pri" data-print="std">🖨️ Receta</button><button type="button" class="btn" data-print="il">🖨️ Ilustrada</button><button type="button" class="btn" data-print="both">🖨️ Ambas</button></div></div>
+    <span class="note">Vista previa tamaño carta.</span><span class="spacer"></span>${rxFolio()==="SIN GUARDAR"?`<button class="btn pri" id="saveRx">Guardar receta</button>`:`<span class="chip c-ok">Guardada · ${RX.folio}</span>`}<div class="printbar"><span class="note">Imprimir:</span><button type="button" class="btn pri" data-print="std">🖨️ Receta</button><button type="button" class="btn" data-print="il">🖨️ Ilustrada</button><button type="button" class="btn" data-print="both">🖨️ Ambas</button><button type="button" class="btn" id="copyRx">📋 Copiar receta</button></div></div>
    <div class="paperwrap">${RX.view==='std'?paperStd():paperIl()}</div>
   </section></div>${vModal()}`;
 }
-function curMedsAsTpl(){return RX.meds.map(m=>{const p=PROD.find(x=>x.id===m.pid);return M_(p.cl,m.eye,m.dose,m.f,m.d,m.taper)})}
+function curMedsAsTpl(){return RX.meds.map(m=>{const p=PROD.find(x=>x.id===m.pid);return M_(p.cl,m.eye,m.dose,m.f,m.d,m.taper,m.taper?JSON.parse(JSON.stringify(fasesOf(m))):null)})}
 let TED=null;
 const VECES=[[1,'24 h'],[2,'12 h'],[3,'8 h'],[4,'6 h'],[6,'4 h']],DIAS=[[5,'5 días'],[7,'7 días'],[10,'10 días'],[14,'14 días'],[21,'21 días'],[28,'28 días'],[0,'Continuo']];
 function tplDlg(id,fromRx){const t=id?TPLS.find(x=>String(x.id)===String(id)):null;
@@ -799,14 +824,14 @@ function renderTED(){const b=$('#tedBox');if(!b||!TED)return;const opts=PROD.fil
    <select data-tm="clave" data-i="${i}" aria-label="Medicamento ${i+1}" class="ted-prod">${opts.replace(`value="${esc(m.clave)}"`,`value="${esc(m.clave)}" selected`)}</select>
    ${sel([['OD','OD · derecho'],['OI','OI · izquierdo'],['AO','AO · ambos']],m.ojo,'ojo',i)}
    ${sel([[1,'1 gota'],[2,'2 gotas'],[3,'3 gotas']],m.gotas,'gotas',i)}
-   ${m.reduccion?'<span class="note ted-red">4→3→2→1 al día</span>':sel(VECES,m.veces,'veces',i)+sel(DIAS,m.dias,'dias',i)}
+   ${m.reduccion?`<span class="note ted-red">Esquema decreciente · ${(m.fases||defFases(m.gotas)).length} fases</span>`:sel(VECES,m.veces,'veces',i)+sel(DIAS,m.dias,'dias',i)}
    <label class="chk ted-chk"><input type="checkbox" data-tm="reduccion" data-i="${i}" ${m.reduccion?'checked':''}> Reducción</label>
    <button type="button" class="icon-btn" data-tmdel="${i}" aria-label="Quitar medicamento ${i+1}">✕</button></div>`).join('')}</div>
   <button type="button" class="addmed" id="tedAdd">+ Agregar medicamento</button>
   <div class="toolbar" style="justify-content:flex-end;margin-top:12px"><button type="button" class="btn" id="tedCancel">Cancelar</button><button class="btn pri">${TED.id?'Guardar cambios':'Guardar plantilla'}</button></div></form>`;
  const keep=()=>{TED.nombre=$('#tpN').value;TED.dx=$('#tpD').value;const e=document.querySelector('input[name=tpE]:checked');if(e)TED.icono=e.value};
  b.querySelectorAll('[data-tm]').forEach(el=>el.onchange=()=>{keep();const m=TED.meds[+el.dataset.i],k=el.dataset.tm;
-  if(k==='reduccion'){m.reduccion=el.checked;if(el.checked){m.veces=4;m.dias=28}}else if(k==='clave'||k==='ojo')m[k]=el.value;else m[k]=+el.value;renderTED()});
+  if(k==='reduccion'){m.reduccion=el.checked;if(el.checked&&!(m.fases&&m.fases.length))m.fases=defFases(m.gotas)}else if(k==='clave'||k==='ojo')m[k]=el.value;else m[k]=+el.value;renderTED()});
  b.querySelectorAll('[data-tmdel]').forEach(el=>el.onclick=()=>{keep();TED.meds.splice(+el.dataset.tmdel,1);renderTED()});
  $('#tedAdd').onclick=()=>{keep();if(TED.meds.length>=6){toast('Máximo 6 medicamentos por plantilla.');return}TED.meds.push(M_((PROD.find(p=>RXABLE(p)&&p.cat==='col')||PROD.find(RXABLE)).cl,'AO',1,4,7));renderTED()};
  $('#tedCancel').onclick=()=>{$('#msgOvl').hidden=true;TED=null};
@@ -892,10 +917,10 @@ function paperStd(){
   ${contactBlock()}
   <div class="p-rp">Rp.</div>
   ${RX.meds.map((m,i)=>{const p=PROD.find(x=>x.id===m.pid);
-   const dur=m.taper?'Reducir cada semana: <b>4 veces → 3 → 2 → 1 vez al día</b>, después suspender':(m.d?`Durante <b>${m.d} días</b>`:'<b>No suspender</b> hasta nueva indicación');
+   const dur=m.taper?'':(m.d?`Durante <b>${m.d} días</b>`:'<b>No suspender</b> hasta nueva indicación');
    return `<div class="p-med"><div class="n">${i+1}</div><div class="nm">${esc(p.nm)} ${p.pa&&p.pa!=='—'?`<small>(${esc(p.pa)})</small>`:''}</div>
-    <div class="how"><span class="p-eye">${EYE[m.eye]}</span><b>${m.dose} gota${m.dose>1?'s':''}</b>${m.taper?'':` <b>${FREQ[m.f]}</b>`}</div>
-    <div class="how">${m.taper?'':`Horario: ${HOURS[m.f].join(' · ')}. `}${dur}.</div></div>`}).join('')}
+    <div class="how"><span class="p-eye">${EYE[m.eye]}</span>${m.taper?'<b>Esquema decreciente</b>':`<b>${m.dose} gota${m.dose>1?'s':''}</b> <b>${FREQ[m.f]}</b>`}</div>
+    ${m.taper?`<table class="p-esq">${fasesOf(m).map(ph=>`<tr><td>${esc(ph.n)}</td><td>${ph.d} días</td><td><b>${fasePos(ph)}</b></td></tr>`).join('')}</table><div class="how" style="font-size:16px">Después suspender. Total ${fasesDias(m)} días.</div>`:`<div class="how">Horario: ${HOURS[m.f].join(' · ')}. ${dur}.</div>`}</div>`}).join('')}
   <div class="p-gen"><b>INDICACIONES:</b> Espere 5 minutos entre una gota y otra. No toque el ojo con la punta del gotero. Agite las suspensiones antes de usar. Lávese las manos antes de aplicar.</div>
   <div class="p-foot"><div class="p-next"><span class="p-lab">Próxima cita</span><span class="p-val">${citaTxt()}</span></div><div class="p-sign"><b>${esc(DOCS[RX.med].n)}</b><br>${DOCS[RX.med].c}</div>${qr()}</div>
   <div class="p-addr">${esc(SEDES[RX.sede])}</div></div>`;
@@ -918,11 +943,12 @@ function paperIl(){
  return `<div class="paper">${head()}
   ${contactBlock()}
   <div class="il-intro">Para el familiar: cada dibujo grande corresponde a la etiqueta pegada en el frasco. La cara muestra en qué ojo va la gota (círculo rojo). Las gotas azules dicen cuántas, y el dibujo de arriba, a qué hora del día.</div>
-  ${RX.meds.map((m,i)=>{const f=m.taper?4:+m.f,sl=SLOTS[f];
+  ${RX.meds.map((m,i)=>{const f=+m.f,sl=SLOTS[f];const dropsN=n=>Array.from({length:n},()=>drop).join('');
    return `<div class="il-card"><div class="il-stk">${SYMS[i]}</div><div class="il-face">${face(m.eye)}</div>
-    <div class="il-times">${sl.map(k=>`<div class="il-t">${ICON[k]}<div class="il-drops">${Array.from({length:m.dose},()=>drop).join('')}</div></div>`).join('')}</div>
-    <div class="il-cal">${cal(m.taper?28:+m.d)}</div>
-    <div class="il-fam">${esc(PROD.find(x=>x.id===m.pid).nm)} · ${EYE[m.eye].toLowerCase()} · ${m.dose} gota${m.dose>1?'s':''} ${m.taper?'— esta semana 4 veces; cada semana una vez menos (el familiar tacha un dibujo de hora cada lunes)':FREQ[f]+(f===6?' (también a medianoche y madrugada)':'')} · ${m.taper?'28 días':(+m.d?m.d+' días':'no suspender')}</div></div>`}).join('')}
+    ${m.taper?`<div class="il-phs">${fasesOf(m).map(ph=>`<div class="il-ph"><span class="il-phn">${esc(ph.n)}<small>${ph.d} días</small></span><div class="il-times sm">${SLOTS[ph.f].map(k=>`<div class="il-t">${ICON[k]}<div class="il-drops">${dropsN(ph.g)}</div></div>`).join('')}</div></div>`).join('')}</div>`
+     :`<div class="il-times">${sl.map(k=>`<div class="il-t">${ICON[k]}<div class="il-drops">${dropsN(m.dose)}</div></div>`).join('')}</div>`}
+    <div class="il-cal">${cal(m.taper?fasesDias(m):+m.d)}</div>
+    <div class="il-fam">${esc(PROD.find(x=>x.id===m.pid).nm)} · ${EYE[m.eye].toLowerCase()} · ${m.taper?'esquema decreciente: '+fasesOf(m).map(ph=>`${ph.n} ${fasePos(ph)}`).join('; '):`${m.dose} gota${m.dose>1?'s':''} ${FREQ[f]}${f===6?' (también a medianoche y madrugada)':''}`} · ${m.taper?fasesDias(m)+' días':(+m.d?m.d+' días':'no suspender')}</div></div>`}).join('')}
   <div class="p-foot" style="grid-template-columns:1fr auto"><div class="p-next"><span class="p-lab">Próxima cita</span><span class="p-val">${citaTxt()}</span></div>${qr()}</div>
   <div class="p-addr">${esc(SEDES[RX.sede])}</div></div>`;
 }
@@ -969,7 +995,10 @@ function bind(){
  [['rxMed','med'],['rxSede','sede'],['rxPac','pac'],['rxEdad','edad'],['rxDx','dx']].forEach(([id,k])=>{const el=$('#'+id);if(el)el.onchange=()=>{RX[k]=el.value;render()}});
  M.querySelectorAll('[data-mf]').forEach(s=>s.onchange=()=>{RX.meds[+s.dataset.i][s.dataset.mf]=+s.value;render()});
  M.querySelectorAll('[data-eye]').forEach(b=>b.onclick=()=>{RX.meds[+b.dataset.eye].eye=b.dataset.e;render()});
- M.querySelectorAll('[data-taper]').forEach(c=>c.onchange=()=>{RX.meds[+c.dataset.taper].taper=c.checked?1:0;render()});
+ M.querySelectorAll('[data-taper]').forEach(c=>c.onchange=()=>{const m=RX.meds[+c.dataset.taper];m.taper=c.checked?1:0;if(m.taper&&!(m.fases&&m.fases.length))m.fases=defFases(m.dose);render()});
+ M.querySelectorAll('[data-fx]').forEach(el=>el.onchange=()=>{const[i,k,f]=el.dataset.fx.split(':');const m=RX.meds[+i];m.fases=fasesOf(m).map(x=>({...x}));const ph=m.fases[+k];if(f==='p'){const[g,q]=el.value.split(':');ph.g=+g;ph.f=+q}else ph[f]=f==='n'?el.value:Math.max(1,+el.value||1);render()});
+ M.querySelectorAll('[data-fdel]').forEach(b=>b.onclick=()=>{const[i,k]=b.dataset.fdel.split(':');const m=RX.meds[+i];m.fases=fasesOf(m).filter((_,x)=>x!==+k);if(!m.fases.length){m.taper=0;delete m.fases}render()});
+ M.querySelectorAll('[data-fadd]').forEach(b=>b.onclick=()=>{const m=RX.meds[+b.dataset.fadd];m.fases=fasesOf(m).map(x=>({...x}));const last=m.fases[m.fases.length-1]||{g:1,f:2,d:7};if(m.fases.length>=8){toast('Máximo 8 fases.');return}m.fases.push({n:'Semana '+(m.fases.length+1),d:last.d,g:last.g,f:last.f===2?1:last.f});render()});
  M.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{RX.meds.splice(+b.dataset.del,1);render()});
  M.querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>{const[i,pid]=b.dataset.sub.split(':');RX.meds[+i].pid=+pid;toast('Medicamento sustituido. La decisión queda registrada con su usuario.');render()});
  M.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{RX.view=b.dataset.view;render()});
@@ -987,6 +1016,7 @@ function bind(){
  const nc=$('#newCal');if(nc)nc.onclick=()=>calDlg(null);
  const sv=$('#saveRx');if(sv)sv.onclick=saveRx;
  M.querySelectorAll('[data-print]').forEach(b=>b.onclick=()=>printRx(b.dataset.print));
+ const cr=$('#copyRx');if(cr)cr.onclick=copyRx;
  const am=$('#addMed');if(am)am.onclick=()=>{if(RX.meds.length>=4){toast('Máximo 4 medicamentos para que la receta quepa en una hoja.');return}MODAL={add:1,q:''};render()};
  M.querySelectorAll('[data-chg]').forEach(b=>b.onclick=()=>{MODAL={i:+b.dataset.chg,q:''};render()});
  M.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{const pid=+b.dataset.pick,nm=PROD.find(x=>x.id===pid).nm;if(MODAL.add){RX.meds.push({pid,eye:'AO',dose:1,f:2,d:7,taper:0});toast(nm+' agregado.')}else{RX.meds[MODAL.i].pid=pid;toast('Cambiado a '+nm+'. Queda registrado con su usuario.')}MODAL=null;render()});
@@ -1037,6 +1067,18 @@ function remap(){const byCl=Object.fromEntries(PROD.map(p=>[p.cl,p.id]));const f
  CONTEO=Object.fromEntries(PROD.map(p=>[p.id,sistema(p)]));JUST={};}
 let rlT=null;
 async function reload(){try{await loadAll();const typing=MODAL||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName);if(typing)renderStrip();else render()}catch(e){setOnline(false,'Reconectando…')}}
+function rxText(){const d=DOCS[RX.med];const L=[];
+ L.push('CENTRO OCULAR ESPECIALIZADO · Oftalmología');L.push(`${d.n} · ${d.c}`);L.push('');
+ L.push(`Paciente: ${RX.pac}${RX.edad?` (${RX.edad} años)`:''}`);L.push(`Fecha: ${fmtD(ISO(TODAY))} · Folio: ${rxFolio()}`);L.push(`Diagnóstico: ${RX.dx||'—'}`);L.push('');L.push('Rp.');
+ RX.meds.forEach((m,i)=>{const p=PROD.find(x=>x.id===m.pid);const nm=`${i+1}. ${p.nm}${p.pa&&p.pa!=='—'?` (${p.pa})`:''} — ${EYE[m.eye]}`;
+  if(m.taper){L.push(nm+', esquema decreciente:');fasesOf(m).forEach(ph=>L.push(`   • ${ph.n} (${ph.d} días): ${fasePos(ph)}`));L.push(`   Después suspender. Total ${fasesDias(m)} días.`)}
+  else L.push(`${nm}: ${m.dose} gota${m.dose>1?'s':''} ${FREQ[m.f]} (${HOURS[m.f].join(' · ')}), ${m.d?`durante ${m.d} días`:'no suspender hasta nueva indicación'}.`)});
+ L.push('');L.push('Indicaciones: espere 5 minutos entre una gota y otra; no toque el ojo con la punta del gotero; agite las suspensiones antes de usar; lávese las manos antes de aplicar.');
+ L.push(`Próxima cita: ${citaTxt()}`);L.push('');L.push('Citas e informes: (459) 100 0431 · WhatsApp: (459) 134 55 29');return L.join('\n')}
+async function copyRx(){const t=rxText();try{await navigator.clipboard.writeText(t);toast('Receta copiada. Péguela en WhatsApp, correo o el expediente.')}
+ catch(e){const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;left:-9999px';document.body.appendChild(ta);ta.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}ta.remove();
+  if(ok)toast('Receta copiada.');else showMsg('Copiar receta',`<textarea id="cpT" rows="14" style="width:100%;font-family:var(--f-mono);font-size:12px">${esc(t)}</textarea><p class="note">Seleccione todo y copie.</p>`)}
+ logDb('receta_copiada',{folio:RX.folio})}
 async function printRx(mode){
  if(rxFolio()==='SIN GUARDAR'){if(sb&&!DEMO){await saveRx();if(rxFolio()==='SIN GUARDAR')return}}
  const pa=$('#printArea');pa.innerHTML=(mode==='il'?'':paperStd())+(mode==='std'?'':paperIl());
@@ -1053,7 +1095,7 @@ async function saveRx(){
  if(!RX.pac.trim()){toast('Falta el nombre del paciente.');return}
  if(!RX.meds.length){toast('Agregue al menos un medicamento.');return}
  if(!sb){RX.folio='DEMO-'+String(Date.now()).slice(-5);RX.saved=rxHash();toast('Modo demostración: la receta no se guardó en la base de datos.');render();return}
- const meds=RX.meds.map(m=>{const p=PROD.find(x=>x.id===m.pid);return{clave:p.cl,producto:p.nm,principio:p.pa,ojo:m.eye,gotas:m.dose,veces_dia:m.taper?null:m.f,dias:m.taper?28:m.d,reduccion:!!m.taper}});
+ const meds=RX.meds.map(m=>{const p=PROD.find(x=>x.id===m.pid);return{clave:p.cl,producto:p.nm,principio:p.pa,ojo:m.eye,gotas:m.dose,veces_dia:m.taper?null:m.f,dias:m.taper?fasesDias(m):m.d,reduccion:!!m.taper,...(m.taper?{fases:fasesOf(m)}:{})}});
  const d=await db(sb.from('rec_recetas').insert({paciente:RX.pac,edad:+RX.edad||null,diagnostico:RX.dx,medico:DOCS[RX.med].n,sede:RX.sede==='tac'?'Tacámbaro':'Morelia',proxima_cita:RX.cita||null,telefono:RX.tel||null,motivo_cita:RX.motivo||null,cita_inicio:RX.hora!=null?slotDate(RX.cita,RX.hora).toISOString():null,cita_calendario:(CALS.find(c=>String(c.id)===String(RX.cal))||{}).nombre||null,acepta_promos:!!RX.promos,medicamentos:meds,creada_por:ME?ME.nombre:PERFILES[eff()]}).select().single(),'Receta');
  if(!d)return;RX.folio=d.folio;RX.saved=rxHash();RXHOY.unshift(d);logDb('receta_emitida',{folio:d.folio});toast(`Receta ${d.folio} guardada.`);render();
 }
@@ -1176,7 +1218,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610170925';
+const APP_VER='202610171033';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
