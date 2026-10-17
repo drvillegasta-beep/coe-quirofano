@@ -416,6 +416,15 @@ body.locked .shell{visibility:hidden}
 .ted-chk{margin:0!important;font-size:12.5px;white-space:nowrap}
 #tedAdd{margin-top:8px}
 @media (max-width:720px){.ted-top{grid-template-columns:1fr}.ted-row{display:flex;flex-wrap:wrap}.ted-row>select{flex:1 1 30%;min-width:0}.ted-row .ted-prod{flex:1 1 calc(100% - 70px)}.ted-row .num{order:-2}.ted-row .icon-btn{order:-1;margin-left:auto}.ted-red{flex:1 1 60%}}
+.lgusers{display:grid;gap:6px;max-height:300px;overflow-y:auto;margin:4px 0 6px}
+.lguser{display:flex;align-items:center;gap:10px;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 10px;color:var(--ink)}
+.lguser:hover{border-color:var(--accent);background:var(--accent-soft)}
+.lguser.last{border-color:var(--accent)}
+.lguser .av{width:34px;height:34px;border-radius:50%;background:var(--accent);color:var(--surface);display:grid;place-items:center;font-weight:600;flex:none}
+.lguser span{display:grid;min-width:0}
+.lguser small{color:var(--muted);font-size:12px}
+.lgchosen{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--accent-soft);border-radius:10px;padding:10px 12px;margin:6px 0 2px}
+.lgchosen small{color:var(--muted)}
 body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 </style>
 
@@ -439,10 +448,12 @@ body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 
 <div id="printArea" aria-hidden="true"></div>
 <div class="login" id="login">
- <form class="lcard" id="loginForm" autocomplete="on">
+ <form class="lcard" id="loginForm" autocomplete="on" novalidate>
   <div class="liso"></div>
   <h1>COE Farmacia</h1><p class="lsub">Centro Ocular Especializado</p>
-  <label for="lgUser">Usuario</label><input id="lgUser" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+  <div id="lgPick"><span class="flabel">¿Quién entra?</span><div class="lgusers" id="lgUsers"><p class="note">Cargando usuarios…</p></div></div>
+  <div id="lgChosen" class="lgchosen" hidden><span id="lgChosenName"></span><button type="button" class="lnk" id="lgChange">Cambiar</button></div>
+  <div id="lgUserWrap"><label for="lgUser">Usuario</label><input id="lgUser" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
   <label for="lgPass">Contraseña</label><input id="lgPass" name="password" type="password" autocomplete="current-password" required>
   <p class="lerr" id="lgErr" hidden></p>
   <button class="btn pri" id="lgBtn" type="submit">Entrar</button>
@@ -862,7 +873,7 @@ function vAcc(){
  <div class="toolbar" style="justify-content:flex-end;margin-top:12px"><button class="btn pri" id="savePerm" ${PERM_DIRTY.size?'':'disabled'}>${PERM_DIRTY.size?'Guardar cambios con PIN':'Sin cambios por guardar'}</button></div>
  <h2 style="margin-top:22px">Usuarios</h2><div class="panel tbl"><table><thead><tr><th>Nombre</th><th>Perfil</th><th>Estado</th><th></th></tr></thead><tbody>
  ${USERS.map((u,i)=>`<tr><td><b>${esc(u.n)}</b><div class="note mono">${esc(u.u)}</div></td><td><select id="up${i}" data-up="${i}" ${u.dbid===ME?.id?'disabled':''}>${Object.entries(PERFILES).map(([k,t])=>`<option value="${k}" ${u.p===k?'selected':''}>${t}</option>`).join('')}</select></td><td>${u.a?chip(['ok','Activo']):chip(['mute','Baja'])}${u.dc?' '+chip(['warn','Contraseña temporal']):''}${u.dp?' '+chip(['info','PIN pendiente']):''}${u.ua?`<div class="note">Último acceso ${new Date(u.ua).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
-  <td style="white-space:nowrap">${u.dbid===ME?.id?'<span class="note">Usted</span>':`<button class="btn sm" data-as="${u.p}">Ver como</button> <button class="btn sm" data-rp="${i}">Nueva contraseña</button> <button class="btn sm" data-rpin="${i}">Nuevo PIN</button> <button class="btn sm" data-ua="${i}">${u.a?'Dar de baja':'Reactivar'}</button>`}</td></tr>`).join('')}
+  <td style="white-space:nowrap">${u.dbid===ME?.id?`<span class="chip c-info">Usted</span> <button class="btn sm" data-rn="${i}">Cambiar usuario</button> <button class="btn sm" data-rp="${i}">Nueva contraseña</button> <button class="btn sm" data-rpin="${i}">Nuevo PIN</button>`:`<button class="btn sm" data-as="${u.p}">Ver como</button> <button class="btn sm" data-rn="${i}">Cambiar usuario</button> <button class="btn sm" data-rp="${i}">Nueva contraseña</button> <button class="btn sm" data-rpin="${i}">Nuevo PIN</button> <button class="btn sm" data-ua="${i}">${u.a?'Dar de baja':'Reactivar'}</button>`}</td></tr>`).join('')}
  </tbody></table></div><div class="toolbar" style="margin-top:10px"><button class="btn" id="newUser">+ Nuevo usuario</button></div>`;
 }
 function toast(t){document.querySelectorAll('.toastx').forEach(x=>x.remove());const d=document.createElement('div');d.className='toastx';d.textContent=t;d.style.cssText='position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;z-index:50;max-width:90vw;font-size:14px';document.body.appendChild(d);setTimeout(()=>d.remove(),3000)}
@@ -901,7 +912,8 @@ function bind(){
  M.querySelectorAll('[data-ua]').forEach(b=>b.onclick=()=>{const u=USERS[+b.dataset.ua];u.a=u.a?0:1;if(sb&&u.dbid)db(sb.from('far_usuarios').update({activo:!!u.a}).eq('id',u.dbid),'Usuario');toast(`${u.n}: ${u.a?'reactivado':'dado de baja'}.`);render()});
  const ab=$('#asBack');if(ab)ab.onclick=()=>{viewAs=null;tab='acc';renderTabs();render()};
  M.querySelectorAll('[data-rp]').forEach(b=>b.onclick=()=>resetPass(USERS[+b.dataset.rp]));
- M.querySelectorAll('[data-rpin]').forEach(b=>b.onclick=async()=>{const u=USERS[+b.dataset.rpin];if(!sb||!u.dbid){toast('Disponible solo con conexión.');return}const r=await sb.rpc('far_reset_pin',{p_token:ME.token,p_usuario_id:u.dbid});if(r.error){toast(r.error.message);return}toast(u.n+': deberá crear un PIN nuevo al entrar.');reload()});
+ M.querySelectorAll('[data-rpin]').forEach(b=>b.onclick=async()=>{const u=USERS[+b.dataset.rpin];if(!sb||!u.dbid){toast('Disponible solo con conexión.');return}const r=await sb.rpc('far_reset_pin',{p_token:ME.token,p_usuario_id:u.dbid});if(r.error){toast(r.error.message);return}if(u.dbid===ME.id){ME.debe_pin=true;sSet(ME);openPin(true);return}toast(u.n+': deberá crear un PIN nuevo al entrar.');reload()});
+ M.querySelectorAll('[data-rn]').forEach(b=>b.onclick=()=>renameUser(USERS[+b.dataset.rn]));
  const sp=$('#savePerm');if(sp)sp.onclick=async()=>{if(!PERM_DIRTY.size)return;if(sb){if(!await askPin('Cambio de accesos por perfil'))return;for(const p of PERM_DIRTY){const d=await db(sb.from('far_permisos').upsert({perfil:p,permisos:PERMS[p],updated_at:new Date().toISOString()}),'Permisos');if(d===null)return}logDb('permisos',{perfiles:[...PERM_DIRTY]})}PERM_DIRTY.clear();toast('Accesos guardados y firmados.');render()};
  const nu=$('#newUser');if(nu)nu.onclick=newUserDlg;
  const sv=$('#saveRx');if(sv)sv.onclick=saveRx;
@@ -978,7 +990,7 @@ function tick(){if(!ME)return;const left=new Date(ME.expira)-Date.now();
  const w=$('#meClose');if(w){w.classList.toggle('soon',left<10*60000);if(left<10*60000)w.textContent='Se cierra en '+Math.ceil(left/60000)+' min'}}
 async function logout(msg){const t=ME&&ME.token;ME=null;sSet(null);clearInterval(closeT);viewAs=null;MODAL=null;
  if(sb&&t){try{await sb.rpc('far_logout',{p_token:t})}catch(e){}}
- $('#login').hidden=false;$('#lgPass').value='';lgErr(msg||'');document.body.classList.add('locked');setTimeout(()=>$('#lgUser').focus(),50)}
+ $('#login').hidden=false;$('#lgPass').value='';$('#lgUser').value='';lgErr(msg||'');document.body.classList.add('locked');loadLoginUsers()}
 async function enter(sess){
  ME=sess;sSet(sess);role=sess.perfil;viewAs=null;tab='dash';
  $('#login').hidden=true;document.body.classList.remove('locked');paintMe();clearInterval(closeT);closeT=setInterval(tick,20000);tick();
@@ -1002,9 +1014,9 @@ $('#pwForm').onsubmit=async e=>{e.preventDefault();const er=$('#pwErr'),a=$('#pw
  const r=await sb.rpc('far_cambiar_pass',{p_token:ME.token,p_actual:a,p_nueva:n});
  if(r.error)return bad(r.error.message);if(!r.data)return bad('La contraseña actual no es correcta.');
  ME.debe_cambiar=false;sSet(ME);$('#pwOvl').hidden=true;toast('Contraseña actualizada.');reload();nextStep()};
-$('#loginForm').onsubmit=async e=>{e.preventDefault();lgErr('');const u=$('#lgUser').value.trim(),p=$('#lgPass').value;if(!sb){lgErr('Sin conexión con el servidor.');return}
+$('#loginForm').onsubmit=async e=>{e.preventDefault();lgErr('');const u=$('#lgUser').value.trim(),p=$('#lgPass').value;if(!u){lgErr('Elija quién entra.');return}if(!p){lgErr('Escriba su contraseña.');$('#lgPass').focus();return}if(!sb){lgErr('Sin conexión con el servidor.');return}
  const b=$('#lgBtn');b.disabled=true;b.textContent='Entrando…';
- try{const r=await sb.rpc('far_login',{p_usuario:u,p_pass:p});if(r.error)throw r.error;if(!r.data){lgErr('Usuario o contraseña incorrectos.');$('#lgPass').select();return}await enter(r.data)}
+ try{const r=await sb.rpc('far_login',{p_usuario:u,p_pass:p});if(r.error)throw r.error;if(!r.data){lgErr('Contraseña incorrecta. Si la olvidó, pida al Director una nueva.');$('#lgPass').select();return}lsSet(LAST_KEY,r.data.usuario);await enter(r.data)}
  catch(err){lgErr('No se pudo entrar: '+(err.message||'sin conexión')+'.')}
  finally{b.disabled=false;b.textContent='Entrar'}};
 $('#lgDemo').onclick=()=>{DEMO=true;sb=null;setOnline(false,'Modo demostración');enter({id:0,nombre:'Demostración',perfil:'dir',token:null,expira:nextCut().toISOString(),debe_cambiar:false})};
@@ -1026,7 +1038,28 @@ $('#signX').onclick=()=>{$('#signOvl').hidden=true;signRes&&signRes(false);signR
 $('#signForm').onsubmit=async e=>{e.preventDefault();const r=await sb.rpc('far_verificar_pin',{p_token:ME.token,p_pin:$('#signPin').value,p_motivo:$('#signSub').textContent});
  if(r.error||!r.data){const er=$('#signErr');er.textContent='PIN incorrecto.';er.hidden=false;$('#signPin').select();return}
  $('#signOvl').hidden=true;signRes&&signRes(true);signRes=null};
+function renameUser(u){if(!sb||!u.dbid){toast('Disponible solo con conexión.');return}
+ showMsg('Cambiar usuario',`<form id="rnF"><p class="note">${esc(u.n)}</p><label for="rnU">Nuevo usuario</label><input id="rnU" required autocapitalize="none" spellcheck="false" value="${esc(u.u)}" pattern="[A-Za-z0-9._-]{3,30}"><p class="note">De 3 a 30 letras o números, sin espacios ni acentos. La contraseña y el PIN no cambian.</p><button class="btn pri" style="width:100%;margin-top:8px">Guardar</button></form>`);
+ $('#rnF').onsubmit=async e=>{e.preventDefault();const nv=$('#rnU').value.trim().toLowerCase();const r=await sb.rpc('far_renombrar_usuario',{p_token:ME.token,p_usuario_id:u.dbid,p_usuario:nv});if(r.error){toast(r.error.message);return}
+  if(u.dbid===ME.id){ME.usuario=nv;sSet(ME);lsSet(LAST_KEY,nv)}$('#msgOvl').hidden=true;toast('Usuario cambiado a '+nv+'.');reload()}}
+const LAST_KEY='coe_farmacia_ultimo';
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}},lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+let LOGIN_USERS=[];
+async function loadLoginUsers(){if(!sb)return;try{const r=await sb.from('far_usuarios').select('nombre,usuario,perfil').eq('activo',true).order('nombre');if(r.error)throw r.error;LOGIN_USERS=r.data||[];paintLoginUsers()}catch(e){$('#lgPick').hidden=true}}
+function paintLoginUsers(){const last=lsGet(LAST_KEY);const list=[...LOGIN_USERS].sort((a,b)=>(b.usuario===last)-(a.usuario===last));
+ $('#lgUsers').innerHTML=list.length?list.map(u=>`<button type="button" class="lguser${u.usuario===last?' last':''}" data-lgu="${esc(u.usuario)}"><span class="av">${esc((u.nombre||'?').replace(/^(Dr|Dra)\.?\s+/i,'').charAt(0))}</span><span><b>${esc(u.nombre)}</b><small>${esc(PERFILES[u.perfil]||u.perfil)}</small></span></button>`).join(''):'<p class="note">Escriba su usuario abajo.</p>';
+ $('#lgUsers').querySelectorAll('[data-lgu]').forEach(b=>b.onclick=()=>chooseLogin(b.dataset.lgu));
+ const keep=$('#lgUser').value;$('#lgUserWrap').hidden=list.length>0&&!keep;
+ if(last&&LOGIN_USERS.some(u=>u.usuario===last)&&!keep)chooseLogin(last);}
+function chooseLogin(us){const u=LOGIN_USERS.find(x=>x.usuario===us);$('#lgUser').value=us;$('#lgChosenName').innerHTML=u?`<b>${esc(u.nombre)}</b> <small class="mono">${esc(us)}</small>`:esc(us);$('#lgChosen').hidden=false;$('#lgPick').hidden=true;$('#lgUserWrap').hidden=true;lgErr('');setTimeout(()=>$('#lgPass').focus(),30)}
+$('#lgChange').onclick=()=>{$('#lgUser').value='';$('#lgChosen').hidden=true;$('#lgPick').hidden=false;$('#lgUserWrap').hidden=LOGIN_USERS.length>0;$('#lgPass').value=''};
 async function resetPass(u){if(!sb||!u.dbid){toast('Disponible solo con conexión.');return}
+ const self=u.dbid===ME.id;
+ if(self){showMsg('Regenerar mi contraseña',`<p>Se generará una contraseña temporal nueva y se cerrará su sesión en todos los dispositivos. Al volver a entrar con ella, la app le pedirá elegir una propia.</p><div class="toolbar" style="justify-content:flex-end"><button class="btn" id="rsNo">Cancelar</button><button class="btn pri" id="rsYes">Regenerar</button></div>`);
+  $('#rsNo').onclick=()=>{$('#msgOvl').hidden=true};
+  $('#rsYes').onclick=async()=>{if(!await askPin('Regenerar mi contraseña'))return;const r=await sb.rpc('far_reset_pass',{p_token:ME.token,p_usuario_id:u.dbid});if(r.error){toast(r.error.message);return}
+   showMsg('Su contraseña temporal',`<p>Usuario <span class="mono">${esc(u.u)}</span></p><p class="tmp mono">${esc(r.data)}</p><p class="note">Anótela antes de continuar. No se vuelve a mostrar.</p><button class="btn pri" id="rsGo" style="width:100%;margin-top:8px">Entrar con la nueva contraseña</button>`);
+   $('#rsGo').onclick=()=>{$('#msgOvl').hidden=true;logout('Entre con su contraseña temporal.')}};return}
  const r=await sb.rpc('far_reset_pass',{p_token:ME.token,p_usuario_id:u.dbid});if(r.error){toast(r.error.message);return}
  showMsg('Nueva contraseña temporal',`<p><b>${esc(u.n)}</b> · usuario <span class="mono">${esc(u.u)}</span></p><p class="tmp mono">${esc(r.data)}</p><p class="note">Entréguela en persona. Se le pedirá cambiarla al entrar. Esta contraseña no se vuelve a mostrar.</p>`);reload()}
 function newUserDlg(){if(!sb){toast('Disponible solo con conexión.');return}
@@ -1042,10 +1075,10 @@ async function boot(){
  catch(e){sb=null;DEMO=true;$('#lgDemo').hidden=false;lgErr('Sin conexión con el servidor.');setTimeout(()=>$('#lgUser').focus(),50);return}
  const st=sGet();
  if(st&&st.token&&new Date(st.expira)>new Date()){try{const r=await sb.rpc('far_sesion',{p_token:st.token});if(r.data){await enter(r.data);return}}catch(e){}}
- sSet(null);setTimeout(()=>$('#lgUser').focus(),50);
+ sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610131042';
+const APP_VER='202610170823';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
