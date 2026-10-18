@@ -395,13 +395,14 @@ body.locked .shell{visibility:hidden}
 
 .printbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%;margin-top:6px}
 #printArea{display:none}
-@page{size:letter;margin:12mm 10mm}
+@page{size:letter portrait;margin:0.45in 0.5in}
 @media print{
- html,body{background:#fff!important;padding:0!important;margin:0!important}
+ html,body{background:#fff!important;padding:0!important;margin:0!important;height:auto!important;min-height:0!important}
  body>*:not(#printArea){display:none!important}
  #printArea{display:block!important}
- #printArea .paper{zoom:var(--fit,1)!important;width:740px;min-height:0;height:auto;margin:0 auto;padding:22px 34px 14px;box-shadow:none;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
- #printArea .paper:last-child{page-break-after:auto;break-after:auto}
+ #printArea .pbox{width:720px;height:920px;overflow:hidden;margin:0 auto;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid}
+ #printArea .pbox:last-child{page-break-after:auto;break-after:auto}
+ #printArea .paper{box-shadow:none;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 .verbar{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:80;background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;display:flex;gap:10px;align-items:center;font-size:14px;box-shadow:var(--shadow)}
 .sec-act{display:flex;gap:6px;order:2}
@@ -1082,10 +1083,14 @@ async function copyRx(){const t=rxText();try{await navigator.clipboard.writeText
 async function printRx(mode){
  if(rxFolio()==='SIN GUARDAR'){if(sb&&!DEMO){await saveRx();if(rxFolio()==='SIN GUARDAR')return}}
  const pa=$('#printArea');pa.innerHTML=(mode==='il'?'':paperStd())+(mode==='std'?'':paperIl());
- // ajustar cada hoja para que quepa en una sola página carta
- pa.style.cssText='display:block;position:absolute;left:-10000px;top:0;width:740px';
- pa.querySelectorAll('.paper').forEach(p=>{p.style.cssText='width:740px;min-height:0;height:auto;padding:22px 34px 14px;box-shadow:none';const h=p.scrollHeight,max=930;p.dataset.fit=h>max?(max/h).toFixed(3):'1';p.style.cssText=''});
- pa.style.cssText='';pa.querySelectorAll('.paper').forEach(p=>{if(p.dataset.fit!=='1')p.style.setProperty('--fit',p.dataset.fit)});
+ // Cada hoja va en una caja fija de 7.5 × 9.6 pulgadas (cabe en carta aun con márgenes de 0.5"); si el contenido es más alto, se escala para caber.
+ const W=720,H=920;
+ pa.innerHTML=[...pa.querySelectorAll('.paper')].map(p=>`<div class="pbox">${p.outerHTML}</div>`).join('');
+ pa.style.cssText=`display:block;position:absolute;left:-10000px;top:0;width:${W}px`;
+ pa.querySelectorAll('.pbox').forEach(b=>{const p=b.querySelector('.paper');let sc=1;
+  for(let k=0;k<3;k++){p.style.cssText=`width:${W/sc}px;min-height:0;height:auto;margin:0;padding:22px 30px 12px;box-shadow:none;zoom:1`;const h=p.scrollHeight;const n=Math.min(1,H/h);if(Math.abs(n-sc)<0.005)break;sc=n}
+  p.style.cssText=`width:${W/sc}px;min-height:0;height:${H/sc}px;margin:0;padding:22px 30px 12px;box-shadow:none;zoom:1;transform:scale(${sc});transform-origin:0 0`});
+ pa.style.cssText='';
  logDb('receta_impresa',{folio:RX.folio,tipo:mode});
  setTimeout(()=>{window.print();},150);
 }
@@ -1218,7 +1223,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610171033';
+const APP_VER='202610172207';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
