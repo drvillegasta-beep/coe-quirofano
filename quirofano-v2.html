@@ -157,9 +157,9 @@ nav button.on b{color:var(--pr)}
 .banner.rojo{background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo)}.banner.amar{background:var(--amar2);color:var(--amar);border:1px solid var(--amar)}
 .banner b{color:inherit}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:12px}
-.tile{text-align:left;background:var(--card);border:1px solid var(--linea);border-left:5px solid var(--linea);border-radius:12px;padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-height:96px}
-.tile b{font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums}.tile span{font-weight:600}.tile small{color:var(--gris);font-size:12px}
-.tile.t-rojo{border-left-color:var(--rojo)}.tile.t-rojo b{color:var(--rojo)}.tile.t-amar{border-left-color:var(--amar)}.tile.t-amar b{color:var(--amar)}
+.tile{position:relative;text-align:left;background:linear-gradient(160deg,var(--card2),var(--card) 70%);border:1px solid var(--linea);border-radius:16px;padding:14px 16px 12px;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-height:112px;color:var(--ink);transition:border-color .15s,transform .15s}.tile:hover{border-color:var(--gris);transform:translateY(-1px)}
+.tile b{font-size:30px;line-height:1.05;font-variant-numeric:tabular-nums;color:var(--ink)}.tile span{font-weight:600}.tile .tl{font-size:13px;color:var(--gris);font-weight:500;padding-right:70px}.tile small{color:var(--gris);font-size:12px}.tile em{position:absolute;top:12px;right:12px;font-style:normal;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;color:var(--verde);background:var(--verde2)}
+.tile.t-rojo{border-color:var(--linea)}.tile.t-rojo em{color:var(--rojo);background:var(--rojo2)}.tile.t-amar em{color:var(--amar);background:var(--amar2)}
 .dash2{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px;align-items:start}
 @media(max-width:860px){.dash2{grid-template-columns:1fr}}
 .calnav{display:flex;align-items:center;gap:8px;text-transform:capitalize}
@@ -178,7 +178,7 @@ nav button.on b{color:var(--pr)}
 .invrow .grow{min-width:150px}.invrow .d{flex:0 0 44px;text-align:center;border:1px solid var(--linea);border-radius:8px;padding:3px 0;line-height:1.1}.invrow .d b{display:block;font-size:17px}.invrow .d span{font-size:11px;color:var(--gris)}
 .invrow.no_realizado .d,.invrow.hoy .d{border-color:var(--rojo);color:var(--rojo)}.invrow.realizado{opacity:.7}
 .critsec{margin-bottom:16px}.critsec-h{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-radius:12px;background:var(--card);border:1px solid var(--linea);border-left:6px solid var(--gris)}
-.critsec-h b{font-size:16px}.c-critico .critsec-h{border-left-color:var(--rojo)}.c-moderado .critsec-h{border-left-color:var(--amar)}.c-no_critico .critsec-h{border-left-color:var(--verde)}
+.critsec-h b{font-size:16px}.c-critico .critsec-h{border-left-color:var(--pr)}.c-moderado .critsec-h{border-left-color:var(--amar)}.c-no_critico .critsec-h{border-left-color:var(--linea)}
 .sec-t{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--gris);margin:16px 0 6px;font-weight:700}
 @page{size:letter;margin:12mm}
 @media print{
@@ -214,6 +214,30 @@ nav{overflow-x:auto;scrollbar-width:none}nav::-webkit-scrollbar{display:none}nav
 .dchips{display:flex;gap:6px;margin:6px 0}.dchips button{flex:1;border:1px solid var(--linea);background:var(--card2);color:var(--ink);border-radius:8px;padding:8px 0;font-weight:700}.dchips button.on{background:var(--pr);color:var(--on-pr);border-color:var(--pr)}
 @media (max-width:900px){.qbar{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom));z-index:5;display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--linea);border-radius:14px;padding:10px 12px;margin-top:8px;box-shadow:0 -4px 18px rgba(0,0,0,.35)}.qbar b{flex:1;font-size:18px}}
 @media (min-width:901px){.qbar{display:none}}
+.navsep{flex:0 0 1px;min-width:1px;background:var(--linea);margin:12px 4px}
+.dgrp{margin-bottom:14px}.dgrp-h{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris);font-weight:600;margin:4px 2px 8px}
+.acc{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 12px}.acc .btn{flex:1 1 140px}
+.prio{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}.prio .card{max-height:420px;overflow:auto}
+.ph3{display:flex;align-items:center;gap:8px;margin-bottom:6px}.ph3 h3{margin:0;flex:1}.ph3 .cnt{font-family:var(--mo);font-size:20px;color:var(--ink)}
+details.card>summary{cursor:pointer;list-style:none;padding:2px 0}details.card>summary::-webkit-details-marker{display:none}details.card>summary::before{content:'▸ ';color:var(--gris)}details.card[open]>summary::before{content:'▾ '}
+.t-r{color:var(--rojo);font-weight:600}.t-a{color:var(--amar);font-weight:600}
+input.inl{width:72px;display:inline-block;padding:3px 6px;min-height:0;margin:0 2px}
+.etg img{width:90px;height:90px}.etq .etl{font-size:9px;line-height:1.25;margin-top:3px}.gav.flash{outline:2px solid var(--pr)}
+.lnk{background:none;border:0;color:var(--gris);text-decoration:underline;width:100%;margin-top:8px;padding:6px;font-size:13px;cursor:pointer}
+.pick.qk{cursor:default}
+.hind .hind-f{font-size:22px;text-align:center;margin:4px 0 12px}.hind-s h4{font-size:20px;margin:10px 0 4px;border-bottom:2px solid #000}.hind-s ul{font-size:17px;line-height:1.45;margin:0;padding-left:22px}
+.pind ul{font-size:18px;line-height:1.5;padding-left:20px}
+.pq{break-after:page;page-break-after:always;font-size:11px;color:#000}.pq:last-child{break-after:auto;page-break-after:auto}
+.pq table{width:100%;border-collapse:collapse;margin-top:4px}.pq td,.pq th{border:1px solid #999;padding:3px 6px;vertical-align:top;text-align:left;font-size:11px}.pq th{background:#f0f0f0}
+.pq h4{margin:8px 0 2px;font-size:12px}.pq p{margin:6px 0;line-height:1.45;text-align:justify}
+.pq-h{display:flex;align-items:center;gap:10px;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:6px}.pq-h img{height:46px}.pq-c{flex:1;font-size:10px}.pq-t{text-align:right;font-weight:700;font-size:13px}.pq-t small{display:block;font-weight:400;font-size:10px}
+.pq-pac td{font-size:10.5px}.pq-n td:first-child{width:28%;font-weight:600;background:#fafafa}.ln{border-bottom:1px solid #aaa;height:17px}
+.pq-fi{display:flex;gap:24px;margin-top:26px}.pq-fi>div{flex:1;text-align:center;font-size:10px}.pq-fi .fl{border-top:1px solid #000;margin-bottom:3px}
+.pq-f{margin-top:12px;font-size:9px;color:#555;border-top:1px solid #ccc;padding-top:3px}
+.pq-3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.pq-3>div{border:1px solid #999;padding:6px;font-size:10.5px;line-height:1.5}.pq-3 h4{margin:0 0 4px}.pq-3 small{font-weight:400}
+.vit td,.vit th{height:18px;text-align:center;font-size:10px;padding:1px}.vit td:first-child{text-align:left;white-space:nowrap}
+.pq-big{font-size:15px}.pq-big ul{line-height:1.6}
+nav .badge{background:var(--card3)!important;color:var(--ink);border:1px solid var(--linea)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -260,7 +284,7 @@ function csv(rows,name){const s=rows.map(r=>r.map(c=>'"'+String(c??'').replace(/
 const S={user:null,sede:null,tab:'inicio',calMes:hoyISO().slice(0,7),escal:[],sub:{},fecha:hoyISO(),
   sedes:[],ubic:[],esp:[],mat:[],lotes:[],lios:[],paq:[],paqItems:[],cx:[],cxItems:[],tanques:[],lect:[],conteos:[],evid:[],msj:[],precios:[],cots:[],config:{},prov:[],pedidos:[],usuarios:[],carroRev:[]};
 const ROLES={director:'Dirección General',direccion:'Dirección',enfermeria:'Enfermería quirófano',contabilidad:'Contabilidad / Administración',consultorio:'Consultorio (asistentes y médicos)'};
-const MODULOS=[['inicio','Inicio (tablero)'],['agenda','Agenda quirúrgica'],['cotizar','Cotizar'],['inventario','Inventario de quirófano'],['carro','Carro rojo'],['lio','Lentes intraoculares'],['mensajes','Pacientes y mensajes'],['alertas','Alertas y pedidos'],['tanques','Tanques'],['mas','Reportes, catálogo y paquetes']];
+const MODULOS=[['inicio','Inicio (tablero)'],['agenda','Agenda quirúrgica'],['cotizar','Cotizar'],['inventario','Inventario de quirófano'],['carro','Carro rojo'],['lio','Stock de LIO'],['alertas','Alertas y pedidos'],['tanques','Tanques'],['mas','Reportes, catálogo y paquetes']];
 const PERMISOS=[['cotizar','Elaborar cotizaciones'],['programar','Programar cirugías y capturar pagos'],['validar','Validar pagos (Contabilidad)'],['inventario','Entradas, salidas y conteos'],['aprobar','Aprobar conteos y autorizar excepciones'],['descuento','Autorizar descuentos mayores al máximo'],['precios','Precios y vigencias'],['catalogo','Catálogo de materiales y paquetes'],['pedir','Pedidos a COE Finanzas'],['usuarios','Usuarios y accesos'],['config','Configuración']];
 const TODOS_MOD=MODULOS.map(x=>x[0]);
 const ROL_DEF={
@@ -322,7 +346,7 @@ async function loadAll(){
   try{await syncMensajes();await cargarMensajes()}catch(e){console.error('mensajes',e)}
   S.pedidos=await sb.from('fin_pedidos').select('id,folio,area,sede,descripcion,partidas,urgente,estado,solicitado_at,autorizado_at,enviado_at,recibido_at,notas,created_at').eq('area','Quirófano').order('created_at',{ascending:false}).limit(80).then(r=>r.data||[]);
   if(!S.sede||!sedeById(S.sede)){const pref=safeLS('qx_sede');S.sede=(sedeById(pref)?pref:null)||(S.sedes.find(s=>s.nombre.startsWith('Tac'))||S.sedes[0]||{}).id}
-  try{await escalarInventarios()}catch(e){console.error('escalar',e)}
+  try{await escalarInventarios();await escalarExtra()}catch(e){console.error('escalar',e)}
 }
 let reloadT=null;
 function scheduleReload(){clearTimeout(reloadT);reloadT=setTimeout(async()=>{try{await loadAll();if(!document.querySelector('.modal'))render();else renderBadge()}catch(e){}},800)}
@@ -344,7 +368,7 @@ function semaforo(m){
   else if(st-dem<=num(m.stock_minimo))nivel='agotarse';
   return {st,dem,nivel,proy:st-dem}
 }
-const NIV={critico:['p-rojo','Nivel crítico'],minimo:['p-amar','En mínimo'],agotarse:['p-morado','Por agotarse'],ok:['p-verde','Suficiente']};
+const NIV={critico:['p-amar','Nivel crítico'],minimo:['p-amar','En mínimo'],agotarse:['p-morado','Por agotarse'],ok:['p-verde','Suficiente']};
 function alertasMat(){return matsQX().map(m=>({m,...semaforo(m)})).filter(x=>x.nivel!=='ok').sort((a,b)=>(CRIT_ORD.indexOf(critOf(a.m))-CRIT_ORD.indexOf(critOf(b.m)))||(['critico','minimo','agotarse'].indexOf(a.nivel)-['critico','minimo','agotarse'].indexOf(b.nivel)))}
 function lecturaUlt(tid){return S.lect.find(l=>l.tanque_id===tid)}
 function nivelTanque(t){const l=lecturaUlt(t.id);if(!l)return 'sin';const p=num(l.presion);return p<=num(t.presion_critica)?'critico':p<=num(t.presion_alerta)?'minimo':'ok'}
@@ -372,9 +396,9 @@ function finCx(c){
   if(total===0&&(c.checklist||{}).cortesia){liq=true;est='Cortesía autorizada';cls='p-morado'}
   else if(liq){est='Liquidado';cls='p-verde'}
   else if(pag>0&&pag>=min){est='Anticipo · saldo '+money(saldo);cls='p-amar'}
-  else if(pag>0){est='Anticipo insuficiente';cls='p-rojo'}
+  else if(pag>0){est='Anticipo insuficiente';cls='p-amar'}
   else if(c.sin_anticipo_autorizado_por){est='Sin anticipo (autorizado)';cls='p-morado'}
-  else{est='Sin pago';cls='p-rojo'}
+  else{est='Sin pago';cls='p-amar'}
   return {pag,total,saldo,liq,min,est,cls,ev}
 }
 function powerMatch(l,r){
@@ -395,6 +419,7 @@ function readiness(c){
     {k:'validado',t:'Pagos validados por Contabilidad',ok:(()=>{const ps=f.ev.filter(e=>['anticipo','abono','liquidacion','reembolso'].includes(e.tipo));return ps.length?ps.every(e=>e.validado_at):!!c.sin_anticipo_autorizado_por})(),grupo:'pago'},
     {k:'consentimiento',t:'Consentimiento informado firmado',ok:evidCx(c.id,'consentimiento').length>0,grupo:'seg'},
     {k:'valoracion',t:'Valoración preoperatoria / laboratorios',ok:evidCx(c.id,'valoracion').length>0||!!ck.valoracion_na,grupo:'seg'},
+    {k:'indicaciones',t:'Indicaciones pre y postoperatorias entregadas',ok:!!ck.indicaciones,grupo:'seg'},
     {k:'confirmacion',t:'Confirmación con paciente (24–48 h, ayuno e indicaciones)',ok:!!ck.confirmacion,grupo:'seg'}];
   if(req)it.push(
     {k:'biometria',t:'Biometría / cálculo de LIO adjunto',ok:evidCx(c.id,'biometria').length>0,grupo:'lio'},
@@ -542,7 +567,7 @@ async function iniciar(){
 }
 
 /* ---------- estructura ---------- */
-const TABS=[['inicio','','Inicio'],['agenda','📅','Agenda'],['cotizar','🧾','Cotizar'],['inventario','📦','Inventario'],['carro','','Carro rojo'],['lio','👁','LIO'],['mensajes','💬','Pacientes'],['alertas','⚠️','Alertas'],['tanques','🫧','Tanques'],['mas','☰','Más']];
+const TABS=[['inicio','','Inicio'],['agenda','📅','Agenda'],['cotizar','🧾','Cotizar'],['inventario','📦','Inventario'],['carro','','Carro rojo'],['lio','👁','Stock LIO'],['tanques','🫧','Tanques'],['alertas','⚠️','Alertas'],['mas','☰','Más']];
 function render(){
   if(!S.user)return pantallaLogin();
   const sedesOpt=S.sedes.filter(s=>s.activa).map(s=>`<option value="${s.id}" ${s.id===S.sede?'selected':''}>${h(s.nombre)}</option>`).join('');
@@ -550,7 +575,7 @@ function render(){
   if(!tabsRol.some(t=>t[0]===S.tab))S.tab=tabsRol[0][0];
   $('#app').innerHTML=`<header>${logoTag()}<div class="tit">COE Quirófano<small><span id="online"></span> ${h(S.user.nombre)} · ${h(ROLES[S.user.rol]||S.user.rol)}</small></div><div class="sp"></div><select id="sedeSel">${sedesOpt}</select></header>
   <main id="main"></main>
-  <nav>${tabsRol.map(([k,i,t])=>`<button data-t="${k}" class="${S.tab===k?'on':''}"><b>${ico(k)}</b>${t}${k==='alertas'?'<span class="badge hidden" id="bdg"></span>':k==='carro'?'<span class="badge hidden" id="bdgC"></span>':k==='mensajes'?'<span class="badge hidden" id="bdgM"></span>':''}</button>`).join('')}</nav>`;
+  <nav>${tabsRol.map(([k,i,t])=>`${k==='inventario'?'<i class="navsep"></i>':''}<button data-t="${k}" class="${S.tab===k?'on':''}"><b>${ico(k)}</b>${t}${k==='alertas'?'<span class="badge hidden" id="bdg"></span>':k==='carro'?'<span class="badge hidden" id="bdgC"></span>':k==='mensajes'?'<span class="badge hidden" id="bdgM"></span>':''}</button>`).join('')}</nav>`;
   $('#sedeSel').onchange=e=>{S.sede=e.target.value;safeLS('qx_sede',S.sede);render()};
   document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;render();window.scrollTo(0,0)});
   try{({inicio:vInicio,agenda:vAgenda,cotizar:vCotizar,inventario:vInventario,carro:vCarro,lio:vLIO,mensajes:vMensajes,alertas:vAlertas,tanques:vTanques,mas:vMas})[S.tab]()}catch(e){console.error(e);$('#main').innerHTML=`<div class="card"><b>Error al mostrar esta sección</b><div class="muted">${h(e.message)}</div></div>`}
@@ -626,29 +651,81 @@ function cadItems(){
   return out.sort((a,b)=>a.fecha<b.fecha?-1:1)
 }
 function vInicio(){
-  const hoy=hoyISO(),sedeU=ubicIdsSede();
-  const cxHoy=S.cx.filter(c=>sedeU.has(c.sala_id)&&c.fecha===hoy&&c.estado!=='cancelada').sort((a,b)=>a.hora<b.hora?-1:1);
+  const hoy=hoyISO(),sedeU=ubicIdsSede(),mm=modsOf(S.user);
+  const cxs=S.cx.filter(c=>sedeU.has(c.sala_id)&&c.estado!=='cancelada'&&!c.consumo_cerrado);
+  const cxHoy=S.cx.filter(c=>sedeU.has(c.sala_id)&&c.estado!=='cancelada'&&c.fecha===hoy).sort((a,b)=>a.hora<b.hora?-1:1);
   const listas=cxHoy.filter(c=>c.consumo_cerrado||readiness(c).listo).length;
+  const prox=cxs.filter(c=>c.fecha>hoy&&c.fecha<=addDays(hoy,7)).map(c=>({c,rd:readiness(c)}));
+  const proxPend=prox.filter(x=>!x.rd.listo),sinLiq=prox.filter(x=>!x.rd.f.liq);
+  const pv=S.evid.filter(e=>['anticipo','abono','liquidacion','reembolso'].includes(e.tipo)&&!e.validado_at);
   const prog=programaInv(addDays(hoy,-30),addDays(hoy,45)).map(estadoInv);
-  const prox=prog.find(e=>e.fecha>=hoy&&e.st!=='realizado');
-  const perdidos=prog.filter(e=>e.st==='no_realizado');
-  const cads=cadItems(),venc=cads.filter(c=>c.fecha<hoy),c30=cads.filter(c=>c.fecha>=hoy&&_dd(c.fecha,hoy)<=30);
-  const am=alertasMat(),amC=am.filter(a=>critOf(a.m)==='critico'),amM=am.filter(a=>critOf(a.m)==='no_critico');
-  const tqBajo=S.tanques.filter(t=>t.activo&&t.sede_id===S.sede&&['critico','minimo'].includes(nivelTanque(t)));
-  const alp=alarmasPend();
-  const tile=(tab,cls,big,lab,sub)=>`<button class="tile ${cls}" onclick="${tab}"><b>${big}</b><span>${lab}</span>${sub?`<small>${sub}</small>`:''}</button>`;
+  const perdido=prog.filter(e=>e.st==='no_realizado'),sig=prog.find(e=>e.fecha>=hoy&&e.st!=='realizado');
+  const amC=alertasMat().filter(a=>critOf(a.m)==='critico'),agot=amC.filter(a=>a.st<=0);
+  const R=carroUb()?carroResumen():null,la=lioAlertas();
+  const tq=S.tanques.filter(t=>t.activo&&t.sede_id===S.sede),tqC=tq.filter(t=>nivelTanque(t)==='critico'),tqB=tq.filter(t=>nivelTanque(t)==='minimo');
+  const recont=S.conteos.filter(c=>c.estado==='reconteo');
+  const T=(go,st,big,lab,sub)=>`<button class="tile ${st}" onclick="${go}"><span class="tl">${lab}</span><b>${big}</b>${sub?`<small>${sub}</small>`:''}${st==='nav'?'':`<em>${st==='t-rojo'?'Atender hoy':st==='t-amar'?'Revisar':'Al día'}</em>`}</button>`;
+  const ir=(tab,sub)=>`S.tab='${tab}';${sub?sub+';':''}render();scrollTo(0,0)`;
+  const pac=[],inv=[];
+  if(mm.includes('agenda')){
+    pac.push(T(ir('agenda',"S.sub.agenda='dia';S.fecha=hoyISO()"),cxHoy.length&&listas<cxHoy.length?'t-rojo':'',cxHoy.length,'Cirugías hoy',cxHoy.length?`${listas} de ${cxHoy.length} listas`:'Sin cirugías'));
+    pac.push(T(ir('agenda',"S.sub.agenda='semana'"),proxPend.length?'t-amar':'',proxPend.length,'Próximos 7 días con pendientes',`${prox.length} programadas · ${sinLiq.length} sin liquidar`));
+    if(can.validar())pac.push(T(ir('alertas',"S.sub.al='alertas'"),pv.length?'t-amar':'',pv.length,'Pagos por validar','anticipos y liquidaciones'));
+  }
+  if(mm.includes('cotizar')&&can.cotizar())pac.push(T(ir('cotizar',"S.sub.cot='nueva'"),'nav','＋','Nueva cotización','cirugía, láser o estudios'));
+  if(mm.includes('inventario')){
+    inv.push(T(ir('inventario',"S.sub.inv='conteo'"),perdido.length?'t-rojo':(sig&&sig.st==='hoy')||recont.length?'t-amar':'',perdido.length?perdido.length:sig?(sig.st==='hoy'?'Hoy':fCorta(sig.fecha)):'—',perdido.length?'Conteos no realizados':'Próximo conteo',perdido.length?'ya se avisó a Finanzas':recont.length?recont.length+' esperan 2º conteo':sig?INV_TIPOS[sig.tipo]:''));
+    inv.push(T(ir('inventario',"S.sub.inv='criticos'"),agot.length?'t-rojo':amC.length?'t-amar':'',amC.length,'Críticos bajo mínimo',agot.length?agot.length+' agotados':'material de quirófano'));
+  }
+  if(R&&mm.includes('carro')){const urg=R.selloRoto||R.venc.length||R.falt.some(x=>critOf(x.m)==='critico');
+    inv.push(T(ir('carro'),urg?'t-rojo':R.revVencida||R.camb.length||R.falt.length?'t-amar':'',R.e.filter(x=>x.nivel!=='ok'||x.venc.length).length,'Carro rojo con pendiente',R.selloRoto?'abierto, falta sello nuevo':`${R.falt.length} faltan · ${R.venc.length} vencidos · ${R.camb.length} por vencer`))}
+  if(mm.includes('lio'))inv.push(T(ir('lio',"S.sub.lio='disp'"),la.venc.length?'t-rojo':la.prox.length?'t-amar':'',la.venc.length+la.prox.length,'LIO por caducar',`${la.venc.length} vencidos · ${la.prox.length} en ${lioAviso()} días`));
+  if(mm.includes('tanques')&&tq.length)inv.push(T(ir('tanques'),tqC.length?'t-rojo':tqB.length?'t-amar':'',tqC.length+tqB.length,'Tanques bajos',tq.length+' tanques'));
   const hora=new Date().getHours(),saludo=hora<12?'Buenos días':hora<19?'Buenas tardes':'Buenas noches';
   let html=`<div class="hello"><div><div class="muted">${fFecha(hoy)} · ${h(sedeById(S.sede)?.nombre||'')}</div><h2 style="margin:2px 0 0">${saludo}, ${h((S.user.nombre||'').split(' ').slice(0,2).join(' '))}</h2></div></div>`;
-  if(perdidos.length||prog.some(e=>e.st==='hoy'))html+=`<div class="banner ${perdidos.length?'rojo':'amar'}">${perdidos.length?`<b>${perdidos.length} inventario(s) no realizado(s) en su fecha.</b> Ya se avisó a COE Finanzas; regularízalo hoy.`:`<b>Hoy toca ${INV_TIPOS[prog.find(e=>e.st==='hoy').tipo].toLowerCase()}.</b> La fecha no tiene prórroga.`}${can.inventario()?` <button class="btn sm" onclick="S.tab='inventario';S.sub.inv='conteo';render()">Ir a conteos</button>`:''}</div>`;
-  html+=`<div class="tiles">
-   ${tile("S.tab='agenda';S.fecha=hoyISO();render()",cxHoy.length&&listas<cxHoy.length?'t-amar':'',cxHoy.length,'Cirugías hoy',cxHoy.length?`${listas} listas · ${cxHoy.length-listas} con pendientes`:'Sin cirugías')}
-   ${tile("S.tab='inventario';S.sub.inv='conteo';render()",prox&&(prox.st==='hoy')?'t-rojo':prox&&prox.st==='proximo'?'t-amar':'',prox?(prox.st==='hoy'?'HOY':fCorta(prox.fecha)):'—','Próximo inventario',prox?INV_TIPOS[prox.tipo]+' · '+prox.txt:'')}
-   ${tile("S.sub.dashCad='todo';document.getElementById('cadSec').scrollIntoView({behavior:'smooth'})",venc.length?'t-rojo':c30.length?'t-amar':'',venc.length+c30.length,'Caducidades',`${venc.length} vencidos · ${c30.length} en 30 días`)}
-   ${tile("S.tab='alertas';render()",amC.length?'t-rojo':amM.length?'t-amar':'',amC.length+amM.length,'Material bajo',`${amC.length} crítico · ${amM.length} no crítico`)}
-   ${carroUb()?(()=>{const R=carroResumen();return tile("S.tab='carro';render()",R.selloRoto||R.venc.length||R.falt.some(x=>critOf(x.m)==='critico')?'t-rojo':R.revVencida||R.camb.length||R.falt.length?'t-amar':'',R.e.filter(x=>x.nivel!=='ok'||x.venc.length).length,'Carro rojo',`${R.falt.length} faltan · ${R.venc.length} con vencidos · ${R.camb.length} por cambiar${R.selloRoto?' · SIN SELLO':R.revVencida?' · revisión pendiente':''}`)})():''}
-   ${tile("S.tab='tanques';render()",tqBajo.some(t=>nivelTanque(t)==='critico')?'t-rojo':tqBajo.length?'t-amar':'',tqBajo.length,'Tanques bajos',S.tanques.filter(t=>t.activo&&t.sede_id===S.sede).length+' tanques')}
-   ${tile("S.tab='mensajes';render()",alp.length?'t-rojo':'',alp.length,'Pacientes con alarma',msjPorEnviar().length+' mensajes por enviar')}
-  </div>`;
+  if(pac.length)html+=`<div class="dgrp"><div class="dgrp-h">Pacientes y cirugías</div><div class="tiles">${pac.join('')}</div></div>`;
+  if(inv.length)html+=`<div class="dgrp"><div class="dgrp-h">Inventarios y seguimiento</div><div class="tiles">${inv.join('')}</div></div>`;
+  if(mm.includes('agenda'))html+=`<div class="card"><h3>Hoy en quirófano</h3>${cxHoy.map(c=>{const rd=readiness(c);return `<div class="list-item" style="cursor:pointer" onclick="verCirugia('${c.id}')"><b style="flex:0 0 48px">${hhmm(c.hora)}</b><div class="grow"><b>${h(c.paciente_nombre)}</b><div class="muted">${h(c.procedimiento||'')} ${h(c.ojo||'')} · ${h(ubicById(c.sala_id)?.nombre||'')}</div></div><span class="pill ${c.consumo_cerrado||rd.listo?'p-verde':'p-rojo'}">${c.consumo_cerrado?'Realizada':rd.listo?'Lista':rd.pend.length+' pendientes'}</span></div>`}).join('')||'<div class="muted">Sin cirugías programadas hoy</div>'}</div>`;
+  $('#main').innerHTML=html;
+}
+const lioAviso=()=>num(cfg('lio_aviso_dias',90))||90;
+function lioAlertas(){const sedeU=ubicIdsSede();const act=S.lios.filter(l=>sedeU.has(l.ubicacion_id)&&['disponible','reservado'].includes(l.estado)&&l.caducidad);
+  return {venc:act.filter(l=>diasHasta(l.caducidad)<0),prox:act.filter(l=>diasHasta(l.caducidad)>=0&&diasHasta(l.caducidad)<=lioAviso())}}
+async function guardarAviso(k,v){if(!await pedirPIN('Cambiar días de aviso'))return render();await setCfg(k,Math.max(1,num(v)));toast('Guardado');render()}
+const inpAviso=(k,v)=>can.aprobar()?`<input type="number" min="7" max="720" value="${v}" class="inl" onchange="guardarAviso('${k}',this.value)">`:v;
+function lioAvisoCard(){const a=lioAlertas(),l=[...a.venc,...a.prox].sort((x,y)=>x.caducidad<y.caducidad?-1:1);
+  return `<div class="card"><div class="row" style="align-items:center"><h3 style="flex:3;margin:0">Por caducar</h3><span class="muted" style="flex:0 0 auto">Aviso a Finanzas ${inpAviso('lio_aviso_dias',lioAviso())} días antes</span></div>
+  ${l.map(x=>`<div class="list-item" onclick="verLIO('${x.id}')" style="cursor:pointer"><div class="grow">${h(x.marca||'')} ${h(x.modelo)} <b>${fmtN(x.dioptria)} D</b><div class="muted">Serie ${h(x.serie||'—')} · ${x.estado}${x.paciente_nombre?' · '+h(x.paciente_nombre):''}</div></div><span class="pill ${diasHasta(x.caducidad)<0?'p-rojo':'p-amar'}">${diasHasta(x.caducidad)<0?'Vencido':'Caduca'} ${fCorta(x.caducidad)}</span></div>`).join('')||'<div class="muted" style="margin-top:6px">Ningún lente caduca en ese plazo.</div>'}</div>`}
+function vCriticos(){
+  const ord=['critico','minimo','agotarse','ok'];
+  const ms=matsQX().filter(m=>critOf(m)==='critico').map(m=>({m,...semaforo(m)})).sort((a,b)=>(a.st<=0?-1:0)-(b.st<=0?-1:0)||ord.indexOf(a.nivel)-ord.indexOf(b.nivel)||a.m.nombre.localeCompare(b.m.nombre));
+  const bajos=ms.filter(x=>x.nivel!=='ok');
+  return `<div class="row" style="margin:4px 0 10px;align-items:center"><div class="muted" style="flex:3">${ms.length} materiales críticos · <b>${bajos.length}</b> bajo mínimo</div>${can.pedir()&&bajos.length?`<button class="btn" style="flex:0 0 auto" onclick="formPedido([...document.querySelectorAll('.selC:checked')].map(x=>x.value))">Solicitar marcados</button>`:''}</div>
+  <div class="card" style="padding:4px 10px"><div class="tblwrap"><table><tr><th></th><th>Material</th><th>Gaveta</th><th>Exist.</th><th>Mín.</th><th>Estado</th></tr>${ms.map(x=>{const pa=pedidoAbierto(x.m.id);return `<tr><td>${x.nivel!=='ok'&&can.pedir()&&!pa?`<input type="checkbox" class="selC" value="${x.m.id}" checked style="width:20px;height:20px;min-height:0">`:''}</td><td onclick="verMaterial('${x.m.id}')" style="cursor:pointer"><b>${h(x.m.nombre)}</b></td><td class="muted">${h(x.m.gaveta||'')}</td><td><b>${fmtN(x.st)}</b></td><td>${fmtN(x.m.stock_minimo)}</td><td>${pa?`<span class="pill p-azul">pedido ${h(pa.estado||'')}</span>`:estPill(x)}</td></tr>`}).join('')}</table></div></div>`;
+}
+const estPill=x=>x.st<=0&&num(x.m.stock_minimo)>0?'<span class="pill p-rojo">Agotado</span>':`<span class="pill ${NIV[x.nivel][0]}">${NIV[x.nivel][1]}</span>`;
+async function escalarFin(items,tipo,titulo,prioridad){
+  const nuevos=items.filter(x=>!S.escal.some(e=>e.clave===x.clave));if(!nuevos.length)return;
+  const r=await sb.from('qx_escalamientos').upsert(nuevos.map(x=>({clave:x.clave,tipo,sede_id:S.sede,fecha_programada:x.fecha||hoyISO(),detalle:x.txt})),{onConflict:'clave',ignoreDuplicates:true}).select();
+  const ins=r.data||[];if(!ins.length)return;S.escal.push(...ins);
+  const sede=sedeById(S.sede)?.nombre||'';
+  try{await sb.from('fin_tareas').insert({clave:'QX-'+tipo+'-'+Date.now(),titulo:`Quirófano ${sede}: ${titulo}`,descripcion:ins.map(x=>'• '+x.detalle).join('\n')+'\nAviso automático de COE Quirófano.',responsable_rol:'direccion',fecha_limite:hoyISO(),estado:'pendiente',prioridad,categoria:'Quirófano',origen:'quirofano',sede})}catch(e){}
+}
+async function escalarExtra(){
+  const hoy=hoyISO(),la=lioAlertas(),lt=l=>`LIO ${l.marca||''} ${l.modelo} ${fmtN(l.dioptria)} D · serie ${l.serie||'—'} · ${l.propiedad}`;
+  await escalarFin(la.venc.map(l=>({clave:'LIO-VENC-'+l.id,fecha:l.caducidad,txt:lt(l)+' VENCIÓ el '+fCorta(l.caducidad)})),'lio_vencido','LIO vencidos en stock','critico');
+  await escalarFin(la.prox.map(l=>({clave:'LIO-PROX-'+l.id,fecha:l.caducidad,txt:lt(l)+' caduca el '+fCorta(l.caducidad)})),'lio_por_caducar','LIO por caducar (cambio o devolución)','alta');
+  if(carroUb()){const R=carroResumen();
+    if(R.revVencida){const lim=R.ultRev?addDays(_dia(R.ultRev.created_at),num(cfg('carro_rev_dias',7))):hoy;
+      await escalarFin([{clave:'CARRO-REV-'+S.sede+'-'+lim,fecha:lim,txt:'Revisión del carro rojo vencida desde el '+fCorta(lim)}],'carro_revision','revisión del carro rojo no realizada','critico')}
+    await escalarFin(R.venc.flatMap(x=>x.venc.map(l=>({clave:'CARRO-VENC-'+l.id,fecha:l.caducidad,txt:`${x.m.nombre} · lote ${l.lote||'—'} venció el ${fCorta(l.caducidad)}`}))),'carro_vencido','medicamentos vencidos en el carro rojo','critico');
+    await escalarFin(R.camb.flatMap(x=>x.camb.map(l=>({clave:'CARRO-PROX-'+l.id,fecha:l.caducidad,txt:`${x.m.nombre} · lote ${l.lote||'—'} caduca el ${fCorta(l.caducidad)}`}))),'carro_por_vencer','medicamentos del carro rojo por vencer','alta');
+  }
+  const rc=S.conteos.filter(c=>c.estado==='reconteo'&&c.enviado_at&&Date.now()-new Date(c.enviado_at)>864e5);
+  await escalarFin(rc.map(c=>({clave:'RECONTEO-'+c.id,fecha:_dia(c.enviado_at),txt:`Segundo conteo pendiente desde ${fDT(c.enviado_at)} (${ubicById(c.ubicacion_id)?.nombre||''})`})),'reconteo','segundo conteo de inventario sin hacer','alta');
+}
+function vCalInv(){
+  const hoy=hoyISO(),prog=programaInv(addDays(hoy,-30),addDays(hoy,45)).map(estadoInv),cads=cadItems();let html='';
   html+=`<div class="dash2"><div>
    <div class="card"><div class="row"><h3 style="flex:3;margin:0">Calendario de quirófano</h3><div class="calnav" style="flex:0 0 auto"><button class="btn sec sm" onclick="S.calMes=mesMas(S.calMes,-1);render()" aria-label="Mes anterior">‹</button><b>${mesTxt(S.calMes)}</b><button class="btn sec sm" onclick="S.calMes=mesMas(S.calMes,1);render()" aria-label="Mes siguiente">›</button></div></div>
    <div class="leyenda"><span><i class="lg lg-inv"></i>Inventario</span><span><i class="lg lg-cad"></i>Caducidad</span><span><i class="lg lg-cx"></i>Cirugías</span></div>
@@ -657,12 +734,11 @@ function vInicio(){
    <div class="card"><h3>Programa de inventarios</h3><div class="muted" style="margin-bottom:6px">Fechas fijas sin prórroga: ${INV_TIPOS.completo.toLowerCase()} cada ${cfg('freq_completo',15)} días y críticos cada ${cfg('freq_criticos',7)} días. Si no se hace en su fecha, se avisa a COE Finanzas al día siguiente.</div>
     ${prog.filter(e=>e.fecha>=addDays(hoy,-21)).slice(0,9).map(e=>`<div class="invrow ${e.st}"><div class="d"><b>${new Date(e.fecha+'T12:00:00').getDate()}</b><span>${MESES[new Date(e.fecha+'T12:00:00').getMonth()]}</span></div><div class="grow"><b>${INV_TIPOS[e.tipo]}</b><div class="muted">${DIAS[new Date(e.fecha+'T12:00:00').getDay()]} · ${e.st==='realizado'?'todas las ubicaciones':e.hechas+' de '+e.total+' ubicaciones'}${e.st==='no_realizado'?' · faltó: '+e.falt.map(u=>h(u.nombre)).join(', '):''}</div></div><span class="pill ${e.cls}">${e.txt}</span></div>`).join('')}
    </div>
-   <div class="card"><h3>Hoy en quirófano</h3>${cxHoy.map(c=>{const rd=readiness(c);return `<div class="list-item" style="cursor:pointer" onclick="verCirugia('${c.id}')"><b style="flex:0 0 48px">${hhmm(c.hora)}</b><div class="grow"><b>${h(c.paciente_nombre)}</b><div class="muted">${h(c.procedimiento||'')} ${h(c.ojo||'')} · ${h(ubicById(c.sala_id)?.nombre||'')}</div></div><span class="pill ${c.consumo_cerrado?'p-verde':rd.listo?'p-verde':'p-rojo'}">${c.consumo_cerrado?'Realizada':rd.listo?'Lista':rd.pend.length+' pend.'}</span></div>`}).join('')||'<div class="muted">Sin cirugías programadas hoy</div>'}</div>
   </div></div>
   <div class="card" id="cadSec"><h3>Caducidades</h3>
    ${[['Vencidos: retirar y registrar merma',c=>c.fecha<hoy,'p-rojo'],['Próximos 7 días',c=>c.fecha>=hoy&&_dd(c.fecha,hoy)<=7,'p-rojo'],['8 a 30 días',c=>_dd(c.fecha,hoy)>7&&_dd(c.fecha,hoy)<=30,'p-amar'],['31 a 90 días',c=>_dd(c.fecha,hoy)>30&&_dd(c.fecha,hoy)<=90,'p-azul']].map(([t,f,cls])=>{const l=cads.filter(f);return l.length?`<div class="sec-t">${t} <span class="pill ${cls}">${l.length}</span></div>${l.map(c=>`<div class="list-item"><div class="grow"><b>${h(c.txt)}</b> ${c.tipo==='lote'&&c.crit!=='no_critico'?`<span class="pill ${CRIT[c.crit][1]}">${'crítico'}</span>`:''}<div class="muted">${h(c.det)}</div></div><span class="pill ${cls}">${fCorta(c.fecha)}</span>${c.fecha<hoy&&c.tipo==='lote'&&can.inventario()?`<button class="btn sm rojo" onclick="formMerma()">Merma</button>`:''}</div>`).join('')}`:''}).join('')||'<div class="muted">Nada por caducar en 90 días</div>'}
   </div>`;
-  $('#main').innerHTML=html;
+  return html
 }
 const mesMas=(m,n)=>{const [y,mm]=m.split('-').map(Number);const d=new Date(y,mm-1+n,1);return d.getFullYear()+'-'+pad(d.getMonth()+1)};
 const MESES_L=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -718,12 +794,13 @@ function cxCard(c){
   const faltan=faltantesCx(c);
   const pills=[];
   pills.push(`<span class="pill ${c.estado==='realizada'?'p-verde':c.estado==='confirmada'||c.estado==='en_curso'?'p-morado':c.estado==='cancelada'?'':'p-azul'}">${h((c.estado||'programada').replace('_',' '))}</span>`);
-  if(c.lio_requerido&&!c.lio_unidad_id&&c.estado!=='cancelada'&&!c.consumo_cerrado)pills.push('<span class="pill p-rojo">LIO sin asignar</span>');
+  const urge=c.fecha<=addDays(hoyISO(),1)?'p-rojo':'p-amar';
+  if(c.lio_requerido&&!c.lio_unidad_id&&c.estado!=='cancelada'&&!c.consumo_cerrado)pills.push(`<span class="pill ${urge}">LIO sin asignar</span>`);
   if(lio)pills.push(`<span class="pill p-azul">LIO ${h(lio.modelo)} ${fmtN(lio.dioptria)}D${lio.propiedad==='consignacion'?' · consig.':''}</span>`);
-  if(faltan.length&&!c.consumo_cerrado&&c.estado!=='cancelada')pills.push(`<span class="pill p-rojo">Falta material (${faltan.length})</span>`);
+  if(faltan.length&&!c.consumo_cerrado&&c.estado!=='cancelada')pills.push(`<span class="pill ${urge}">Falta material (${faltan.length})</span>`);
   if(c.consumo_cerrado)pills.push('<span class="pill p-verde">Consumo cerrado</span>');
   if(c.estado!=='cancelada'){const rd=readiness(c);pills.unshift(`<span class="pill ${rd.f.cls}">${h(rd.f.est)}</span>`);
-    if(!c.consumo_cerrado)pills.push(rd.listo?'<span class="pill p-verde">✓ Lista para operar</span>':`<span class="pill p-rojo">Pendientes: ${rd.pend.length}</span>`);
+    if(!c.consumo_cerrado)pills.push(rd.listo?'<span class="pill p-verde">✓ Lista para operar</span>':`<span class="pill ${urge}">Pendientes: ${rd.pend.length}</span>`);
     if(c.timeout&&!c.consumo_cerrado)pills.push('<span class="pill p-morado">Pausa de seguridad hecha</span>')}
   return `<div class="cx ${c.estado}" onclick="verCirugia('${c.id}')"><div class="row" style="gap:10px;flex-wrap:nowrap"><span class="h" style="flex:0 0 auto">${hhmm(c.hora)}</span><span class="h" style="flex:1">${h(c.paciente_nombre)}</span></div>
   <div class="muted">${h(c.procedimiento||'')}${c.ojo?' · '+h(c.ojo):''} · ${h(esp?.nombre||'')} ${S.sub.agenda==='semana'||S.sub.agenda==='historial'?'· '+h(sala?.nombre||''):''}${c.cirujano?' · '+h(c.cirujano):''}</div>
@@ -960,7 +1037,7 @@ function verCirugia(id){
     lio_asignado:ed&&!lio?`<button class="btn sm sec" onclick="this.closest('.modal').remove();formCirugia('${id}')">Asignar</button>`:'',
     lio_coincide:'',
     lio_respaldo:ed&&!c.lio_respaldo_id&&!ck.respaldo_na?`<button class="btn sm sec" onclick="this.closest('.modal').remove();formCirugia('${id}')">Apartar</button>${can.aprobar()?`<button class="btn sm sec" onclick="respaldoNA('${id}')">Sin respaldo</button>`:''}`:'',
-    validado:'',cotizacion:'',
+    validado:'',cotizacion:'',indicaciones:`<button class="btn sm" onclick="enviarIndic('${id}')">WhatsApp</button><button class="btn sm sec" onclick="hojaIndic('${id}')">Hoja QR</button>`,
     lio_verificado:ed&&!c.lio_verificado_por&&lio?`<button class="btn sm" onclick="verificarLIO('${id}')">Verificar (2ª persona)</button>`:'',
     material:''
   };
@@ -968,6 +1045,7 @@ function verCirugia(id){
     cotizacion:c.cotizacion_id?'Folio '+h((S.cots||[]).find(x=>x.id===c.cotizacion_id)?.folio||String(c.cotizacion_id).slice(0,8)):c.sin_cotizacion_autorizado_por?`Urgencia sin cotización autorizada por ${h(c.sin_cotizacion_autorizado_por)}: ${h(c.sin_cotizacion_motivo||'')}`:'',
     anticipo:c.sin_anticipo_autorizado_por?`Excepción autorizada por ${h(c.sin_anticipo_autorizado_por)}: ${h(c.sin_anticipo_motivo||'')}`:`Mínimo ${money(f.min)} · pagado ${money(f.pag)}`,
     liquidado:f.total?`Total ${money(f.total)} · saldo ${money(f.saldo)}`:'Sin costo total capturado',
+    indicaciones:ck.indicaciones?`${ck.indicaciones.via==='whatsapp'?'Enviadas por WhatsApp':'Entregadas impresas'} · ${h(ck.indicaciones.nombre)} · ${fDT(ck.indicaciones.at)}`:'',
     confirmacion:ck.confirmacion?`${h(ck.confirmacion.nombre)} · ${fDT(ck.confirmacion.at)} · ${h(ck.confirmacion.nota||'')}`:'',
     valoracion:ck.valoracion_na?`No aplica — ${h(ck.valoracion_na.nombre)}: ${h(ck.valoracion_na.motivo||'')}`:'',
     lio_coincide:lio?`Indicado: ${h(lioTxt(c.lio_requerido))} · Asignado: ${h(lio.modelo)} ${fmtN(lio.dioptria)} D${lio.cilindro?' Cil '+fmtN(lio.cilindro):''}`:'',
@@ -992,16 +1070,16 @@ function verCirugia(id){
    <div class="muted" style="margin-top:6px">${c.fecha_nacimiento?'F. nac. '+fCorta(c.fecha_nacimiento)+' · ':''}${c.expediente?'Exp. '+h(c.expediente)+' · ':''}${h(c.telefono||'')}${c.alergias?' · Alergias: '+h(c.alergias):''}${c.anticoagulantes?' · Anticoag.: '+h(c.anticoagulantes):''}</div>
   </div>
   ${pasosCx(c,rd,ed)}
-  <div class="row" style="margin:6px 0"><h3 style="margin:0;flex:3">Lista de verificación</h3><span class="pill ${rd.listo?'p-verde':'p-rojo'}" style="flex:0 0 auto">${rd.listo?'✓ Lista para operar':rd.pend.length+' pendientes'}</span></div>
+  <div class="row" style="margin:6px 0"><h3 style="margin:0;flex:3">Lista de verificación</h3><span class="pill ${rd.listo?'p-verde':c.fecha<=addDays(hoyISO(),1)?'p-rojo':'p-amar'}" style="flex:0 0 auto">${rd.listo?'✓ Lista para operar':rd.pend.length+' pendientes'}</span></div>
   ${grupos.map(([g,t])=>{const its=rd.it.filter(x=>x.grupo===g);return its.length?`<div class="sec-t">${t}</div>${its.map(x=>`<div class="list-item"><span style="font-size:20px;flex:0 0 26px">${x.ok?'✅':'⬜'}</span><div class="grow">${h(x.t)}${det[x.k]?`<div class="muted">${det[x.k]}</div>`:''}${evs.filter(e=>e.tipo===x.k||(x.k==='anticipo'&&['anticipo','abono','reembolso'].includes(e.tipo))||(x.k==='liquidado'&&e.tipo==='liquidacion')).map(e=>`<div class="row" style="margin-top:6px;gap:8px">${evidThumb(e)}<span class="muted" style="flex:3">${e.monto?(e.tipo==='reembolso'?'−':'')+money(e.monto)+' · ':''}${h(e.tipo)}${e.metodo?' · '+h(e.metodo):''}${e.folio?' · folio '+h(e.folio):''}<br>${h(e.usuario_nombre||'')} · ${fDT(e.created_at)}${e.validado_at?` · <b style="color:var(--verde)">✓ validó ${h(e.validado_por)}</b>`:''}</span>${!e.validado_at&&['anticipo','abono','liquidacion','reembolso'].includes(e.tipo)&&can.validar()?`<button class="btn sm verde" style="flex:0 0 auto" onclick="validarPago('${e.id}','${id}')">Validar</button>`:''}</div>`).join('')}</div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${acc[x.k]||''}</div></div>`).join('')}`:''}).join('')}
   ${c.consumo_cerrado?`<div class="sec-t">Posoperatorio</div><div class="list-item"><div class="grow">Cita subsecuente: <b>${c.cita_subsecuente?fFecha(localISO(c.cita_subsecuente))+' '+(()=>{const d=new Date(c.cita_subsecuente);return pad(d.getHours())+':'+pad(d.getMinutes())})():'sin agendar'}</b></div>${can.programar()?`<button class="btn sm" onclick="citaSubsecuente('${id}')">${c.cita_subsecuente?'Cambiar':'Agendar'}</button>`:''}</div><div id="posop_${id}" class="muted">Cargando mensajes…</div>`:''}
-  ${c.timeout?`<div class="sec-t">Pausa de seguridad</div><div class="pill p-morado">Realizada por ${h(c.timeout.nombre)} · ${fDT(c.timeout.at)}${c.timeout.override?' · con saldo autorizado por '+h(c.timeout.override.nombre):''}</div>`:''}
+  ${c.timeout?`<div class="sec-t">Pausa de seguridad</div><div class="pill p-morado">Realizada por ${h(c.timeout.nombre)} · ${fDT(c.timeout.at)}${c.timeout.override?' · con saldo autorizado por '+h(c.timeout.override.nombre):''}</div>${evidCx(id,'lio_caja').map(e=>`<div class="row" style="margin-top:6px;gap:8px">${evidThumb(e)}<span class="muted">Caja del LIO</span></div>`).join('')}`:''}
   ${c.paquete_nombre?`<div class="sec-t">Material · paquete ${h(c.paquete_nombre)}</div>`:'<div class="sec-t">Material</div>'}
   <table><tr><th>Material</th><th>Plan</th><th>Usado</th><th>Exist.</th></tr>${items.map(i=>{const mt=matById(i.material_id);return `<tr><td>${h(mt?.nombre)} ${i.es_extra?'<span class="pill p-amar">extra</span>':''}</td><td>${fmtN(i.cantidad_plan)}</td><td>${i.cantidad_usada==null?'—':fmtN(i.cantidad_usada)}</td><td>${fmtN(stockMat(i.material_id,ubicIdsSede()))}</td></tr>`}).join('')||'<tr><td colspan=4 class="muted">Sin material</td></tr>'}</table>
   ${lio?`<div class="muted" style="margin-top:6px">LIO asignado: ${h(lio.marca||'')} ${h(lio.modelo)} ${fmtN(lio.dioptria)} D · Serie ${h(lio.serie||'—')} · ${lio.estado} · ${lio.propiedad}</div>`:''}
   ${c.notas?`<div class="sec-t">Notas</div><div>${h(c.notas)}</div>`:''}
   <div class="acts">
-   <button class="btn sec" onclick="imprimirHoja('${id}')">🖨 Hoja de programación</button>
+   <button class="btn sec" onclick="imprimirHoja('${id}')">Hoja de programación</button><button class="btn sec" onclick="papeleriaCx('${id}')">Papelería quirúrgica</button>
    ${ed?`
     <button class="btn sec" onclick="this.closest('.modal').remove();formCirugia('${id}')">Editar</button>
     ${c.estado==='programada'?`<button class="btn sec" onclick="estadoCx('${id}','confirmada')">Confirmar</button>`:''}
@@ -1119,17 +1197,17 @@ function pausaSeguridad(id){
   ${bloq.length?`<div class="card" style="border-color:var(--rojo);background:var(--rojo2)"><b>No se puede iniciar:</b><br>${bloq.map(h).join('<br>')}</div>`:''}
   ${!f.liq?`<div class="card" style="border-color:var(--amar);background:var(--amar2)"><b>Saldo pendiente: ${money(f.saldo)}</b> (${h(f.est)}). Solo Dirección General puede autorizar operar sin liquidar, con motivo.</div>`:''}
   ${items.map(([k,t])=>`<div class="sw"><input type="checkbox" class="toI" data-k="${k}" id="to_${k}"><label for="to_${k}" style="margin:0;text-transform:none;font-size:15px;color:var(--ink)">${t}</label></div>`).join('')}
-  ${lio?`<div class="card" style="background:var(--fondo)"><b>Lente en mano</b><div style="font-size:18px;margin:4px 0">${h(lio.marca||'')} ${h(lio.modelo)} · <b>${fmtN(lio.dioptria)} D</b>${lio.cilindro?' Cil '+fmtN(lio.cilindro)+' Eje '+h(c.lio_requerido?.eje||''):''}</div><label>Teclea el número de serie de la caja del lente</label><input id="toS" autocomplete="off"></div>`:''}
+  ${lio?`<div class="card" style="background:var(--fondo)"><b>Lente en mano</b><div style="font-size:18px;margin:4px 0">${h(lio.marca||'')} ${h(lio.modelo)} · <b>${fmtN(lio.dioptria)} D</b>${lio.cilindro?' Cil '+fmtN(lio.cilindro)+' Eje '+h(c.lio_requerido?.eje||''):''}</div><label>Foto de la caja del lente (que se lean poder y serie)</label><input type="file" id="toF" accept="image/*" capture="environment" onchange="const i=this.closest('.box').querySelector('#toPrev');if(this.files[0]){i.src=window.URL.createObjectURL(this.files[0]);i.style.display='block'}"><img id="toPrev" style="display:none;max-width:220px;border-radius:8px;margin-top:8px"><label>Serie (opcional, el sistema la coteja)</label><input id="toS" autocomplete="off"></div>`:''}
   <div class="acts"><button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancelar</button><button class="btn azul" id="ok" ${bloq.length?'disabled':''}>Confirmar e iniciar</button></div>`);
   m.dataset.lock=1;
   m.querySelector('#ok').onclick=async()=>{
     if([...m.querySelectorAll('.toI')].some(x=>!x.checked))return toast('Marca todos los puntos de la pausa de seguridad',true);
     if(lio){const s0=(m.querySelector('#toS').value||'').trim().toUpperCase();
       const rsp=c.lio_respaldo_id?S.lios.find(l=>l.id===c.lio_respaldo_id):null;
-      if(lio.serie&&s0!==String(lio.serie).trim().toUpperCase()){
+      if(s0&&lio.serie&&s0!==String(lio.serie).trim().toUpperCase()){
         if(rsp&&rsp.serie&&s0===String(rsp.serie).trim().toUpperCase()){if(!await confirmar(`Esa serie es del <b>LIO de respaldo</b> (${h(rsp.modelo)} ${fmtN(rsp.dioptria)} D). ¿Se usará el respaldo?`))return}
         else return toast('La serie no coincide con el lente asignado ni con el respaldo. NO continuar: verifica el lente.',true)}
-      if(!lio.serie&&!s0)return toast('Captura la serie del lente',true)}
+      if(!m.querySelector('#toF').files[0])return toast('Toma la foto de la caja del lente',true)}
     let override=null;
     if(!f.liq){
       if(S.user.rol!=='director')return toast('La cirugía no está liquidada. Captura la liquidación.',true);
@@ -1137,7 +1215,9 @@ function pausaSeguridad(id){
       override={nombre:S.user.nombre,motivo:mot,saldo:f.saldo};
     }
     if(!await pedirPIN((override?'AUTORIZO operar con saldo · ':'Pausa de seguridad · ')+c.paciente_nombre))return;
-    const to={nombre:S.user.nombre,usuario_id:S.user.id,at:new Date().toISOString(),items:items.map(x=>x[0]),serie:lio?m.querySelector('#toS').value.trim():null,override};
+    let fotoCaja=null;
+    if(lio){try{toast('Subiendo foto…');fotoCaja=await subirArchivo(m.querySelector('#toF').files[0],'evidencias/lio_caja');await q(sb.from('qx_cirugia_evidencias').insert({cirugia_id:id,tipo:'lio_caja',url:fotoCaja,nota:'Caja del LIO en la pausa de seguridad',usuario_id:S.user.id,usuario_nombre:S.user.nombre}))}catch(e){return dbErr(e,'Foto de la caja')}}
+    const to={nombre:S.user.nombre,usuario_id:S.user.id,at:new Date().toISOString(),items:items.map(x=>x[0]),serie:lio?m.querySelector('#toS').value.trim():null,foto_caja:fotoCaja,override};
     await q(sb.from('qx_cirugias').update({timeout:to,estado:'en_curso'}).eq('id',id),'Pausa de seguridad');
     await logA('pausa_seguridad','qx_cirugias',id,{override:!!override});
     m.remove();toast('Pausa de seguridad registrada');await loadAll();render();verCirugia(id);
@@ -1239,8 +1319,8 @@ function imprimirAgenda(){
    INVENTARIO
    ============================================================ */
 function vInventario(){
-  const st=subtabs('inv',[['exist','Existencias'],['conteo','Conteos'],['mov','Movimientos']],'exist');
-  let html=`<div class="row" style="margin-bottom:10px"><h2 style="flex:3">Inventario de quirófano</h2></div>${st.html}`;
+  const st=subtabs('inv',[['conteo','Conteos'],['criticos','Críticos'],['exist','Existencias'],['mov','Movimientos'],['cal','Calendario']],'conteo');
+  let html=`<div class="row" style="margin-bottom:10px"><h2 style="flex:3">Inventario de quirófano</h2>${can.pedir()?`<button class="btn sec" style="flex:0 0 auto" onclick="formPedido(alertasMat().filter(a=>critOf(a.m)==='critico'&&!pedidoAbierto(a.m.id)).map(a=>a.m.id))">Solicitar a Finanzas</button>`:''}</div>${st.html}`;
   if(st.cur==='exist'){
     const fu=S.sub.invU||'todas',fq=(S.sub.invQ||'').toLowerCase();
     const ubs=ubicSede();
@@ -1254,6 +1334,8 @@ function vInventario(){
     return `<div class="critsec c-${k}"><div class="critsec-h"><b>${CRIT[k][0]}</b><span class="muted">${CRIT[k][2]} · ${mk.length} materiales</span>${bajos?`<span class="pill ${k==='no_critico'?'p-amar':CRIT[k][1]}">${bajos} bajo mínimo</span>`:'<span class="pill p-verde">Todo suficiente</span>'}</div>${invTablas(mk,uSet,ubs,fu)}</div>`}).join('')||'<div class="card empty">Sin materiales</div>';
     html+=`<button class="btn sec" onclick="exportExist()">⬇ Exportar existencias (Excel/CSV)</button>`;
   }else if(st.cur==='conteo')html+=vConteos();
+  else if(st.cur==='criticos')html+=vCriticos();
+  else if(st.cur==='cal')html+=vCalInv();
   else html+=`<div id="movs" class="card"><div class="muted">Cargando…</div></div>`;
   $('#main').innerHTML=html;
   if(st.cur==='mov')cargarMovs();
@@ -1262,7 +1344,7 @@ function invTablas(mats,uSet,ubs,fu){
   const cats=[...new Set(mats.map(m=>m.categoria||'General'))].sort();
   return cats.map(cat=>`<div class="sec-t">${h(cat)}</div><div class="card" style="padding:4px 10px"><div class="tblwrap"><table><tr><th>Material</th><th>Existencia</th>${fu==='todas'?ubs.map(u=>`<th>${h(u.nombre.replace('Quirófano','Q').replace('Almacén de quirófano','Almacén'))}</th>`).join(''):''}<th>Mín/Crít</th><th>Estado</th><th>Próx. cad.</th></tr>
       ${mats.filter(m=>(m.categoria||'General')===cat).map(m=>{const sm=semaforo(m),stv=stockMat(m.id,uSet);const cad=S.lotes.filter(l=>l.material_id===m.id&&uSet.has(l.ubicacion_id)&&num(l.cantidad)>0&&l.caducidad).sort((a,b)=>a.caducidad<b.caducidad?-1:1)[0];const dc=cad?diasHasta(cad.caducidad):null;
-      return `<tr onclick="verMaterial('${m.id}')" style="cursor:pointer"><td>${h(m.nombre)}<div class="muted">${h(m.codigo||'')} ${h(m.unidad)}</div></td><td><b>${fmtN(stv)}</b></td>${fu==='todas'?ubs.map(u=>`<td>${fmtN(stockUbic(m.id,u.id))}</td>`).join(''):''}<td class="muted">${fmtN(m.stock_minimo)} / ${fmtN(m.stock_critico)}</td><td><span class="pill ${NIV[sm.nivel][0]}">${NIV[sm.nivel][1]}</span></td><td>${cad?`<span class="pill ${dc<0?'p-rojo':dc<=60?'p-amar':''}">${fCorta(cad.caducidad)}</span>`:'—'}</td></tr>`}).join('')}</table></div></div>`).join('')
+      return `<tr onclick="verMaterial('${m.id}')" style="cursor:pointer"><td>${h(m.nombre)}<div class="muted">${h(m.codigo||'')} ${h(m.unidad)}</div></td><td><b>${fmtN(stv)}</b></td>${fu==='todas'?ubs.map(u=>`<td>${fmtN(stockUbic(m.id,u.id))}</td>`).join(''):''}<td class="muted">${fmtN(m.stock_minimo)} / ${fmtN(m.stock_critico)}</td><td>${estPill({m,st:stv,nivel:sm.nivel})}</td><td>${cad?`<span class="pill ${dc<0?'p-rojo':dc<=60?'p-amar':''}">${fCorta(cad.caducidad)}</span>`:'—'}</td></tr>`}).join('')}</table></div></div>`).join('')
 }
 function exportExist(){const ubs=ubicSede();csv([['Material','Código','Categoría','Unidad','Criticidad','Total',...ubs.map(u=>u.nombre),'Mínimo','Nivel crítico','Estado'],...matsQX().map(m=>{const s=semaforo(m);return [m.nombre,m.codigo,m.categoria,m.unidad,CRIT[critOf(m)][0],stockMat(m.id,ubicIdsSede()),...ubs.map(u=>stockUbic(m.id,u.id)),m.stock_minimo,m.stock_critico,NIV[s.nivel][1]]})],'existencias_quirofano_'+hoyISO()+'.csv')}
 async function cargarMovs(mid){
@@ -1335,19 +1417,18 @@ function vConteos(){
   const vencidos=conteoVencido();
   const ubs=ubicSede(),cu=carroUb(),ids=new Set([...ubs.map(u=>u.id),cu?.id].filter(Boolean));
   const abiertos=S.conteos.filter(c=>ids.has(c.ubicacion_id)&&['abierto','reconteo','enviado'].includes(c.estado));
-  const hechos=S.conteos.filter(c=>ids.has(c.ubicacion_id)&&['aprobado','rechazado'].includes(c.estado)).slice(0,20);
+  const hechos=S.conteos.filter(c=>ids.has(c.ubicacion_id)&&['aprobado','rechazado'].includes(c.estado)).slice(0,8);
   const est={abierto:['p-azul','Contando','Continuar','abrirConteo'],reconteo:['p-morado','Falta 2º conteo','Recontar (2ª persona)','reconteo'],enviado:['p-amar','Por revisar','Revisar','revisarConteo']};
-  return `<div class="card"><h3>Cómo se evidencia el conteo</h3><div class="muted" style="line-height:1.6">
+  return `  ${vencidos.map(v=>`<div class="pill ${v.ev.st==='hoy'?'p-amar':'p-rojo'}" style="margin-bottom:6px">${v.nom}: ${v.ev.txt}</div>`).join(' ')}
+  ${can.inventario()?`<div class="row" style="margin:10px 0"><button class="btn" onclick="nuevoConteo('criticos')">Contar críticos</button><button class="btn" onclick="nuevoConteo('completo')">Inventario completo</button><button class="btn sec" onclick="imprimirEtiquetas('quirofano')">Etiquetas QR</button></div>`:''}
+  <div class="sec-t">En proceso / por revisar</div>${abiertos.map(c=>{const e=est[c.estado];return `<div class="list-item"><div class="grow"><b>${TIPO_CONTEO[c.tipo]||c.tipo}</b> · ${h(ubicById(c.ubicacion_id)?.nombre)}<div class="muted">${fDT(c.created_at)} · ${h(c.creado_nombre||'')}</div></div><span class="pill ${e[0]}">${e[1]}</span><button class="btn sm" onclick="${e[3]}('${c.id}')">${e[2]}</button></div>`}).join('')||'<div class="muted">Ninguno</div>'}
+  <div class="sec-t">Historial</div>${hechos.map(c=>`<div class="list-item"><div class="grow">${TIPO_CONTEO[c.tipo]||c.tipo} · ${h(ubicById(c.ubicacion_id)?.nombre)}<div class="muted">${fDT(c.created_at)} · contó ${h(c.creado_nombre||'')}${c.reconteo_nombre?' · recontó '+h(c.reconteo_nombre):''} · ${c.estado} por ${h(c.aprobado_nombre||'')}${c.precision!=null?' · precisión '+c.precision+'%':''}</div></div><button class="btn sec sm" onclick="revisarConteo('${c.id}',true)">Ver</button></div>`).join('')||'<div class="muted">Sin conteos</div>'}<details class="card"><summary><b>¿Cómo se evidencia el conteo?</b></summary><div class="muted" style="line-height:1.6">
    1. <b>Ciego</b>: quien cuenta no ve la existencia del sistema.<br>
    2. <b>Por gaveta y con etiqueta QR</b>: la lista sigue el orden del anaquel; escanea la etiqueta y el sistema te lleva al material.<br>
    3. <b>Cajas cerradas + piezas sueltas</b>: no se cuentan piezas una por una; el sistema multiplica.<br>
    4. <b>Foto de cada gaveta</b> antes de cerrar: queda como evidencia.<br>
    5. <b>Doble conteo solo en diferencias</b>: si algo no cuadra, una segunda persona (con su PIN) lo recuenta sin ver cifras. Si su conteo coincide con el sistema, fue error de conteo y no se ajusta.<br>
-   6. Dirección aprueba el ajuste con PIN. Semanal: críticos (${cfg('freq_criticos',7)} días) · Completo: cada ${cfg('freq_completo',15)} días.</div></div>
-  ${vencidos.map(v=>`<div class="pill p-rojo" style="margin-bottom:6px">${v.nom}: ${v.ev.txt}</div>`).join(' ')}
-  ${can.inventario()?`<div class="row" style="margin:10px 0"><button class="btn" onclick="nuevoConteo('criticos')">Iniciar conteo de críticos</button><button class="btn sec" onclick="nuevoConteo('completo')">Iniciar inventario completo</button><button class="btn sec" onclick="imprimirEtiquetas('quirofano')">🏷 Etiquetas QR</button></div>`:''}
-  <div class="sec-t">En proceso / por revisar</div>${abiertos.map(c=>{const e=est[c.estado];return `<div class="list-item"><div class="grow"><b>${TIPO_CONTEO[c.tipo]||c.tipo}</b> · ${h(ubicById(c.ubicacion_id)?.nombre)}<div class="muted">${fDT(c.created_at)} · ${h(c.creado_nombre||'')}</div></div><span class="pill ${e[0]}">${e[1]}</span><button class="btn sm" onclick="${e[3]}('${c.id}')">${e[2]}</button></div>`}).join('')||'<div class="muted">Ninguno</div>'}
-  <div class="sec-t">Historial</div>${hechos.map(c=>`<div class="list-item"><div class="grow">${TIPO_CONTEO[c.tipo]||c.tipo} · ${h(ubicById(c.ubicacion_id)?.nombre)}<div class="muted">${fDT(c.created_at)} · contó ${h(c.creado_nombre||'')}${c.reconteo_nombre?' · recontó '+h(c.reconteo_nombre):''} · ${c.estado} por ${h(c.aprobado_nombre||'')}${c.precision!=null?' · precisión '+c.precision+'%':''}</div></div><button class="btn sec sm" onclick="revisarConteo('${c.id}',true)">Ver</button></div>`).join('')||'<div class="muted">Sin conteos</div>'}`;
+   6. Dirección aprueba el ajuste con PIN. Semanal: críticos (${cfg('freq_criticos',7)} días) · Completo: cada ${cfg('freq_completo',15)} días.</div></details>`;
 }
 const TIPO_CONTEO={criticos:'Críticos',completo:'Completo',carro:'Carro rojo'};
 async function nuevoConteo(tipo){
@@ -1377,7 +1458,7 @@ async function abrirConteo(cid){
   const m=modal(`${mhead('Conteo · '+h(ubicById(c.ubicacion_id)?.nombre))}<div class="muted">Cuenta lo que físicamente encuentras, gaveta por gaveta. Se guarda solo.</div>
   <div class="row" style="margin:8px 0;gap:8px"><input placeholder="Buscar…" id="cQ"><button class="btn sec" style="flex:0 0 auto" id="cScan">📷 Escanear etiqueta</button></div>
   <div class="muted" id="cProg"></div>
-  <div id="cL">${secs.map(s=>`<div class="gav"><div class="gav-h"><b>${h(s)}</b><span class="muted" data-fc="${h(s)}"></span><button class="btn sec sm" data-foto="${h(s)}">📷 Foto de la gaveta</button></div>${mats.filter(i=>gavetaDe(matById(i.material_id))===s).map(fila).join('')}</div>`).join('')}
+  <div id="cL">${secs.map(s=>`<div class="gav" data-g="${h(s)}"><div class="gav-h"><b>${h(s)}</b><span class="muted" data-fc="${h(s)}"></span><button class="btn sec sm" data-foto="${h(s)}">📷 Foto de la gaveta</button></div>${mats.filter(i=>gavetaDe(matById(i.material_id))===s).map(fila).join('')}</div>`).join('')}
   ${lios.length?`<div class="gav"><div class="gav-h"><b>Lentes intraoculares</b><span class="muted">marca los que están presentes</span></div>${lios.map(i=>{const l=S.lios.find(x=>x.id===i.lio_unidad_id);return `<div class="list-item" data-n="${h(((l?.modelo||'')+' '+(l?.serie||'')).toLowerCase())}"><div class="grow">${h(l?.modelo||'LIO')} <b>${fmtN(l?.dioptria)} D</b><div class="muted">Serie ${h(l?.serie||'—')} · cad. ${fCorta(l?.caducidad)}</div></div><input type="checkbox" style="width:26px;height:26px" data-lio="${i.id}" ${i.contado===1?'checked':''}></div>`}).join('')}</div>`:''}</div>
   <input type="file" id="cFoto" accept="image/*" capture="environment" style="display:none">
   <div class="acts"><button class="btn sec" onclick="closeModal(this.closest('.modal'))">Guardar y salir</button><button class="btn" id="env">Terminar conteo</button></div>`);
@@ -1393,7 +1474,7 @@ async function abrirConteo(cid){
   m.querySelectorAll('[data-foto]').forEach(b=>b.onclick=()=>{secFoto=b.dataset.foto;m.querySelector('#cFoto').click()});
   m.querySelector('#cFoto').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{toast('Subiendo foto…');const url=await subirArchivo(f,'conteos');fotos.push({seccion:secFoto,url,at:new Date().toISOString(),por:S.user.nombre});
     await q(sb.from('qx_conteos').update({fotos}).eq('id',cid));c.fotos=fotos;toast('Foto guardada');prog()}catch(x){dbErr(x,'Foto')}e.target.value=''};
-  m.querySelector('#cScan').onclick=()=>escanear(cod=>{const r=[...m.querySelectorAll('.cnt')].find(x=>x.dataset.cod&&cod.toUpperCase().includes(x.dataset.cod.toUpperCase()));
+  m.querySelector('#cScan').onclick=()=>escanear(cod=>{if(/^GAV:/i.test(cod)){const g=[...m.querySelectorAll('.gav')].find(x=>x.dataset.g===cod.slice(4));if(!g)return toast('Esa gaveta no está en este conteo',true);m.querySelector('#cQ').value='';m.querySelectorAll('#cL .list-item').forEach(x=>x.style.display='');g.scrollIntoView({behavior:'smooth',block:'start'});g.classList.add('flash');setTimeout(()=>g.classList.remove('flash'),1600);return}const r=[...m.querySelectorAll('.cnt')].find(x=>x.dataset.cod&&cod.toUpperCase().includes(x.dataset.cod.toUpperCase()));
     if(!r)return toast('Esa etiqueta no está en este conteo',true);m.querySelector('#cQ').value='';m.querySelectorAll('#cL .list-item').forEach(x=>x.style.display='');r.scrollIntoView({behavior:'smooth',block:'center'});r.classList.add('flash');setTimeout(()=>r.classList.remove('flash'),1600);(r.querySelector('.qc')||r.querySelector('.qty')).focus()});
   prog();
   m.querySelector('#env').onclick=async()=>{
@@ -1482,8 +1563,11 @@ async function escanear(cb){
   const loop=async()=>{if(!on)return;try{const r=await det.detect(v);if(r.length){stop();return cb(r[0].rawValue)}}catch(e){}requestAnimationFrame(loop)};loop();
 }
 /* ----- etiquetas QR para gavetas y materiales ----- */
-async function imprimirEtiquetas(area){
-  const mats=(area==='carro_rojo'?matsCarro():matsQX()).sort((a,b)=>gavetaDe(a).localeCompare(gavetaDe(b))||a.nombre.localeCompare(b.nombre));
+async function imprimirEtiquetas(area,modo){
+  if(!modo){const m=modal(`${mhead('Etiquetas QR')}<div class="muted">Por gaveta: una etiqueta por cajón o anaquel con su lista; al escanearla te lleva a esa gaveta en el conteo. Es lo práctico cuando hay mucho material.</div><div class="acts"><button class="btn sec" id="eM">Por material (críticos)</button><button class="btn" id="eG">Por gaveta</button></div>`,'sm');m.querySelector('#eG').onclick=()=>{m.remove();imprimirEtiquetas(area,'gaveta')};m.querySelector('#eM').onclick=()=>{m.remove();imprimirEtiquetas(area,'material')};return}
+  if(modo==='gaveta'){const ms=(area==='carro_rojo'?matsCarro():matsQX());const gs=[...new Set(ms.map(gavetaDe))].sort();toast('Generando etiquetas…');const et=[];for(const g of gs){const l=ms.filter(m=>gavetaDe(m)===g);et.push(`<div class="etq etg"><img src="${await qrURL('GAV:'+g)}"><div><b>${h(g)}</b><span>${l.length} materiales · ${l.filter(m=>critOf(m)==='critico').length} críticos</span><span class="etl">${l.map(m=>h(m.nombre)).join(' · ')}</span></div></div>`)}
+    return printWin(`${printHead('Etiquetas por gaveta · '+(area==='carro_rojo'?'Carro rojo':'Quirófano'))}<div class="etqs" style="grid-template-columns:repeat(2,1fr)">${et.join('')}</div>`)}
+  const mats=(area==='carro_rojo'?matsCarro():matsQX().filter(m=>critOf(m)==='critico')).sort((a,b)=>gavetaDe(a).localeCompare(gavetaDe(b))||a.nombre.localeCompare(b.nombre));
   const sinCod=mats.filter(m=>!m.codigo);
   if(sinCod.length&&can.catalogo()){for(const m of sinCod){m.codigo=(area==='carro_rojo'?'CR-':'QX-')+m.id.slice(0,6).toUpperCase();await sb.from('qx_materiales').update({codigo:m.codigo}).eq('id',m.id)}}
   toast('Generando etiquetas…');
@@ -1515,33 +1599,31 @@ function carroResumen(){
   return {e,falt,venc,camb,ult,ultSello,ultRev,dRev,revVencida,selloRoto,alerta:carroUb()?e.filter(x=>(x.nivel!=='ok'&&critOf(x.m)==='critico')||x.venc.length).length+(revVencida?1:0)+(selloRoto?1:0):0}
 }
 const CR_EST={falta:['p-rojo','Falta'],bajo:['p-amar','Bajo mínimo'],ok:['p-verde','Completo']};
+/* ----- carro rojo: prioridad conteo, faltantes, vencidos y por vencer ----- */
 function vCarro(){
-  const cu=carroUb(),R=carroResumen(),f=S.sub.crF||'todos',qq=(S.sub.crQ||'').toLowerCase();
-  let html=`<div class="row" style="margin-bottom:10px"><h2 style="flex:3">Carro rojo</h2></div>`;
+  const cu=carroUb(),R=carroResumen(),qq=(S.sub.crQ||'').toLowerCase();
+  let html=`<div class="row" style="margin-bottom:10px"><h2 style="flex:3">Carro rojo</h2>${R.ultSello?`<span class="muted" style="flex:0 0 auto">Sello <b style="color:var(--ink)">${h(R.ultSello.sello_nuevo)}</b></span>`:''}</div>`;
   if(!cu){$('#main').innerHTML=html+`<div class="card empty">Esta sede no tiene carro rojo configurado.${can.config()?`<div style="margin-top:10px"><button class="btn" onclick="crearCarro()">Crear carro rojo en esta sede</button></div>`:''}</div>`;return}
-  if(R.selloRoto)html+=`<div class="banner rojo"><b>El carro se abrió el ${fDT(R.ult.created_at)}</b>${R.ult.paciente?' ('+h(R.ult.paciente)+')':''} y no se ha vuelto a sellar. Repón lo usado y registra el nuevo sello.${can.inventario()?` <button class="btn sm" onclick="formCarroRevision('reposicion')">Reponer y sellar</button>`:''}</div>`;
-  else if(R.revVencida)html+=`<div class="banner amar"><b>Revisión del carro pendiente.</b> ${R.ultRev?'La última fue hace '+R.dRev+' días':'No hay revisiones registradas'}; toca cada ${cfg('carro_rev_dias',7)} días.${can.inventario()?` <button class="btn sm" onclick="formCarroRevision('rapida')">Revisar ahora</button>`:''}</div>`;
-  const tile=(k,cls,big,lab,sub)=>`<button class="tile ${cls}" onclick="S.sub.crF='${k}';render()"><b>${big}</b><span>${lab}</span>${sub?`<small>${sub}</small>`:''}</button>`;
-  html+=`<div class="tiles">
-   ${tile('falta',R.falt.some(x=>critOf(x.m)==='critico')?'t-rojo':R.falt.length?'t-amar':'',R.falt.length,'Faltantes',R.falt.filter(x=>critOf(x.m)==='critico').length+' críticos')}
-   ${tile('vencido',R.venc.length?'t-rojo':'',R.venc.length,'Vencidos','retirar hoy')}
-   ${tile('cambiar',R.camb.length?'t-amar':'',R.camb.length,'Por cambiar',`caducan en ${Math.round(avisoCarro()/30)} meses o menos`)}
-   <button class="tile ${R.selloRoto?'t-rojo':''}" onclick="formCarroRevision()"><b style="font-size:20px">${R.ultSello?h(R.ultSello.sello_nuevo):'—'}</b><span>Sello actual</span><small>${R.ultRev?'revisado '+fCorta(_dia(R.ultRev.created_at))+' · '+h(R.ultRev.usuario_nombre||''):'sin revisiones'}</small></button>
+  if(R.selloRoto)html+=`<div class="banner rojo"><b>Carro abierto el ${fDT(R.ult.created_at)}</b>${R.ult.paciente?' ('+h(R.ult.paciente)+')':''}. Repón y coloca sello nuevo.${can.inventario()?` <button class="btn sm" onclick="formCarroRevision('reposicion')">Reponer y sellar</button>`:''}</div>`;
+  else if(R.revVencida)html+=`<div class="banner amar"><b>Revisión pendiente.</b> ${R.ultRev?'Última hace '+R.dRev+' días':'Sin revisiones'}; toca cada ${cfg('carro_rev_dias',7)} días.${can.inventario()?` <button class="btn sm" onclick="formCarroRevision('rapida')">Revisar</button>`:''}</div>`;
+  if(can.inventario())html+=`<div class="acc"><button class="btn" onclick="nuevoConteo('carro')">Iniciar conteo</button><button class="btn sec" onclick="formCarroUso()">Registrar uso</button><button class="btn sec" onclick="formCarroEntrada()">Reponer</button><button class="btn sec" onclick="formCarroRevision()">Revisión y sello</button></div>`;
+  const ab=S.conteos.find(c=>c.ubicacion_id===cu.id&&['abierto','reconteo','enviado'].includes(c.estado));
+  if(ab)html+=`<div class="list-item card" style="padding:10px 14px"><div class="grow"><b>Conteo del carro en curso</b><div class="muted">${fDT(ab.created_at)} · ${h(ab.creado_nombre||'')}</div></div><button class="btn sm" onclick="${ab.estado==='abierto'?'abrirConteo':ab.estado==='reconteo'?'reconteo':'revisarConteo'}('${ab.id}')">${ab.estado==='abierto'?'Continuar':ab.estado==='reconteo'?'2º conteo':'Revisar'}</button></div>`;
+  const row=(x,extra)=>`<div class="list-item" onclick="verCarroMat('${x.m.id}')" style="cursor:pointer"><div class="grow"><b>${h(x.m.nombre)}</b><div class="muted">${h(x.m.categoria||'')}</div></div>${extra}</div>`;
+  const falt=R.falt.slice().sort((a,b)=>(critOf(a.m)==='critico'?0:1)-(critOf(b.m)==='critico'?0:1));
+  html+=`<div class="prio">
+   <div class="card"><div class="ph3"><h3>Faltantes</h3><span class="cnt">${R.falt.length}</span></div>${falt.map(x=>row(x,`<span class="muted" style="flex:0 0 auto">${fmtN(x.vig)} / ${fmtN(x.min)}</span>${critOf(x.m)==='critico'?'<span class="pill p-rojo">crítico</span>':''}`)).join('')||'<div class="muted">Nada falta</div>'}</div>
+   <div class="card"><div class="ph3"><h3>Vencidos</h3><span class="cnt">${R.venc.length}</span></div>${R.venc.map(x=>row(x,`<span class="pill p-rojo">${x.venc.map(l=>fCorta(l.caducidad)).join(', ')}</span>`)).join('')||'<div class="muted">Sin vencidos</div>'}</div>
+   <div class="card"><div class="ph3"><h3>Por vencer</h3><span class="cnt">${R.camb.length}</span></div><div class="muted" style="margin-bottom:4px">Cambio ${inpAviso('carro_aviso_dias',avisoCarro())} días antes de caducar</div>${R.camb.map(x=>row(x,`<span class="pill p-amar">${fCorta(x.camb[0].caducidad)}</span>`)).join('')||'<div class="muted">Nada por vencer</div>'}</div>
   </div>`;
-  if(can.inventario())html+=`<div class="row" style="margin:4px 0 12px;flex-wrap:wrap"><button class="btn" onclick="formCarroUso()">Usé medicamento del carro</button><button class="btn sec" onclick="formCarroEntrada()">＋ Reponer</button><button class="btn sec" onclick="formCarroRevision()">Revisión y sello</button><button class="btn sec" onclick="nuevoConteo('carro')">Conteo del carro</button><button class="btn sec" onclick="imprimirEtiquetas('carro_rojo')">🏷 Etiquetas</button>${can.pedir()&&(R.falt.length||R.venc.length||R.camb.length)?`<button class="btn sec" onclick="formPedido([...new Set([...R_ids('falt'),...R_ids('venc'),...R_ids('camb')])])">Pedir a COE Finanzas</button>`:''}</div>`;
-  html+=`<div class="row" style="margin-bottom:8px"><input placeholder="Buscar medicamento o lote" value="${h(S.sub.crQ||'')}" oninput="S.sub.crQ=this.value;clearTimeout(window._cq);window._cq=setTimeout(()=>{render();const i=document.querySelector('#main input');i.focus();i.setSelectionRange(i.value.length,i.value.length)},350)"></div>
-  <div class="tabs">${[['todos','Todos'],['falta','Faltantes'],['cambiar','Por cambiar'],['vencido','Vencidos']].map(([k,t])=>`<button class="${f===k?'on':''}" onclick="S.sub.crF='${k}';render()">${t}</button>`).join('')}</div>`;
-  const lista=R.e.filter(x=>(f==='todos'||(f==='falta'&&x.nivel!=='ok')||(f==='vencido'&&x.venc.length)||(f==='cambiar'&&x.camb.length&&!x.venc.length))&&(!qq||(x.m.nombre+' '+x.ls.map(l=>l.lote).join(' ')+' '+(x.m.categoria||'')).toLowerCase().includes(qq)));
-  html+=CRIT_ORD.map(k=>{const lk=lista.filter(x=>critOf(x.m)===k);if(!lk.length)return '';const cats=[...new Set(lk.map(x=>x.m.categoria||'General'))];
-    return `<div class="critsec c-${k}"><div class="critsec-h"><b>${CRIT[k][0]}</b><span class="muted">${lk.length} medicamentos</span>${lk.some(x=>x.nivel!=='ok'||x.venc.length)?`<span class="pill ${k==='critico'?'p-rojo':'p-amar'}">${lk.filter(x=>x.nivel!=='ok'||x.venc.length).length} con pendiente</span>`:'<span class="pill p-verde">Completo y vigente</span>'}</div>
-    ${cats.map(cat=>`<div class="sec-t">${h(cat)}</div><div class="card" style="padding:4px 10px"><div class="tblwrap"><table><tr><th>Medicamento</th><th>Lote</th><th>Caducidad</th><th>Exist. / mín.</th><th>Estado</th></tr>
-    ${lk.filter(x=>(x.m.categoria||'General')===cat).map(x=>{const pc=x.ls.find(l=>l.caducidad),dc=pc?diasHasta(pc.caducidad):null;
-      return `<tr onclick="verCarroMat('${x.m.id}')" style="cursor:pointer"><td><b>${h(x.m.nombre)}</b>${x.m.notas?`<div class="muted">${h(x.m.notas)}</div>`:''}</td><td class="muted">${x.ls.map(l=>h(l.lote||'—')).join('<br>')||'—'}</td>
-      <td>${x.ls.map(l=>{const d=l.caducidad?diasHasta(l.caducidad):null;return l.caducidad?`<span class="pill ${d<0?'p-rojo':d<=avisoCarro()?'p-amar':''}">${fCorta(l.caducidad)}${d<0?' · vencido':d<=avisoCarro()?' · cambiar':''}</span>`:'<span class="muted">sin fecha</span>'}).join('<br>')||'—'}</td>
-      <td><b style="font-size:16px">${fmtN(x.vig)}</b> / ${fmtN(x.min)}${x.venc.length?`<div class="muted">+${fmtN(x.st-x.vig)} vencido</div>`:''}</td><td><span class="pill ${CR_EST[x.nivel][0]}">${CR_EST[x.nivel][1]}</span></td></tr>`}).join('')}</table></div></div>`).join('')}</div>`}).join('')||'<div class="card empty">Sin medicamentos en esta vista</div>';
-  const revs=S.carroRev.filter(r=>!r.sede_id||r.sede_id===S.sede).slice(0,12);
-  html+=`<div class="card"><h3>Bitácora del carro</h3>${revs.map(r=>`<div class="list-item"><div class="grow"><b>${REV_TIPO[r.tipo]||r.tipo}</b>${r.sello_nuevo?' · sello <b>'+h(r.sello_nuevo)+'</b>':''}${r.tipo==='uso'?' · '+h(r.evento||'')+(r.paciente?' · '+h(r.paciente):''):''}<div class="muted">${fDT(r.created_at)} · ${h(r.usuario_nombre||'')}${(r.items||[]).length?' · '+(r.items||[]).map(i=>h(i.nombre)+' ×'+fmtN(i.cantidad)).join(', '):''}${r.notas?' · '+h(r.notas):''}</div></div>${r.tipo==='uso'?`<button class="btn sec sm" onclick="hojaConsumoCarro('${r.id}')">Hoja</button>`:''}</div>`).join('')||'<div class="muted">Sin registros</div>'}</div>
-  <button class="btn sec" onclick="exportCarro()">⬇ Exportar carro rojo (Excel/CSV)</button>`;
+  if(can.pedir()&&(R.falt.length||R.venc.length||R.camb.length))html+=`<button class="btn sec" style="margin-bottom:12px" onclick="formPedido([...new Set([...R_ids('falt'),...R_ids('venc'),...R_ids('camb')])])">Solicitar a Finanzas</button>`;
+  const lista=R.e.filter(x=>!qq||(x.m.nombre+' '+x.ls.map(l=>l.lote).join(' ')+' '+(x.m.categoria||'')).toLowerCase().includes(qq));
+  html+=`<details class="card" ${S.sub.crTodo||qq?'open':''} ontoggle="S.sub.crTodo=this.open"><summary><b>Todo el carro</b> <span class="muted">· ${R.e.length} medicamentos e insumos</span></summary>
+  <input placeholder="Buscar medicamento o lote" style="margin:10px 0" value="${h(S.sub.crQ||'')}" onchange="S.sub.crQ=this.value;S.sub.crTodo=true;render()">
+  ${CRIT_ORD.map(k=>{const lk=lista.filter(x=>critOf(x.m)===k);if(!lk.length)return '';return `<div class="sec-t">${CRIT[k][0]}</div><div class="tblwrap"><table><tr><th>Medicamento</th><th>Lote</th><th>Caducidad</th><th>Exist. / mín.</th></tr>${lk.map(x=>`<tr onclick="verCarroMat('${x.m.id}')" style="cursor:pointer"><td>${h(x.m.nombre)}<div class="muted">${h(x.m.categoria||'')}</div></td><td class="muted">${x.ls.map(l=>h(l.lote||'—')).join('<br>')||'—'}</td><td>${x.ls.map(l=>{const d=l.caducidad?diasHasta(l.caducidad):null;return l.caducidad?`<span class="${d<0?'t-r':d<=avisoCarro()?'t-a':''}">${fCorta(l.caducidad)}</span>`:'—'}).join('<br>')||'—'}</td><td><b>${fmtN(x.vig)}</b> / ${fmtN(x.min)}</td></tr>`).join('')}</table></div>`}).join('')}
+  <div class="row" style="margin-top:10px"><button class="btn sec sm" onclick="imprimirEtiquetas('carro_rojo')">Etiquetas</button><button class="btn sec sm" onclick="exportCarro()">Exportar</button></div></details>`;
+  const revs=S.carroRev.filter(r=>!r.sede_id||r.sede_id===S.sede).slice(0,10);
+  html+=`<details class="card"><summary><b>Bitácora del carro</b> <span class="muted">· ${revs.length} registros recientes</span></summary>${revs.map(r=>`<div class="list-item"><div class="grow"><b>${REV_TIPO[r.tipo]||r.tipo}</b>${r.sello_nuevo?' · sello '+h(r.sello_nuevo):''}${r.tipo==='uso'?' · '+h(r.evento||'')+(r.paciente?' · '+h(r.paciente):''):''}<div class="muted">${fDT(r.created_at)} · ${h(r.usuario_nombre||'')}${(r.items||[]).length?' · '+(r.items||[]).map(i=>h(i.nombre)+' ×'+fmtN(i.cantidad)).join(', '):''}${r.notas?' · '+h(r.notas):''}</div></div>${r.tipo==='uso'?`<button class="btn sec sm" onclick="hojaConsumoCarro('${r.id}')">Hoja</button>`:''}</div>`).join('')||'<div class="muted">Sin registros</div>'}</details>`;
   $('#main').innerHTML=html;
 }
 const R_ids=k=>carroResumen()[k].map(x=>x.m.id);
@@ -1633,18 +1715,203 @@ function formCarroRevision(tipoDef){
 function exportCarro(){csv([['Grupo','Medicamento','Criticidad','Lote','Caducidad','Cantidad','Existencia mínima','Estado'],...carroResumen().e.flatMap(x=>(x.ls.length?x.ls:[{}]).map(l=>[x.m.categoria,x.m.nombre,CRIT[critOf(x.m)][0],l.lote||'',l.caducidad||'',l.cantidad??0,x.min,CR_EST[x.nivel][1]+(x.venc.length?' · vencido':x.camb.length?' · por cambiar':'')]))],'carro_rojo_'+hoyISO()+'.csv')}
 
 /* ============================================================
+   INDICACIONES PRE Y POSTOPERATORIAS (WhatsApp, hoja con QR y página)
+   ============================================================ */
+const IND_PRE=`• Ayuno de 6 horas antes de la cirugía (agua simple hasta 2 horas antes).
+• Tome sus medicamentos de presión, diabetes y tiroides como siempre, con poca agua.
+• Si toma aspirina, clopidogrel, warfarina u otro anticoagulante, avísenos. Suspéndalo solo si su médico se lo indicó.
+• Báñese y lave su cara. No use maquillaje, cremas ni joyas.
+• Venga con ropa cómoda y un acompañante adulto.
+• Traiga su identificación, sus estudios y sus gotas.
+• Llegue 45 minutos antes de su hora.`;
+const IND_POST=`• No se talle ni apriete el ojo operado.
+• Use el protector para dormir durante 1 semana.
+• Aplique sus gotas como dice la receta. Lávese las manos antes.
+• No cargue más de 5 kg ni se agache bruscamente durante 2 semanas.
+• Que no le entre agua ni jabón al ojo. No use alberca ni maquillaje en 2 semanas.
+• Use lentes oscuros afuera.
+• Acuda a su revisión del día siguiente.
+• LLAME DE INMEDIATO si tiene dolor fuerte, baja de visión, ojo muy rojo o lagaña.`;
+const OJO_L={OD:'derecho',OI:'izquierdo',AO:'ambos ojos'};
+const linkInd=c=>location.origin+location.pathname+'?ind='+c.id;
+const telsProg=()=>String(cfg('tels_programar','(459) 100 0431|(459) 134 5529')).split('|').map(t=>t.trim()).filter(Boolean);
+function indicTxt(c,k){const e=espById(c.especialidad_id)?.nombre||'';return cfg('indic_'+k+'_'+e,cfg('indic_'+k,k==='pre'?IND_PRE:IND_POST))}
+function msgIndic(c){const t=telsProg();
+  return `Hola ${c.paciente_nombre}. Su cirugía quedó programada:
+📅 ${fFecha(c.fecha)} a las ${hhmm(c.hora)}
+👁 ${c.procedimiento||''}${OJO_L[c.ojo]?' · ojo '+OJO_L[c.ojo]:''}
+📍 Centro Ocular Especializado, ${sedeDir()}
+
+*ANTES DE LA CIRUGÍA*
+${indicTxt(c,'pre')}
+
+*DESPUÉS DE LA CIRUGÍA*
+${indicTxt(c,'post')}
+
+Sus indicaciones siempre aquí: ${linkInd(c)}
+¿Dudas? Llame al ${t[0]||''}${t[1]?' o escríbanos por WhatsApp al '+t[1]:''}.`}
+async function enviarIndic(id){
+  const c=S.cx.find(x=>x.id===id),t=String(c.telefono||'').replace(/\D/g,'');
+  if(t.length<10)return toast('Captura el teléfono del paciente en la cirugía',true);
+  window.open('https://wa.me/'+waNum(c.telefono)+'?text='+encodeURIComponent(msgIndic(c)),'_blank');
+  await setChecklist(id,'indicaciones',{nombre:S.user.nombre,at:new Date().toISOString(),via:'whatsapp'});await logA('indicaciones_whatsapp','qx_cirugias',id);refrescarDetalle(id);
+}
+const listaInd=t=>t.split('\n').map(x=>x.replace(/^\s*[•\-]\s*/,'').trim()).filter(Boolean);
+async function hojaIndic(id){
+  const c=S.cx.find(x=>x.id===id),qr=await qrURL(linkInd(c)),t=telsProg();
+  printWin(`<div class="hoja h2 hind"><div class="h2top">${logoTag()}<div class="h2tit">INDICACIONES<div>${h(c.procedimiento||'')}${OJO_L[c.ojo]?' · OJO '+OJO_L[c.ojo].toUpperCase():''}</div></div></div>
+  <div class="h2pac">${h(c.paciente_nombre)}</div>
+  <div class="hind-f">${fFecha(c.fecha)} · <b>${hhmm(c.hora)} h</b> · llegue 45 min antes</div>
+  <div class="hind-s"><h4>ANTES DE LA CIRUGÍA</h4><ul>${listaInd(indicTxt(c,'pre')).map(x=>`<li>${h(x)}</li>`).join('')}</ul></div>
+  <div class="hind-s"><h4>DESPUÉS DE LA CIRUGÍA</h4><ul>${listaInd(indicTxt(c,'post')).map(x=>`<li>${h(x)}</li>`).join('')}</ul></div>
+  <div class="h2pie"><div class="progtel"><div>DUDAS</div><div class="tels">${t.map((x,i)=>`<b>${h(x)}${i===1?' <small>WhatsApp</small>':''}</b>`).join('')}</div></div>${qr?`<div class="qr"><img src="${qr}" alt="QR"><div>Véalas en su celular</div></div>`:''}</div>
+  <div class="h2fin">${h(sedeDir())}</div></div>`,`<button class="btn sec" onclick="enviarIndic('${id}')">Enviar por WhatsApp</button>`);
+  await setChecklist(id,'indicaciones',{...(c.checklist?.indicaciones||{}),nombre:S.user.nombre,at:new Date().toISOString(),impresa:true});
+}
+async function paginaIndic(id){
+  document.title='Centro Ocular Especializado';const app=$('#app');app.innerHTML='<div class="empty">Cargando…</div>';
+  const [r,cf]=await Promise.all([sb.from('qx_cirugias').select('id,paciente_nombre,procedimiento,ojo,fecha,hora,especialidad_id,sede_id,estado').eq('id',id).maybeSingle(),sb.from('qx_config').select('*')]);
+  (cf.data||[]).forEach(x=>S.config[x.clave]=x.valor);const c=r.data;const t=telsProg();
+  if(!c||c.estado==='cancelada'){app.innerHTML=`<div class="login">${logoTag()}<div class="card"><h3>Indicaciones no disponibles</h3><div class="muted">Comuníquese con la clínica: ${h(t[0]||'')}</div></div></div>`;return}
+  const {data:esp}=await sb.from('qx_especialidades').select('*');S.esp=esp||[];
+  app.innerHTML=`<div class="login pind" style="max-width:560px;margin-top:2vh">${logoTag()}<div class="card"><div class="muted">Centro Ocular Especializado</div><h2 style="margin:4px 0">${h(c.paciente_nombre)}</h2>
+  <div style="font-size:20px"><b>${fFecha(c.fecha)} · ${hhmm(c.hora)} h</b></div><div class="muted">${h(c.procedimiento||'')}${OJO_L[c.ojo]?' · ojo '+OJO_L[c.ojo]:''} · llegue 45 minutos antes</div></div>
+  <div class="card"><h3>Antes de la cirugía</h3><ul>${listaInd(indicTxt(c,'pre')).map(x=>`<li>${h(x)}</li>`).join('')}</ul></div>
+  <div class="card"><h3>Después de la cirugía</h3><ul>${listaInd(indicTxt(c,'post')).map(x=>`<li>${h(x)}</li>`).join('')}</ul></div>
+  <div class="card"><h3>¿Dudas?</h3>${t[0]?`<a class="btn" style="width:100%;margin-bottom:8px" href="tel:${t[0].replace(/\D/g,'')}">Llamar ${h(t[0])}</a>`:''}${t[1]?`<a class="btn sec" style="width:100%" href="https://wa.me/${waNum(t[1])}">WhatsApp ${h(t[1])}</a>`:''}</div></div>`;
+}
+function vIndic(out){
+  const esps=S.esp.filter(e=>e.activa);
+  out(`<h2>Indicaciones al paciente</h2><div class="muted" style="margin-bottom:10px">Texto que se envía por WhatsApp al programar, se imprime en la hoja con QR y aparece en la página del paciente. Un renglón por indicación.</div>
+  <div class="card"><label>Especialidad</label><select id="inE"><option value="">General (todas)</option>${esps.map(e=>`<option value="${h(e.nombre)}">${h(e.nombre)}</option>`).join('')}</select>
+  <label>Antes de la cirugía</label><textarea id="inPre" style="min-height:170px"></textarea><label>Después de la cirugía</label><textarea id="inPost" style="min-height:190px"></textarea>
+  <div class="acts"><button class="btn" onclick="guardarIndic()">Guardar con PIN</button></div></div>`);
+  setTimeout(()=>{const f=()=>{const e=$('#inE').value,sf=e?'_'+e:'';$('#inPre').value=cfg('indic_pre'+sf,cfg('indic_pre',IND_PRE));$('#inPost').value=cfg('indic_post'+sf,cfg('indic_post',IND_POST))};$('#inE').onchange=f;f()},0);
+}
+async function guardarIndic(){const e=$('#inE').value,sf=e?'_'+e:'';if(!await pedirPIN('Guardar indicaciones'))return;await setCfg('indic_pre'+sf,$('#inPre').value.trim());await setCfg('indic_post'+sf,$('#inPost').value.trim());toast('Indicaciones guardadas')}
+
+/* ============================================================
+   PAPELERÍA QUIRÚRGICA (expediente clínico)
+   ============================================================ */
+const DOCS_QX=[['frontal','Hoja frontal del expediente quirúrgico','COE-QX-01'],['oms','Lista de verificación de cirugía segura (OMS)','COE-QX-02'],['preop','Nota preoperatoria','COE-QX-03'],['preanest','Valoración preanestésica','COE-QX-04'],['anest','Registro anestésico','COE-QX-05'],['enf','Hoja de enfermería quirúrgica','COE-QX-06'],['postop','Nota postoperatoria','COE-QX-07'],['postanest','Nota postanestésica y recuperación','COE-QX-08'],['cons','Consentimiento informado de cirugía','COE-QX-09'],['consan','Consentimiento informado de anestesia','COE-QX-10'],['egreso','Indicaciones de egreso','COE-QX-11'],['consumo','Hoja de consumo de material','COE-QX-12']];
+function medInfo(nombre){const ls=String(cfg('medicos_cedulas','Dr. José Antonio Villegas Ávila|7256707|9457035')).split('\n').map(l=>l.split('|').map(x=>x.trim())).filter(l=>l[0]);
+  const n=normTxt(nombre||'');const f=ls.find(l=>normTxt(l[0]).split(/\s+/).filter(w=>w.length>3&&!/^(dr|dra)\.?$/.test(w)).some(w=>n.includes(w)))||(!nombre?ls[0]:null);
+  return f?{nombre:f[0],ced:f[1]||'',esp:f[2]||''}:{nombre:nombre||'',ced:'',esp:''}}
+function papeleriaCx(id){
+  const c=S.cx.find(x=>x.id===id),pp=c.checklist?.papeleria||{};
+  const m=modal(`${mhead('Papelería quirúrgica')}<div class="muted">Se llena con los datos del paciente, la clínica y el cirujano. Lo que falte se completa a mano.</div>
+  <div class="grid2"><div><label>Anestesiólogo</label><input id="ppA" value="${h(pp.anest||cfg('anestesiologo',''))}"></div><div><label>Ayudante</label><input id="ppY" value="${h(pp.ayud||'')}"></div>
+  <div><label>Instrumentista</label><input id="ppI" value="${h(pp.instr||'')}"></div><div><label>Circulante</label><input id="ppC" value="${h(pp.circ||'')}"></div>
+  <div><label>Sexo</label><select id="ppS"><option value="">—</option>${['Femenino','Masculino'].map(x=>`<option ${pp.sexo===x?'selected':''}>${x}</option>`).join('')}</select></div><div><label>Diagnóstico preoperatorio</label><input id="ppD" value="${h(pp.dx||'')}" placeholder="Ej. Catarata senil ${h(c.ojo||'')}"></div></div>
+  <div class="sec-t">Documentos</div><div class="chkgrid">${DOCS_QX.map(([k,t,cod])=>`<label class="chk"><input type="checkbox" class="ppK" value="${k}" ${k==='cons'||k==='consan'?(pp.cons===false?'':'checked'):'checked'}>${t}</label>`).join('')}</div>
+  <div class="acts"><button class="btn" id="ok">Generar e imprimir</button></div>`);
+  m.querySelector('#ok').onclick=async()=>{const g=s=>m.querySelector(s).value.trim();
+    const d={anest:g('#ppA'),ayud:g('#ppY'),instr:g('#ppI'),circ:g('#ppC'),sexo:g('#ppS'),dx:g('#ppD')};const ks=[...m.querySelectorAll('.ppK:checked')].map(x=>x.value);
+    if(!ks.length)return toast('Elige al menos un documento',true);
+    try{await setChecklist(id,'papeleria',{...d,cons:ks.includes('cons')})}catch(e){}
+    imprimirPapeleria(c,d,ks)};
+}
+async function imprimirPapeleria(c,d,ks){
+  const lio=c.lio_unidad_id?S.lios.find(l=>l.id===c.lio_unidad_id):null,med=medInfo(c.cirujano),req=c.lio_requerido;
+  const edad=c.fecha_nacimiento?Math.floor((new Date(c.fecha)-new Date(c.fecha_nacimiento))/31557600000):'';
+  const tel=telsProg()[0]||'',sala=ubicById(c.sala_id)?.nombre||'';
+  const items=S.cxItems.filter(i=>i.cirugia_id===c.id);
+  const L=(n=1)=>Array.from({length:n},()=>'<div class="ln"></div>').join('');
+  const cb=(on,t)=>`<span class="cb">${on?'☒':'☐'} ${t}</span>`;
+  const ojoBox=`${cb(c.ojo==='OD','OD')} ${cb(c.ojo==='OI','OI')} ${cb(c.ojo==='AO','AO')}`;
+  const pac=`<table class="pq-pac"><tr><td colspan="2">Paciente: <b>${h(c.paciente_nombre)}</b></td><td>Exp.: <b>${h(c.expediente||'')}</b></td><td>Fecha: <b>${fCorta(c.fecha)}</b> ${hhmm(c.hora)}</td></tr>
+   <tr><td>Edad: <b>${edad}</b>${c.fecha_nacimiento?' · F. nac. '+fCorta(c.fecha_nacimiento):''}</td><td>Sexo: <b>${h(d.sexo||'')}</b></td><td>Tel.: ${h(c.telefono||'')}</td><td>${h(sala)}</td></tr>
+   <tr><td colspan="2">Procedimiento: <b>${h(c.procedimiento||'')}</b></td><td>Ojo: ${ojoBox}</td><td>Anestesia: <b>${h(c.anestesia||'')}</b></td></tr>
+   <tr><td colspan="2">Cirujano: <b>${h(med.nombre)}</b>${med.ced?' · Céd. '+h(med.ced):''}${med.esp?' · Céd. esp. '+h(med.esp):''}</td><td colspan="2">Anestesiólogo: <b>${h(d.anest||'')}</b></td></tr>
+   <tr><td colspan="4">Alergias: <b>${h(c.alergias||'')}</b> · Anticoagulantes: <b>${h(c.anticoagulantes||'')}</b>${c.riesgo_diabetes?' · <b>Diabetes</b>':''}${c.riesgo_glaucoma?' · <b>Glaucoma</b>':''}${req?' · LIO indicado: <b>'+h(lioTxt(req))+'</b>':''}</td></tr></table>`;
+  const head=(t,cod)=>`<div class="pq-h">${logoTag()}<div class="pq-c"><b>CENTRO OCULAR ESPECIALIZADO</b><br>${h(sedeDir())}${tel?' · Tel. '+h(tel):''}</div><div class="pq-t">${t}<small>${cod}</small></div></div>${pac}`;
+  const pie=(cod,ext)=>`<div class="pq-f">Expediente clínico conforme a NOM-004-SSA3-2012${ext?' · '+ext:''} · ${cod} · Folio ${h(c.folio||'')}</div>`;
+  const firma=(...ps)=>`<div class="pq-fi">${ps.map(p=>`<div><div class="fl"></div>${p}</div>`).join('')}</div>`;
+  const firmaMed=`Nombre y firma del cirujano<br><b>${h(med.nombre)}</b>${med.ced?'<br>Céd. prof. '+h(med.ced):''}${med.esp?' · Céd. esp. '+h(med.esp):''}`;
+  const vit=(rows,cols)=>`<table class="vit"><tr><th>Hora</th>${Array.from({length:cols},()=>'<th></th>').join('')}</tr>${rows.map(r=>`<tr><td>${r}</td>${Array.from({length:cols},()=>'<td></td>').join('')}</tr>`).join('')}</table>`;
+  const tec=['Tópica','Local','Retrobulbar','Peribulbar','Subtenoniana','Sedación','General'];
+  const P={
+  frontal:(cd)=>`${head('HOJA FRONTAL DEL EXPEDIENTE QUIRÚRGICO',cd)}
+   <table><tr><th colspan="2">Equipo quirúrgico</th><th colspan="2">Lente intraocular</th></tr>
+   <tr><td>Cirujano</td><td>${h(med.nombre)}</td><td>Indicado</td><td>${req?h(lioTxt(req)):'No lleva'}</td></tr>
+   <tr><td>Ayudante</td><td>${h(d.ayud||'')}</td><td>Asignado</td><td>${lio?h((lio.marca||'')+' '+lio.modelo+' '+fmtN(lio.dioptria)+' D'):''}</td></tr>
+   <tr><td>Anestesiólogo</td><td>${h(d.anest||'')}</td><td>Serie / lote</td><td>${lio?h((lio.serie||'')+' / '+(lio.lote||'')):''}</td></tr>
+   <tr><td>Instrumentista</td><td>${h(d.instr||'')}</td><td>Caducidad</td><td>${lio?.caducidad?fCorta(lio.caducidad):''}</td></tr>
+   <tr><td>Circulante</td><td>${h(d.circ||'')}</td><td>Verificó poder (2ª persona)</td><td>${h(c.lio_verificado_nombre||'')}</td></tr></table>
+   <table style="margin-top:8px"><tr><td style="width:30%">Diagnóstico preoperatorio</td><td>${h(d.dx||'')}</td></tr><tr><td>Cirugía programada</td><td>${h(c.procedimiento||'')} · ${h(c.ojo||'')}</td></tr><tr><td>Paquete</td><td>${h(c.paquete_nombre||'')}</td></tr><tr><td>Valoración preoperatoria</td><td>${evidCx(c.id,'valoracion').length?'Adjunta en sistema':c.checklist?.valoracion_na?'No aplica: '+h(c.checklist.valoracion_na.motivo||''):''}</td></tr><tr><td>Consentimiento informado</td><td>${evidCx(c.id,'consentimiento').length?'Firmado y digitalizado':'Pendiente'}</td></tr><tr><td>Observaciones</td><td>${h(c.notas||'')}${L(2)}</td></tr></table>
+   ${firma(firmaMed,'Enfermería (recibe expediente)')}${pie(cd)}`,
+  oms:(cd)=>`${head('LISTA DE VERIFICACIÓN DE CIRUGÍA SEGURA',cd)}
+   <div class="pq-3"><div><h4>1. ENTRADA <small>antes de la anestesia</small></h4>${['Paciente confirma identidad, procedimiento, ojo y consentimiento','Sitio quirúrgico (ojo) marcado','Consentimiento informado firmado','Biometría y cálculo de LIO en sala','Alergias conocidas revisadas','Anticoagulantes revisados','Equipo de anestesia y monitor verificados','Oxímetro colocado y funcionando','Riesgo de vía aérea difícil evaluado','Riesgo de hemorragia evaluado'].map(x=>`<div>☐ ${x}</div>`).join('')}</div>
+   <div><h4>2. PAUSA <small>antes de la incisión</small></h4>${['Todo el equipo se presenta por nombre y función','Confirmación de paciente, procedimiento y OJO correcto: '+h(c.ojo||''),'LIO correcto: modelo, poder y serie leídos en voz alta','LIO de respaldo disponible','Profilaxis antibiótica / antiséptica aplicada (iodopovidona 5%)','Cirujano: pasos críticos y posibles eventos','Anestesia: consideraciones del paciente','Enfermería: esterilidad confirmada (indicadores)','Equipo (faco / vitrectomía / microscopio) funcionando','Imágenes y estudios disponibles'].map(x=>`<div>☐ ${x}</div>`).join('')}</div>
+   <div><h4>3. SALIDA <small>antes de que salga</small></h4>${['Nombre del procedimiento realizado','Recuento de gasas, agujas e instrumental correcto','Etiquetado de muestras (si aplica)','Etiqueta del LIO pegada en el expediente','Problemas con el equipo reportados','Indicaciones postoperatorias y de recuperación','Protector ocular colocado','Medicamentos y receta entregados'].map(x=>`<div>☐ ${x}</div>`).join('')}</div></div>
+   ${firma('Cirujano','Anestesiólogo','Enfermería circulante')}${pie(cd,'Lista OMS adaptada a oftalmología')}`,
+  preop:(cd)=>`${head('NOTA PREOPERATORIA',cd)}
+   <table class="pq-n"><tr><td>Fecha de la cirugía</td><td>${fFecha(c.fecha)} ${hhmm(c.hora)} h</td></tr><tr><td>Diagnóstico</td><td>${h(d.dx||'')}${L(1)}</td></tr><tr><td>Plan quirúrgico</td><td>${h(c.procedimiento||'')} ojo ${h(OJO_L[c.ojo]||c.ojo||'')}${req?' con implante de LIO '+h(lioTxt(req)):''} bajo anestesia ${h((c.anestesia||'').toLowerCase())}${L(1)}</td></tr><tr><td>Tipo de intervención</td><td>${cb(true,'Electiva')} ${cb(false,'Urgencia')}</td></tr><tr><td>Riesgo quirúrgico</td><td>${cb(false,'Bajo')} ${cb(false,'Moderado')} ${cb(false,'Alto')}${L(1)}</td></tr><tr><td>Cuidados y plan terapéutico preoperatorios</td><td>${L(3)}</td></tr><tr><td>Pronóstico</td><td>${L(2)}</td></tr></table>
+   ${firma(firmaMed)}${pie(cd,'apartado 8.5')}`,
+  preanest:(cd)=>`${head('VALORACIÓN PREANESTÉSICA',cd)}
+   <table class="pq-n"><tr><td>Antecedentes</td><td>${c.riesgo_diabetes?'Diabetes mellitus. ':''}${L(2)}</td></tr><tr><td>Medicamentos actuales</td><td>${h(c.anticoagulantes||'')}${L(1)}</td></tr><tr><td>Alergias</td><td>${h(c.alergias||'')}</td></tr><tr><td>Ayuno</td><td>_____ horas · Última ingesta: __________</td></tr>
+   <tr><td>Signos vitales</td><td>TA ______ FC ____ FR ____ Temp ____ SpO₂ ____ % · Peso ____ kg · Talla ____ cm · Glucemia ______</td></tr>
+   <tr><td>Vía aérea</td><td>Mallampati ${['I','II','III','IV'].map(x=>cb(false,x)).join(' ')} · Apertura oral ____ · Movilidad cervical ____</td></tr><tr><td>Laboratorios / gabinete</td><td>${L(2)}</td></tr>
+   <tr><td>Estado físico ASA</td><td>${['I','II','III','IV','V'].map(x=>cb(false,x)).join(' ')}</td></tr><tr><td>Plan anestésico</td><td>${tec.map(t=>cb(normTxt(c.anestesia)===normTxt(t),t)).join(' ')}${L(1)}</td></tr><tr><td>Riesgo anestésico y observaciones</td><td>${L(2)}</td></tr></table>
+   ${firma('Nombre, firma y cédula del anestesiólogo<br><b>'+h(d.anest||'')+'</b>')}${pie(cd,'apartado 8.7 · NOM-006-SSA3-2011')}`,
+  anest:(cd)=>`${head('REGISTRO ANESTÉSICO',cd)}
+   <table><tr><td>Ingreso a sala ______</td><td>Inicio anestesia ______</td><td>Inicio cirugía ______</td><td>Fin cirugía ______</td><td>Fin anestesia ______</td><td>Salida ______</td></tr></table>
+   <div style="margin:6px 0">Técnica: ${tec.map(t=>cb(normTxt(c.anestesia)===normTxt(t),t)).join(' ')} · Posición: decúbito supino · Monitoreo: ☐ ECG ☐ PANI ☐ SpO₂ ☐ EtCO₂</div>
+   ${vit(['TA sistólica','TA diastólica','FC','SpO₂ %','FR','EtCO₂'],14)}
+   <table style="margin-top:6px"><tr><th>Medicamento</th><th>Dosis</th><th>Vía</th><th>Hora</th><th>Medicamento</th><th>Dosis</th><th>Vía</th><th>Hora</th></tr>${Array.from({length:6},()=>'<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>').join('')}</table>
+   <table style="margin-top:6px"><tr><td>Bloqueo: agente ________ volumen ____ ml · aguja ______ · abordaje ______</td><td>Líquidos: ________ ml · Sangrado: ______ ml</td></tr><tr><td colspan="2">Incidentes / complicaciones:${L(2)}</td></tr><tr><td colspan="2">Estado al salir de sala:${L(1)}</td></tr></table>
+   ${firma('Nombre, firma y cédula del anestesiólogo<br><b>'+h(d.anest||'')+'</b>')}${pie(cd,'NOM-006-SSA3-2011')}`,
+  enf:(cd)=>`${head('HOJA DE ENFERMERÍA QUIRÚRGICA',cd)}
+   <h4>Preoperatorio</h4><table><tr><td>SV ingreso: TA ______ FC ____ FR ____ T ____ SpO₂ ____ Glucemia ____</td><td>Hora de ingreso ______</td></tr>
+   <tr><td colspan="2">☐ Identificación con brazalete · ☐ Ayuno ___ h · ☐ Consentimientos firmados · ☐ Ojo marcado (${h(c.ojo||'')}) · ☐ Sin prótesis, joyas ni maquillaje · ☐ Midriasis (hora ____ ) · ☐ Vía periférica calibre ___ · ☐ Antisepsia con iodopovidona 5%</td></tr></table>
+   <h4>Transoperatorio</h4><table><tr><td>Ingreso a sala ______ · Inicio ______ · Término ______ · Salida ______</td><td>Instrumentista: ${h(d.instr||'')}<br>Circulante: ${h(d.circ||'')}</td></tr>
+   <tr><td>Recuento de gasas / agujas: inicial ______ final ______ ☐ correcto</td><td>Indicadores de esterilización: ☐ químico ☐ biológico (lote ____)</td></tr>
+   <tr><td style="height:60px">LIO implantado: ${lio?h((lio.marca||'')+' '+lio.modelo+' '+fmtN(lio.dioptria)+' D · serie '+(lio.serie||'')):''}<br><small>Pegar aquí la etiqueta del lente (trazabilidad)</small></td><td>Incidentes:${L(2)}</td></tr></table>
+   <table style="margin-top:4px"><tr><th>Material y medicamentos utilizados</th><th>Plan</th><th>Usado</th><th>Lote</th></tr>${items.map(i=>`<tr><td>${h(matById(i.material_id)?.nombre||'')}</td><td>${fmtN(i.cantidad_plan)}</td><td>${i.cantidad_usada==null?'':fmtN(i.cantidad_usada)}</td><td></td></tr>`).join('')}${Array.from({length:1},()=>'<tr><td>&nbsp;</td><td></td><td></td><td></td></tr>').join('')}</table>
+   <h4>Postoperatorio</h4><table><tr><td>SV: TA ______ FC ____ SpO₂ ____ · Aldrete ____ · Dolor (0-10) ____</td><td>☐ Oclusión / protector ocular · ☐ Indicaciones entregadas y explicadas · ☐ Receta</td></tr><tr><td>Hora de egreso ______ · Acompañante: ____________________</td><td>Observaciones:${L(1)}</td></tr></table>
+   ${firma('Enfermera(o) circulante','Enfermera(o) instrumentista')}${pie(cd,'NOM-019-SSA3-2013')}`,
+  postop:(cd)=>`${head('NOTA POSTOPERATORIA',cd)}
+   <table class="pq-n"><tr><td>Diagnóstico postoperatorio</td><td>${L(1)}</td></tr><tr><td>Operación realizada</td><td>${h(c.procedimiento||'')} ${h(c.ojo||'')}${L(1)}</td></tr><tr><td>Técnica quirúrgica</td><td>${L(4)}</td></tr><tr><td>Hallazgos transoperatorios</td><td>${L(2)}</td></tr>
+   <tr><td>Reporte de gasas y compresas</td><td>☐ Completo ☐ Incompleto</td></tr><tr><td>Incidentes y accidentes</td><td>${L(1)}</td></tr><tr><td>Cuantificación de sangrado</td><td>__________ ml</td></tr><tr><td>Estudios transoperatorios</td><td>${L(1)}</td></tr>
+   <tr><td>Implante</td><td>${lio?h((lio.marca||'')+' '+lio.modelo+' '+fmtN(lio.dioptria)+' D · serie '+(lio.serie||'')):'No aplica'}</td></tr>
+   <tr><td>Equipo quirúrgico</td><td>Cirujano: ${h(med.nombre)} · Ayudante: ${h(d.ayud||'')} · Anestesiólogo: ${h(d.anest||'')} · Instrumentista: ${h(d.instr||'')} · Circulante: ${h(d.circ||'')}</td></tr>
+   <tr><td>Estado postquirúrgico inmediato</td><td>${L(1)}</td></tr><tr><td>Plan de manejo y tratamiento postoperatorio</td><td>${L(2)}</td></tr><tr><td>Pronóstico</td><td>${L(1)}</td></tr><tr><td>Envío de piezas a patología</td><td>☐ No ☐ Sí: ______________</td></tr></table>
+   ${firma(firmaMed)}${pie(cd,'apartado 8.8')}`,
+  postanest:(cd)=>`${head('NOTA POSTANESTÉSICA Y RECUPERACIÓN',cd)}
+   <table class="pq-n"><tr><td>Medicamentos utilizados</td><td>${L(2)}</td></tr><tr><td>Duración de la anestesia</td><td>__________ min</td></tr><tr><td>Incidentes y accidentes atribuibles a la anestesia</td><td>${L(1)}</td></tr><tr><td>Balance hídrico</td><td>Ingresos ______ ml · Egresos ______ ml</td></tr><tr><td>Estado clínico al egreso de sala</td><td>${L(1)}</td></tr><tr><td>Plan de manejo</td><td>${L(1)}</td></tr></table>
+   <h4>Recuperación (escala de Aldrete)</h4><table><tr><th>Criterio</th><th>Ingreso</th><th>15 min</th><th>30 min</th><th>Egreso</th></tr>${['Actividad','Respiración','Circulación','Conciencia','Saturación de O₂'].map(x=>`<tr><td>${x}</td><td></td><td></td><td></td><td></td></tr>`).join('')}<tr><td><b>Total</b></td><td></td><td></td><td></td><td></td></tr></table>
+   ${firma('Nombre, firma y cédula del anestesiólogo<br><b>'+h(d.anest||'')+'</b>','Enfermería de recuperación')}${pie(cd,'apartado 8.9')}`,
+  cons:(cd)=>`${head('CONSENTIMIENTO INFORMADO PARA CIRUGÍA',cd)}
+   <p>En ${h((sedeById(c.sede_id)||sedeById(S.sede))?.nombre||'')}, Michoacán, a ____ de ______________ de ______, yo <b>${h(c.paciente_nombre)}</b>${edad?', de '+edad+' años':''}, en pleno uso de mis facultades, AUTORIZO al <b>${h(med.nombre)}</b>${med.ced?' (céd. prof. '+h(med.ced)+(med.esp?', céd. esp. '+h(med.esp):'')+')':''} y a su equipo para realizarme: <b>${h(c.procedimiento||'')}</b> en ${ojoBox}${req?', con implante de lente intraocular '+h(lioTxt(req)):''}.</p>
+   <p>Se me explicó en lenguaje claro el diagnóstico, el procedimiento, sus beneficios esperados, las alternativas de tratamiento y los riesgos, entre ellos: infección (endoftalmitis), inflamación, aumento de la presión intraocular, edema de córnea o de mácula, desprendimiento de retina, opacidad de cápsula posterior, ruptura de cápsula, necesidad de otra cirugía, resultado refractivo distinto al calculado y, en casos raros, pérdida de visión. Riesgos particulares de mi caso:${L(2)}</p>
+   <p>Autorizo los procedimientos adicionales que se requieran ante una contingencia o urgencia derivada del acto autorizado, atendiendo al principio de libertad prescriptiva. Sé que puedo revocar este consentimiento antes del procedimiento. Pude hacer preguntas y fueron contestadas. En caso de controversia, las partes podrán acudir a la Comisión Nacional de Arbitraje Médico (CONAMED).</p>
+   ${firma('Nombre y firma del paciente o representante legal','Testigo 1 (nombre y firma)','Testigo 2 (nombre y firma)')}${firma(firmaMed)}${pie(cd,'apartado 10.1 y 4.2')}`,
+  consan:(cd)=>`${head('CONSENTIMIENTO INFORMADO DE ANESTESIA',cd)}
+   <p>Yo <b>${h(c.paciente_nombre)}</b> autorizo al anestesiólogo <b>${h(d.anest||'______________________')}</b> a aplicarme anestesia de tipo: ${tec.map(t=>cb(normTxt(c.anestesia)===normTxt(t),t)).join(' ')}, para la cirugía <b>${h(c.procedimiento||'')}</b> del ojo ${h(OJO_L[c.ojo]||c.ojo||'')}.</p>
+   <p>Se me explicaron los riesgos: dolor o hematoma en el sitio de punción, náusea y vómito, reacciones alérgicas, alteraciones de la presión o del ritmo cardiaco, depresión respiratoria y, de forma excepcional, perforación del globo ocular por bloqueo, daño al nervio óptico o complicaciones graves que pongan en riesgo la vida. Autorizo cambiar la técnica si la seguridad lo requiere. Declaro haber respetado el ayuno indicado y haber informado mis enfermedades, alergias y medicamentos.</p>
+   ${firma('Nombre y firma del paciente o representante legal','Testigo 1','Testigo 2')}${firma('Nombre, firma y cédula del anestesiólogo')}${pie(cd,'apartado 10.1 · NOM-006-SSA3-2011')}`,
+  egreso:(cd)=>`${head('INDICACIONES DE EGRESO',cd)}<div class="pq-big"><ul>${listaInd(indicTxt(c,'post')).map(x=>`<li>${h(x)}</li>`).join('')}</ul>
+   <p>Medicamentos:${L(4)}</p><p>Próxima cita: ______________________ · Dudas: <b>${telsProg().map(h).join(' / ')}</b></p></div>${firma('Recibí y entendí (paciente o familiar)',firmaMed)}${pie(cd)}`,
+  consumo:(cd)=>`${head('HOJA DE CONSUMO DE MATERIAL',cd)}<table><tr><th>Material</th><th>Plan</th><th>Usado</th><th>Extra</th><th>Lote</th></tr>${items.map(i=>`<tr><td>${h(matById(i.material_id)?.nombre||'')}</td><td>${fmtN(i.cantidad_plan)}</td><td>${i.cantidad_usada==null?'':fmtN(i.cantidad_usada)}</td><td>${i.es_extra?'sí':''}</td><td></td></tr>`).join('')}${Array.from({length:6},()=>'<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td></tr>').join('')}</table>
+   <div style="margin-top:6px">LIO: ${lio?h((lio.marca||'')+' '+lio.modelo+' '+fmtN(lio.dioptria)+' D · serie '+(lio.serie||'')+' · '+lio.propiedad):'—'}</div>${firma('Enfermería','Recibe almacén / caja')}${pie(cd)}`
+  };
+  printWin(DOCS_QX.filter(x=>ks.includes(x[0])).map(([k,t,cod])=>`<div class="pq">${P[k](cod)}</div>`).join(''));
+  await logA('papeleria_quirurgica','qx_cirugias',c.id,{docs:ks});
+}
+
+/* ============================================================
    LIO
    ============================================================ */
 function vLIO(){
   const st=subtabs('lio',[['disp','Disponibles'],['mapa','Mapa de dioptrías'],['hist','Implantados']],'disp');
   const sedeU=ubicIdsSede();
-  let html=`<div class="row" style="margin-bottom:10px"><h2 style="flex:3">Lentes intraoculares</h2>${can.inventario()?`<button class="btn" style="flex:0 0 auto" onclick="formLIO()">＋ Recibir LIO</button>`:''}</div>${st.html}`;
+  let html=`<div class="row" style="margin-bottom:10px"><h2 style="flex:3">Stock de LIO</h2>${can.inventario()?`<button class="btn" style="flex:0 0 auto" onclick="formLIO()">＋ Recibir LIO</button>`:''}</div>${st.html}`;
   const act=S.lios.filter(l=>sedeU.has(l.ubicacion_id)&&['disponible','reservado'].includes(l.estado));
   const kp=`<div class="kpis"><div class="kpi"><b>${act.filter(l=>l.estado==='disponible').length}</b><span>Disponibles</span></div><div class="kpi"><b>${act.filter(l=>l.estado==='reservado').length}</b><span>Reservados</span></div><div class="kpi"><b>${act.filter(l=>l.propiedad==='consignacion').length}</b><span>En consignación</span></div><div class="kpi"><b>${act.filter(l=>l.caducidad&&diasHasta(l.caducidad)<=90).length}</b><span>Caducan ≤ 90 días</span></div></div>`;
   if(st.cur==='disp'){
     const fq=(S.sub.lioQ||'').toLowerCase(),fp=S.sub.lioP||'';
     const l=act.filter(x=>(!fp||x.propiedad===fp)&&(!fq||[x.modelo,x.marca,x.tipo,x.serie,fmtN(x.dioptria)].join(' ').toLowerCase().includes(fq))).sort((a,b)=>(a.modelo||'').localeCompare(b.modelo||'')||num(a.dioptria)-num(b.dioptria));
-    html+=kp+`<div class="row" style="margin-bottom:10px"><input placeholder="Modelo, serie o dioptría" value="${h(S.sub.lioQ||'')}" onchange="S.sub.lioQ=this.value;render()"><select onchange="S.sub.lioP=this.value;render()"><option value="">Propios y consignación</option><option value="propio" ${fp==='propio'?'selected':''}>Propios</option><option value="consignacion" ${fp==='consignacion'?'selected':''}>Consignación</option></select></div>
+    html+=lioAvisoCard()+kp+`<div class="row" style="margin-bottom:10px"><input placeholder="Modelo, serie o dioptría" value="${h(S.sub.lioQ||'')}" onchange="S.sub.lioQ=this.value;render()"><select onchange="S.sub.lioP=this.value;render()"><option value="">Propios y consignación</option><option value="propio" ${fp==='propio'?'selected':''}>Propios</option><option value="consignacion" ${fp==='consignacion'?'selected':''}>Consignación</option></select></div>
     <div class="card" style="padding:4px 10px"><div class="tblwrap"><table><tr><th>Modelo</th><th>D</th><th>Cil/Add</th><th>Serie</th><th>Cad.</th><th>Tipo</th><th>Estado</th></tr>${l.map(x=>`<tr onclick="verLIO('${x.id}')" style="cursor:pointer"><td>${h(x.marca||'')} ${h(x.modelo)}<div class="muted">${h(x.tipo||'')} · ${h(ubicById(x.ubicacion_id)?.nombre||'')}</div></td><td><b>${fmtN(x.dioptria)}</b></td><td>${x.cilindro?'C '+fmtN(x.cilindro):''}${x.adicion?' A '+fmtN(x.adicion):''}</td><td>${h(x.serie||'—')}</td><td><span class="pill ${x.caducidad&&diasHasta(x.caducidad)<0?'p-rojo':x.caducidad&&diasHasta(x.caducidad)<=90?'p-amar':''}">${fCorta(x.caducidad)}</span></td><td><span class="pill ${x.propiedad==='consignacion'?'p-morado':'p-azul'}">${x.propiedad==='consignacion'?'Consig.':'Propio'}</span></td><td>${x.estado==='reservado'?`<span class="pill p-amar">Reservado</span><div class="muted">${h(x.paciente_nombre||'')}</div>`:'<span class="pill p-verde">Disponible</span>'}</td></tr>`).join('')||'<tr><td colspan=7 class="empty">Sin lentes</td></tr>'}</table></div></div>`;
   }else if(st.cur==='mapa'){
     const modelos=[...new Set(act.filter(l=>l.estado==='disponible').map(l=>(l.marca?l.marca+' ':'')+l.modelo))].sort();
@@ -2083,14 +2350,14 @@ function vCotizar(){
   <div>
    <div class="card"><h3>Paciente</h3>
     <div class="grid2"><div style="grid-column:1/-1"><label for="qN">Nombre completo</label><input id="qN" value="${h(Q.paciente_nombre)}" oninput="Q.paciente_nombre=this.value"></div>
-    <div><label for="qT1">Teléfono 1 (paciente)</label><input id="qT1" inputmode="tel" value="${h(Q.telefono1)}" placeholder="10 dígitos" oninput="Q.telefono1=this.value"></div>
-    <div><label for="qT2">Teléfono 2 (familiar)</label><input id="qT2" inputmode="tel" value="${h(Q.telefono2)}" placeholder="10 dígitos" oninput="Q.telefono2=this.value"></div>
+    <div><label for="qT1">Teléfono</label><input id="qT1" inputmode="tel" value="${h(Q.telefono1)}" placeholder="10 dígitos" oninput="Q.telefono1=this.value"></div>
+    <div><label for="qT2">Tel. familiar</label><input id="qT2" inputmode="tel" value="${h(Q.telefono2)}" placeholder="10 dígitos" oninput="Q.telefono2=this.value"></div>
     <div><label for="qE">Expediente</label><input id="qE" value="${h(Q.expediente)}" oninput="Q.expediente=this.value"></div>
-    <div><label for="qM">Médico que indica</label><input id="qM" list="dlMed" value="${h(Q.medico)}" oninput="Q.medico=this.value"><datalist id="dlMed">${meds.map(m=>`<option value="${h(m)}">`).join('')}</datalist></div>
-    <div style="grid-column:1/-1"><label for="qMo">Motivo del estudio / diagnóstico</label><textarea id="qMo" placeholder="Ej. Catarata senil OD > OI; control de retinopatía diabética" oninput="Q.motivo=this.value">${h(Q.motivo)}</textarea></div></div>
+    <div><label for="qM">Médico</label><input id="qM" list="dlMed" value="${h(Q.medico)}" oninput="Q.medico=this.value"><datalist id="dlMed">${meds.map(m=>`<option value="${h(m)}">`).join('')}</datalist></div>
+    <div style="grid-column:1/-1"><label for="qMo">Diagnóstico / motivo</label><input id="qMo" placeholder="Ej. Catarata OD" value="${h(Q.motivo)}" oninput="Q.motivo=this.value"></div></div>
    </div>
    <div class="card"><h3>Agregar concepto</h3>
-    <input id="qBus" placeholder="🔎 Escribe: catarata, YAG, OCT, pterigión, amígdalas…" value="${h(Q.bus||'')}" oninput="Q.bus=this.value;drawBus()" autocomplete="off"><div id="qBusR"></div><div class="freq" id="qFreq"></div>
+    <input id="qBus" placeholder="🔎 Escribe: catarata, YAG, OCT, pterigión, amígdalas…" value="${h(Q.bus||'')}" oninput="Q.bus=this.value;drawBus()" autocomplete="off"><div id="qBusR"></div>
     <div class="cattabs">${catTabs().map(([k,t,sub])=>`<button class="${Q.cat===k?'on':''}" onclick="Q.cat='${k}';vCotizar()"><b>${t}</b><span>${sub}</span></button>`).join('')}</div>
     <div class="picker">${pickerCat(Q.cat)}</div>
    </div>
@@ -2098,7 +2365,7 @@ function vCotizar(){
   </div>
   <div><div class="card cotres" id="qRes"></div></div>
   </div>`;
-  drawQItems();drawQRes();drawBus();drawFreq();
+  drawQItems();drawQRes();drawBus();
 }
 function catTabs(){
   const esps=[...new Set(S.precios.filter(p=>p.categoria==='cirugia'&&p.activo).map(p=>p.especialidad_id))].map(espById).filter(Boolean)
@@ -2117,7 +2384,7 @@ function pickerCat(cat){
 function pickHTML(p){const ok=precioOk(p);
   if(!ok)return `<button class="pick off" onclick="toast('${num(p.precio)?'Precio vencido':'Sin precio capturado'}: pide a Dirección actualizarlo en Precios y vigencias',true)"><b>${h(p.nombre)}</b><span>${num(p.precio)?'precio vencido':'sin precio'}</span></button>`;
   const sub=`<span>${money(p.precio)} · ${LAT_TXT[p.lateralidad].replace('Precio ','')}</span>${p.es_paquete&&ahorroPaq(p)>0?`<span class="ahorro">Ahorra ${money(ahorroPaq(p))}</span>`:''}`;
-  if(p.lateralidad==='por_ojo')return `<div class="pick qk ${p.es_paquete?'paq':''}" onclick="addItemQ('${p.id}')"><b>${h(p.nombre)}</b>${sub}<div class="ojos3">${['OD','OI','AO'].map(o=>`<button type="button" title="${o==='AO'?'Ambos ojos':o==='OD'?'Ojo derecho':'Ojo izquierdo'}" onclick="event.stopPropagation();quickAdd('${p.id}','${o}')">${o}</button>`).join('')}</div></div>`;
+  if(p.lateralidad==='por_ojo')return `<div class="pick qk ${p.es_paquete?'paq':''}"><b>${h(p.nombre)}</b>${sub}<div class="ojos3">${['OD','OI','AO'].map(o=>`<button type="button" title="${o==='AO'?'Ambos ojos':o==='OD'?'Ojo derecho':'Ojo izquierdo'}" onclick="event.stopPropagation();quickAdd('${p.id}','${o}')">${o}</button>`).join('')}</div></div>`;
   return `<button class="pick ${p.es_paquete?'paq':''}" onclick="quickAdd('${p.id}')"><b>${h(p.nombre)}</b>${sub}</button>`}
 const normTxt=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
 function drawBus(){const el=$('#qBusR');if(!el)return;const t=normTxt(Q.bus).trim();if(t.length<2){el.innerHTML='';return}
@@ -2175,22 +2442,24 @@ function drawQItems(){
 function drawQRes(){
   const el=$('#qRes');if(!el)return;const r=calcCot(Q);
   el.innerHTML=`<h3>Resumen</h3>
-  ${Q.items.map((it,i)=>`<div class="rline"><span>${h(it.nombre)} <span class="muted">${it.lateralidad!=='sin_lado'?ojosTxt(it):''}</span></span><b>${money(r.cs[i].subtotal)}</b></div>`).join('')||'<div class="muted">Sin conceptos</div>'}
-  <div class="rline tot1"><span>Subtotal</span><b>${money(r.subtotal)}</b></div>
-  ${Q.items.length?`<div class="sec-t">Descuento manual</div>
-   <div class="dchips">${[0,5,10,15].map(v=>`<button class="${(v===0&&!num(Q.desc_val))||(Q.desc_tipo==='pct'&&num(Q.desc_val)===v&&v)?'on':''}" onclick="Q.desc_tipo='pct';Q.desc_val='${v||''}';Q.autorizado=null;drawQRes()">${v?v+'%':'Sin'}</button>`).join('')}</div>
-   <div class="row" style="gap:6px"><select id="qDT" style="flex:0 0 80px;min-width:0" onchange="Q.desc_tipo=this.value;Q.autorizado=null;drawQRes()"><option value="pct" ${Q.desc_tipo==='pct'?'selected':''}>%</option><option value="monto" ${Q.desc_tipo==='monto'?'selected':''}>$</option></select><input id="qDV" type="number" inputmode="decimal" value="${h(Q.desc_val)}" placeholder="Otro" onchange="Q.desc_val=this.value;Q.autorizado=null;drawQRes()"></div>
-   <div class="muted">${r.descMax>0?'Hasta '+money(r.descMax)+' lo autoriza quien cotiza con su PIN; más, con PIN de Dirección.':'En estos conceptos cualquier descuento requiere PIN de Dirección.'}</div>
-   ${r.descuento>0?`<input id="qDM" style="margin-top:6px" placeholder="Motivo del descuento (obligatorio)" value="${h(Q.desc_motivo)}" oninput="Q.desc_motivo=this.value">
-   ${Q.autorizado&&Math.abs(Q.autorizado.monto-r.descuento)<=0.5?`<div class="pill p-verde" style="margin-top:6px">✓ Autorizado con PIN por ${h(Q.autorizado.nombre)}</div>`:`<button class="btn ${r.requiereAut?'rojo':''}" style="width:100%;margin-top:8px" onclick="autorizarDesc()">🔒 Autorizar descuento con PIN${r.requiereAut?' de Dirección':''}</button>`}`:''}
-   <div class="rline"><span>Descuento</span><b>${r.descuento?'− '+money(r.descuento):money(0)}</b></div>`:''}
+  ${Q.items.map((it,i)=>`<div class="rline"><span>${h(it.nombre)} <span class="muted">${it.lateralidad!=='sin_lado'?ojosTxt(it):''}</span></span><b>${money(r.cs[i].subtotal)}</b></div>`).join('')||'<div class="muted">Agrega conceptos</div>'}
+  ${Q.items.length?`<div class="sec-t">Descuento</div>
+   <div class="dchips">${[['','Sin'],['5','5%'],['10','10%'],['15','15%']].map(([v,t])=>`<button class="${Q.desc_tipo==='pct'&&String(Q.desc_val||'')===v?'on':''}" onclick="Q.desc_tipo='pct';Q.desc_val='${v}';drawQRes()">${t}</button>`).join('')}<button class="${Q.desc_tipo==='monto'?'on':''}" onclick="Q.desc_tipo='monto';Q.desc_val='';drawQRes();setTimeout(()=>$('#qDV')?.focus(),0)">$</button></div>
+   ${Q.desc_tipo==='monto'?`<input id="qDV" type="number" inputmode="decimal" placeholder="Monto del descuento" value="${h(Q.desc_val)}" onchange="Q.desc_val=this.value;drawQRes()">`:''}
+   ${r.descuento>0?`<input id="qDM" style="margin-top:6px" placeholder="Motivo del descuento" value="${h(Q.desc_motivo)}" oninput="Q.desc_motivo=this.value"><div class="muted">${r.requiereAut&&!can.descuento()?'Supera el máximo: Dirección lo autoriza con su PIN al guardar.':'Queda firmado con tu PIN al guardar.'}</div>`:''}`:''}
+  ${r.descuento?`<div class="rline"><span>Descuento</span><b>− ${money(r.descuento)}</b></div>`:''}
   <div class="rline tot"><span>Total</span><b>${money(r.total)}</b></div>
-  <div class="grid2" style="margin-top:8px"><div><label for="qAnt">Anticipo para apartar fecha</label><input id="qAnt" type="number" inputmode="decimal" value="${h(Q.anticipo??r.anticipo)}" onchange="Q.anticipo=this.value===''?null:num(this.value)"><div class="muted">${r.anticipo?'Sugerido '+money(r.anticipo)+' · 0 = no imprimir':'0 = no imprimir'}</div></div>
-  <div><label for="qVig">Precio válido hasta</label><input id="qVig" type="date" value="${h(Q.vigencia||r.vigencia)}" onchange="Q.vigencia=this.value||null"><div class="muted">Sugerido ${r.dias} días</div></div></div>
-  <button class="btn" style="width:100%;margin-top:12px" onclick="guardarCot()" ${Q.items.length?'':'disabled'}>Guardar e imprimir</button>
-  <button class="btn sec" style="width:100%;margin-top:8px" onclick="if(Q.items.length||Q.paciente_nombre){confirmar('¿Borrar la cotización en captura?').then(ok=>{if(ok){Q=nuevaQ();vCotizar()}})}">Limpiar</button>`;
-  const qb=$('#qBar');if(qb)qb.innerHTML=Q.items.length?`<b>${money(r.total)}</b><button class="btn" onclick="guardarCot()">Guardar e imprimir</button>`:'';
+  <div class="grid2" style="margin-top:8px"><div><label for="qAnt">Anticipo</label><input id="qAnt" type="number" inputmode="decimal" value="${h(Q.anticipo??r.anticipo)}" onchange="Q.anticipo=this.value===''?null:num(this.value)"></div>
+  <div><label for="qVig">Válida hasta</label><input id="qVig" type="date" value="${h(Q.vigencia||r.vigencia)}" onchange="Q.vigencia=this.value||null"></div></div>
+  <button class="btn" style="width:100%;margin-top:12px" onclick="guardarCot()" ${Q.items.length?'':'disabled'}>Guardar con PIN</button>
+  ${Q.items.length||Q.paciente_nombre?`<button class="lnk" onclick="confirmar('¿Borrar la cotización en captura?').then(ok=>{if(ok){Q=nuevaQ();vCotizar()}})">Borrar todo</button>`:''}`;
+  const qb=$('#qBar');if(qb)qb.innerHTML=Q.items.length?`<b>${money(r.total)}</b><button class="btn" onclick="guardarCot()">Guardar</button>`:'';
 }
+function autorizarDescDir(){return new Promise(res=>{const r=calcCot(Q),aut=S.usuarios.filter(u=>u.activo&&permsOf(u).includes('descuento'));
+  const m=modal(`${mhead('Autoriza Dirección')}<div>Descuento de <b>${money(r.descuento)}</b>; sin autorización el máximo es ${money(r.descMax)}.</div><div class="muted">Motivo: ${h(Q.desc_motivo)}</div><label>Autoriza</label><select id="adU">${aut.map(u=>`<option value="${u.id}">${h(u.nombre)}</option>`).join('')}</select><label>PIN</label><input id="adP" type="password" inputmode="numeric" maxlength="4"><div id="adE" class="muted" style="color:var(--rojo);margin-top:6px"></div><div class="acts"><button class="btn" id="ok">Autorizar</button></div>`,'sm');
+  m.querySelector('.x').onclick=()=>{m.remove();res(null)};
+  m.querySelector('#ok').onclick=async()=>{const u=S.usuarios.find(x=>x.id===m.querySelector('#adU').value);if(!u)return;const rr=await sb.from('qx_usuarios').select('pin_hash,activo').eq('id',u.id).single();
+    if(!rr.data||!rr.data.activo||rr.data.pin_hash!==await pinHash(u.usuario,m.querySelector('#adP').value))return m.querySelector('#adE').textContent='PIN incorrecto';m.remove();res(u.nombre)}})}
 async function autorizarDesc(){
   const r=calcCot(Q),aut=S.usuarios.filter(u=>u.activo&&permsOf(u).includes('descuento'));
   if(!Q.desc_motivo.trim())return toast('Escribe primero el motivo del descuento',true);
@@ -2217,10 +2486,12 @@ async function guardarCot(){
   if(!Q.items.length)return toast('Agrega al menos un concepto',true);
   if(Q.vigencia&&Q.vigencia<hoyISO())return toast('La fecha de validez ya pasó',true);
   if(r.descuento>0&&!Q.desc_motivo.trim())return toast('Escribe el motivo del descuento',true);
-  if(r.descuento>0&&(!Q.autorizado||Math.abs(Q.autorizado.monto-r.descuento)>0.5))return toast('El descuento debe autorizarse con PIN (botón 🔒)',true);
-  if(!await pedirPIN('Guardar cotización de '+Q.paciente_nombre))return;
+  let autor=null;
+  if(r.descuento>0&&r.requiereAut&&!can.descuento()){autor=await autorizarDescDir();if(!autor)return}
+  if(!await pedirPIN((r.descuento?'Descuento '+money(r.descuento)+' · ':'')+'Guardar cotización de '+Q.paciente_nombre))return;
+  if(r.descuento>0&&!autor)autor=S.user.nombre;
   const row={folio:'COT-'+folio('').slice(1),token:randTok(),sede_id:S.sede,paciente_nombre:Q.paciente_nombre.trim(),expediente:Q.expediente||null,telefono1:t1,telefono2:t2||null,motivo:Q.motivo.trim(),medico:Q.medico||null,
-    items:Q.items,subtotal:r.subtotal,descuento:r.descuento,descuento_motivo:r.descuento?Q.desc_motivo:null,descuento_autorizado_por:r.descuento&&Q.autorizado?Q.autorizado.nombre:null,total:r.total,anticipo:Q.anticipo!=null?num(Q.anticipo):r.anticipo,
+    items:Q.items,subtotal:r.subtotal,descuento:r.descuento,descuento_motivo:r.descuento?Q.desc_motivo:null,descuento_autorizado_por:r.descuento?autor:null,total:r.total,anticipo:Q.anticipo!=null?num(Q.anticipo):r.anticipo,
     vigencia_hasta:Q.vigencia||r.vigencia,estado:'vigente',notas:Q.notas||null,elaboro:S.user.nombre,elaboro_id:S.user.id};
   try{const c=(await q(sb.from('qx_cotizaciones').insert(row).select(),'Guardar cotización'))[0];
     await logA('cotizacion','qx_cotizaciones',c.id,{total:r.total,descuento:r.descuento,autorizo:row.descuento_autorizado_por});
@@ -2407,6 +2678,7 @@ async function paginaCotPublica(tok){
 function vMas(){
   let items=[['reporte','Reporte semanal'],['paquetes','Paquetes quirúrgicos'],['catalogo','Catálogo de materiales']];
   if(can.precios())items.splice(1,0,['precios','Precios y vigencias']);
+  if(can.config())items.push(['indic','Indicaciones al paciente']);
   if(can.usuarios())items.push(['usuarios','Usuarios']);
   if(can.config())items.push(['config','Configuración']);
   items.push(['bitacora','Bitácora']);items.push(['cuenta','Mi cuenta']);
@@ -2415,7 +2687,7 @@ function vMas(){
   if(!items.some(i=>i[0]===S.sub.mas))S.sub.mas=items[0][0];
   const st=subtabs('mas',items,items[0][0]);
   let html=st.html;
-  ({precios:vPrecios,reporte:vReporte,paquetes:vPaquetes,catalogo:vCatalogo,usuarios:vUsuarios,config:vConfig,bitacora:vBitacora,cuenta:vCuenta})[st.cur](x=>html+=x);
+  ({indic:vIndic,precios:vPrecios,reporte:vReporte,paquetes:vPaquetes,catalogo:vCatalogo,usuarios:vUsuarios,config:vConfig,bitacora:vBitacora,cuenta:vCuenta})[st.cur](x=>html+=x);
   $('#main').innerHTML=html;
   if(st.cur==='bitacora')cargarBitacora();
 }
@@ -2567,7 +2839,7 @@ async function cargarBitacora(){const r=await q(sb.from('qx_log').select('*').or
 
 /* ---------- arranque ---------- */
 (function boot(){
-  let tries=0;const wait=()=>{if(window.supabase){sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);const seg=new URLSearchParams(location.search).get('seg');if(seg)return paginaPaciente(seg);const cotT=new URLSearchParams(location.search).get('cot');if(cotT)return paginaCotPublica(cotT);const u=safeLS('qx_user');if(u){try{S.user=JSON.parse(u);iniciar()}catch(e){pantallaLogin()}}else pantallaLogin()}else if(tries++<50)setTimeout(wait,100);else document.getElementById('app').innerHTML='<div class="empty">No se pudo cargar la librería de Supabase. Revisa la conexión a internet.</div>'};wait();
+  let tries=0;const wait=()=>{if(window.supabase){sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);const seg=new URLSearchParams(location.search).get('seg');if(seg)return paginaPaciente(seg);const cotT=new URLSearchParams(location.search).get('cot');if(cotT)return paginaCotPublica(cotT);const indT=new URLSearchParams(location.search).get('ind');if(indT)return paginaIndic(indT);const u=safeLS('qx_user');if(u){try{S.user=JSON.parse(u);iniciar()}catch(e){pantallaLogin()}}else pantallaLogin()}else if(tries++<50)setTimeout(wait,100);else document.getElementById('app').innerHTML='<div class="empty">No se pudo cargar la librería de Supabase. Revisa la conexión a internet.</div>'};wait();
 })();
 </script>
 </body>
