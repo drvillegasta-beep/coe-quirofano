@@ -463,6 +463,36 @@ body.locked .shell{visibility:hidden}
 .il-ph{display:flex;align-items:center;gap:6px}
 .il-phn{width:70px;font-size:12px;font-weight:700;display:grid}.il-phn small{font-weight:400}
 .il-times.sm .il-t{padding:2px 2px 4px;max-width:62px}.il-times.sm svg{max-height:34px}
+/* operación real */
+.setup ol{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.setup li{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.setup li .note{margin:2px 0 0}
+.setup .ck{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-weight:800;font-size:13px}
+.setup li.done{opacity:.7}.setup li.done .ck{background:var(--ok);border-color:var(--ok);color:#fff}
+.setup{margin-bottom:16px;border-left:4px solid var(--accent)!important}
+.invt td:nth-child(3){font-size:12.5px;max-width:110px}.invt td{padding-left:8px;padding-right:8px}
+.racts{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;font-family:var(--f-ui,system-ui)}
+.mm{font-size:11px;color:var(--muted);white-space:nowrap;font-weight:400;line-height:1.3}
+.lnk.sm{font-size:12px;padding:0;margin:0}
+.lotl{line-height:1.9}
+.dlg.pop{width:min(640px,100%)}
+.pop-f{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--line);background:var(--bg)}
+.pop-g{margin-bottom:14px}.pop-g h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:flex;align-items:center;gap:8px}
+.pop-g h4 i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.pop-g .alert{grid-template-columns:6px 1fr}
+.pop-g .alert>div:last-child{grid-column:2;justify-content:flex-start!important}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}.fgrid .full{grid-column:1/-1}
+.fgrid label{display:grid;gap:4px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.fgrid label input,.fgrid label select,.fgrid label textarea{font-weight:400;color:var(--ink)}
+@media (max-width:520px){.fgrid{grid-template-columns:1fr}}
+.rq-row{display:grid;grid-template-columns:minmax(0,1fr) 80px 28px;gap:6px;align-items:center;margin-bottom:6px}
+.rq-row small{grid-column:1/-1;margin-top:-4px;color:var(--muted);font-size:12px}
+.rq-tot{display:flex;justify-content:space-between;font-weight:700;margin:10px 0}
+.pinrow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.imp-tbl{max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:8px;margin:10px 0}
+.imp-tbl table{width:100%;font-size:12.5px;border-collapse:collapse}.imp-tbl td,.imp-tbl th{padding:4px 8px;border-bottom:1px solid var(--line);text-align:left}
+.imp-tbl .num{text-align:right}
+.ferr{color:var(--crit);font-size:13px;font-weight:600;margin:8px 0 0}
 body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 </style>
 
@@ -478,7 +508,7 @@ body{margin:0}[hidden]{display:none!important}img{max-width:100%}
  </aside>
  <div class="content">
   <header class="top"><div class="ttl"><h1 id="pgTitle">Panel</h1><span id="pgSub"></span></div><div class="spacer"></div>
-   <button class="bell" id="bellBtn" aria-label="Alertas"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><span id="bellCount">0</span></button></header>
+   <button class="btn pri sm" id="reqBtn" hidden>Solicitar a Finanzas</button><button class="bell" id="bellBtn" aria-label="Alertas"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><span id="bellCount">0</span></button></header>
   <div class="strip" id="strip"></div>
   <main id="main"></main>
  </div>
@@ -512,6 +542,7 @@ body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 <div class="ovl" id="signOvl" hidden><form class="dlg pw" id="signForm"><div class="dlg-h"><div><h3>Firmar con PIN</h3><div class="cur" id="signSub"></div></div><button class="icon-btn" type="button" id="signX" aria-label="Cancelar">✕</button></div>
  <div class="dlg-b"><label for="signPin">Su PIN</label><input id="signPin" class="pinin" type="password" inputmode="numeric" autocomplete="off" maxlength="6" required>
  <p class="lerr" id="signErr" hidden></p><button class="btn pri" type="submit" style="width:100%;margin-top:12px">Firmar</button></div></form></div>
+<div class="ovl" id="popOvl" hidden><div class="dlg pop" role="alertdialog" aria-modal="true" aria-labelledby="popT"><div class="dlg-h"><div><h3 id="popT">Atención</h3><div class="cur" id="popSub"></div></div><button class="icon-btn" type="button" id="popX" aria-label="Cerrar">✕</button></div><div class="dlg-b" id="popB"></div><div class="pop-f" id="popF"></div></div></div>
 <div class="ovl" id="msgOvl" hidden><div class="dlg pw"><div class="dlg-h"><div><h3 id="msgT"></h3></div><button class="icon-btn" type="button" id="msgX" aria-label="Cerrar">✕</button></div><div class="dlg-b" id="msgB"></div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
@@ -562,10 +593,14 @@ let PROD=[
  {id:28,cl:'r98547449',d:'LENTE DE CONTACTO TERAPEUTICO',nm:'Lente de contacto terapéutico',pa:'',g:'insumo',cat:'var',min:2,cri:1,c:180,v:400,lotes:[L('LC2701','2028-01-01',1)],sal:1},
 ];
 const sistema=p=>p.lotes.reduce((a,l)=>a+l.q,0);
-const stock=p=>p.lotes.filter(l=>days(l.cad)>=0).reduce((a,l)=>a+l.q,0);
-const firstLot=p=>p.lotes.filter(l=>days(l.cad)>=0&&l.q>0).sort((a,b)=>a.cad.localeCompare(b.cad))[0];
-function stockState(p){if(p.srv) return ['mute','Servicio'];const s=stock(p);if(s===0)return['dead','Agotado'];if(s<=p.cri)return['crit','Crítico'];if(s<=p.min)return['warn','Mínimo'];return['ok','Suficiente']}
-function cadState(d){const n=days(d);if(n<0)return['dead','Vencido'];if(n<=30)return['crit',n+' días'];if(n<=90)return['warn',n+' días'];if(n<=180)return['info',n+' días'];return['ok','Vigente']}
+const vig=l=>!l.cad||days(l.cad)>=0;
+const stock=p=>p.lotes.filter(vig).reduce((a,l)=>a+l.q,0);
+const sinLote=p=>p.lotes.filter(l=>!l.cad).reduce((a,l)=>a+l.q,0);
+const firstLot=p=>p.lotes.filter(l=>l.cad&&days(l.cad)>=0&&l.q>0).sort((a,b)=>a.cad.localeCompare(b.cad))[0];
+const lotSort=(a,b)=>(a.cad||'9999').localeCompare(b.cad||'9999');
+PROD.forEach(p=>{p.cap=1});
+function stockState(p){if(p.srv) return ['mute','Servicio'];if(!p.cap)return['mute','Sin capturar'];const s=stock(p);if(s===0)return['dead','Agotado'];if(s<=p.cri)return['crit','Crítico'];if(s<=p.min)return['warn','Mínimo'];return['ok','Suficiente']}
+function cadState(d){if(!d)return['info','Sin lote ni caducidad'];const n=days(d);if(n<0)return['dead','Vencido'];if(n<=30)return['crit',n+' días'];if(n<=90)return['warn',n+' días'];if(n<=180)return['info',n+' días'];return['ok','Vigente']}
 const chip=([k,t])=>`<span class="chip c-${k}">${esc(t)}</span>`;
 const RXABLE=p=>!p.srv&&!['insumo','servicio'].includes(p.g);
 
@@ -581,21 +616,29 @@ let PEDIDOS=[
 const PSTEPS=['Enviado','Autorizado','Pedido al proveedor','Recibido'];
 let ATENDIDAS=new Set();let RXHOY=[];
 
+let CEDIT=new Set();let CONTEOS_PEND=[],LAST_CONTEO=null,LAST_IMPORT=null,LAST_IMPORT_N=0,HAS_SALIDAS=false;
+const nextMonday=()=>{const d=new Date(TODAY);const w=d.getDay();d.setDate(d.getDate()+((8-w)%7));return d};
 function alerts(){
- const a=[];
- PROD.filter(p=>!p.srv).forEach(p=>{
-  const[k]=stockState(p);
-  if(k==='dead')a.push({id:'s'+p.id,k:'dead',t:`${p.nm}: agotado`,d:'Sin existencia vigente. Bloqueado en receta; se sugiere alternativa del mismo grupo.',p});
-  else if(k==='crit')a.push({id:'s'+p.id,k:'crit',t:`${p.nm}: existencia crítica`,d:`Quedan ${stock(p)} (crítico ≤ ${p.cri}).`,p});
-  else if(k==='warn')a.push({id:'s'+p.id,k:'warn',t:`${p.nm}: en mínimo`,d:`Quedan ${stock(p)} (mínimo ${p.min}).`,p});
-  p.lotes.forEach(l=>{const[ck,ct]=cadState(l.cad);
-   if(ck==='dead')a.push({id:'c'+l.l,k:'dead',t:`${p.nm} lote ${l.l}: vencido`,d:`${l.q} pza caducó el ${fmtD(l.cad)}. Retirar del anaquel y dar de baja con doble PIN.`,p,cad:1});
-   else if(ck==='crit'||ck==='warn')a.push({id:'c'+l.l,k:ck,t:`${p.nm} lote ${l.l}: caduca en ${ct}`,d:`${l.q} pzas · ${fmtD(l.cad)}. Se sugiere primero en recetas.`,p,cad:1});
+ const a=[],PR=PROD.filter(p=>!p.srv);
+ const nocap=PR.filter(p=>!p.cap);
+ if(nocap.length)a.push({id:'nocap'+nocap.length,k:'info',grp:'disc',t:`${nocap.length} producto${nocap.length>1?'s':''} sin existencia capturada`,d:'Importe el reporte de eOptics (Excel) o registre entradas con lote y caducidad.',p:null,imp:1});
+ PR.filter(p=>p.cap).forEach(p=>{
+  const[k]=stockState(p),s=stock(p),lk=p.lotes.map(l=>l.id).sort((a,b)=>a-b).join('.');
+  if(k==='dead')a.push({id:`s${p.id}:dead`,k:'dead',grp:'stock',t:`${p.nm}: agotado`,d:`Sin existencia vigente${p.min?` (mínimo ${p.min})`:''}. En receta se sugiere alternativa del mismo grupo.`,p});
+  else if(k==='crit')a.push({id:`s${p.id}:crit:${lk}`,k:'crit',grp:'stock',t:`${p.nm}: existencia crítica`,d:`Quedan ${s} (crítico ≤ ${p.cri}, mínimo ${p.min}).`,p});
+  else if(k==='warn')a.push({id:`s${p.id}:warn:${lk}`,k:'warn',grp:'stock',t:`${p.nm}: en mínimo`,d:`Quedan ${s} (mínimo ${p.min}).`,p});
+  p.lotes.filter(l=>l.cad).forEach(l=>{const[ck,ct]=cadState(l.cad),id=`c${p.id}:${l.l}:${ck}`;
+   if(ck==='dead')a.push({id,k:'dead',grp:'cad',t:`${p.nm} lote ${l.l}: vencido`,d:`${l.q} pza caducó el ${fmtD(l.cad)}. Retirar del anaquel y dar de baja con PIN.`,p,cad:1,lote:l.l});
+   else if(ck==='crit'||ck==='warn')a.push({id,k:ck,grp:'cad',t:`${p.nm} lote ${l.l}: caduca en ${ct}`,d:`${l.q} pza · vence ${fmtD(l.cad)}. Se sugiere primero en recetas.`,p,cad:1,lote:l.l});
   });
+  const sl=sinLote(p);if(sl)a.push({id:`l${p.id}:${sl}`,k:'warn',grp:'disc',t:`${p.nm}: ${sl} pza sin lote ni caducidad`,d:'Vienen de eOptics o del conteo sin lote registrado. Asígnelo para vigilar la caducidad.',p,sinl:1});
  });
+ CONTEOS_PEND.forEach(c=>{const p=PROD.find(x=>x.id===c.producto_id);if(!p)return;const df=c.conteo-c.existencia;
+  a.push({id:'k'+c.id,k:'crit',grp:'disc',t:`Discrepancia de conteo · ${p.nm}: ${df>0?'+':''}${df}`,d:`Conteo físico ${c.conteo} contra ${c.existencia} en sistema (${fmtD(c.fecha)} · ${c.firmado_por||'—'}).${c.explicacion?' Motivo: '+c.explicacion+'.':''} Pendiente de autorizar.`,p,conteo:c.id})});
  const sc=PROD.filter(p=>p.g==='sc');
- if(sc.length)a.push({id:'sc',k:'info',t:`${sc.length} productos sin clasificar`,d:`${sc.map(p=>p.nm).join(', ')}: asigne principio activo y grupo para que aparezcan en sugerencias de receta.`,p:null});
- a.push({id:'inv',k:'info',t:'Inventario del lunes 12 oct',d:'Recordatorio: conteo físico semanal mañana. Último completado el 5 oct.',p:null});
+ if(sc.length)a.push({id:'sc'+sc.length,k:'info',grp:'info',t:`${sc.length} producto${sc.length>1?'s':''} sin clasificar`,d:`${sc.map(p=>p.nm).join(', ')}: asigne principio activo y grupo para que aparezcan en sugerencias de receta.`,p:null,cls:1});
+ const nm=nextMonday(),hoy=TODAY.getDay()===1,hecho=LAST_CONTEO&&LAST_CONTEO===ISO(TODAY);
+ if(!hecho)a.push({id:'inv'+ISO(hoy?TODAY:nm),k:hoy?'warn':'info',grp:'info',t:hoy?'Hoy toca el conteo físico semanal':`Conteo físico: lunes ${nm.toLocaleDateString('es-MX',{day:'numeric',month:'short'})}`,d:`Último conteo firmado: ${LAST_CONTEO?fmtD(LAST_CONTEO):'ninguno todavía'}.`,p:null});
  const o={dead:0,crit:1,warn:2,info:3};return a.sort((x,y)=>o[x.k]-o[y.k]);
 }
 
@@ -616,7 +659,7 @@ const TABN={dash:'Panel',inv:'Inventario',conteo:'Conteo del lunes',alert:'Alert
 let role='dir',tab='dash';
 
 function renderStrip(){
- $('#strip').hidden=!can('resumen'); $('#bellBtn').hidden=!tabsFor().includes('alert');
+ $('#strip').hidden=!can('resumen'); $('#bellBtn').hidden=!tabsFor().includes('alert');$('#reqBtn').hidden=!can('pedir')||!!viewAs;
  const al=alerts(),PR=PROD.filter(p=>!p.srv);
  const crit=PR.filter(p=>stockState(p)[0]==='crit').length,minc=PR.filter(p=>stockState(p)[0]==='warn').length,ago=PR.filter(p=>stock(p)===0).length;
  const lots=PR.flatMap(p=>p.lotes);
@@ -632,7 +675,7 @@ function renderStrip(){
   <button class="kpi dead" data-go="inv" data-f="venc"><small>Vencidos</small><b>${venc}</b></button>
   <button class="kpi" data-go="ped"><small>Pedidos</small><b>${open}</b></button>
   ${!can('costos')?'':`<div class="kpi ok"><small>Valor a costo</small><b>${money(val)}</b></div>`}
-  <div class="kpi"><small>Inventario</small><b>Lun 12</b></div>`;
+  <button class="kpi" data-go="conteo"><small>Último conteo</small><b>${LAST_CONTEO?new Date(LAST_CONTEO+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'}):'—'}</b></button>`;
  $('#strip').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{if(!tabsFor().includes(b.dataset.go))return;invFilter=b.dataset.f||'all';go(b.dataset.go)});
 }
 const TABIC={dash:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
@@ -645,29 +688,47 @@ const TABIC={dash:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14"
 function renderTabs(){$('#pgTitle').textContent=TABN[tab];$('#tabs').innerHTML=tabsFor().map(t=>`<button role="tab" aria-selected="${t===tab}" data-t="${t}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TABIC[t]}</svg><span>${TABN[t]}</span></button>`).join('');$('#tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>go(b.dataset.t))}
 function go(t){tab=t;renderTabs();render();window.scrollTo({top:0});if(t==='rx')loadBusy()}
 
+function vSetup(){
+ if(DEMO||!can('entrada'))return '';
+ const PR=PROD.filter(p=>!p.srv),nocap=PR.filter(p=>!p.cap).length,sl=PR.reduce((t,p)=>t+sinLote(p),0),slp=PR.filter(p=>sinLote(p)).length,par=PR.filter(p=>p.ejp).length;
+ if(!nocap&&!sl&&!par)return '';
+ const st=(ok,t,d,btn)=>`<li class="${ok?'done':''}"><span class="ck">${ok?'✓':''}</span><div><b>${t}</b><p class="note">${d}</p></div>${ok?'':btn}</li>`;
+ return `<section class="panel setup"><h3>Puesta en marcha con datos reales</h3><ol>
+  ${st(!nocap,'Cargar existencias',nocap?`${nocap} de ${PR.length} productos aún sin existencia. Suba el Excel de toma de inventario de eOptics o registre entradas una por una.`:`Existencias cargadas${LAST_IMPORT?' · último reporte '+fmtD(LAST_IMPORT.slice(0,10)):''}.`,'<button class="btn sm pri" data-imp="1">Importar eOptics</button>')}
+  ${st(!sl&&nocap<PR.length,'Asignar lote y caducidad',sl?`${sl} pieza${sl>1?'s':''} de ${slp} producto${slp>1?'s':''} sin lote. Sin caducidad no hay alertas de vencimiento.`:nocap<PR.length?'Todas las piezas tienen lote y caducidad.':'Después de cargar existencias.','<button class="btn sm" data-goinv="sinl">Ver productos</button>')}
+  ${st(!par,'Definir mínimo, crítico y precios',par?`${par} producto${par>1?'s':''} con valores predeterminados (mínimo 2, crítico 1, precio $0).`:'Parámetros revisados.','<button class="btn sm" data-goinv="param">Ver productos</button>')}
+ </ol></section>`;
+}
 function vDash(){
  const al=alerts().filter(a=>!ATENDIDAS.has(a.id)).slice(0,6);
- const top=PROD.filter(p=>!p.srv).sort((a,b)=>b.sal-a.sal).slice(0,8),mx=top[0].sal;
- const sinMov=PROD.filter(p=>p.sal===0&&!p.srv);
- return `<div class="proto">${DEMO?'<b>Modo demostración:</b> no hay conexión con la base de datos de farmacia; los datos no se guardan.':'<b>Conectado a Supabase.</b> Claves y descripciones del reporte de eOptics. Lotes, caducidades, mínimos y precios están cargados como ejemplo hasta que capture los reales.'}</div>
+ const top=PROD.filter(p=>!p.srv&&p.sal>0).sort((a,b)=>b.sal-a.sal).slice(0,8),mx=top.length?top[0].sal:1;
+ const sinMov=PROD.filter(p=>p.cap&&p.sal===0&&!p.srv&&stock(p)>0);
+ return `${DEMO?'<div class="proto"><b>Modo demostración:</b> no hay conexión con la base de datos de farmacia; los datos no se guardan.</div>':''}${vSetup()}
  <div class="dashgrid">
   <section class="panel"><h3>Atender primero</h3>${al.map(alertRow).join('')||'<p class="note">Sin alertas pendientes.</p>'}</section>
-  <section class="panel"><h3>Más vendidos · últimas 4 semanas</h3><div class="bars">${top.map(p=>`<div><span>${esc(p.nm)}</span><i style="width:${p.sal/mx*100}%"></i><span class="mono">${p.sal}</span></div>`).join('')}</div>
-   <p class="note" style="margin-top:10px">Sin movimiento en 60 días: ${sinMov.map(p=>esc(p.nm)).join(', ')||'ninguno'}.</p></section>
+  <section class="panel"><h3>Más vendidos · últimas 4 semanas</h3>${top.length?`<div class="bars">${top.map(p=>`<div><span>${esc(p.nm)}</span><i style="width:${p.sal/mx*100}%"></i><span class="mono">${p.sal}</span></div>`).join('')}</div>`:'<p class="note">Aún no hay salidas registradas. Se calculan con cada reporte de eOptics que importe.</p>'}
+   ${HAS_SALIDAS&&sinMov.length?`<p class="note" style="margin-top:10px">Con existencia y sin salidas en 4 semanas: ${sinMov.map(p=>esc(p.nm)).join(', ')}.</p>`:''}</section>
   <section class="panel"><h3>Recetas de hoy</h3>${(()=>{const e=RXHOY.length,su=RXHOY.filter(r=>r.estado==="surtida").length;return `<div style="display:flex;gap:22px;flex-wrap:wrap"><div><b class="mono" style="font-size:28px">${e}</b><div class="note">emitidas</div></div><div><b class="mono" style="font-size:28px;color:var(--ok)">${su}</b><div class="note">surtidas en COE</div></div><div><b class="mono" style="font-size:28px">${e?Math.round(su/e*100)+"%":"—"}</b><div class="note">captura de farmacia</div></div></div><p class="note">${e?RXHOY.slice(0,4).map(r=>esc(r.folio)+" · "+esc(r.paciente)).join("<br>"):"Aún no hay recetas guardadas hoy."}</p>`})()}</section>
-  <section class="panel"><h3>Pedidos a Finanzas</h3>${PEDIDOS.map(pedRow).join('')}</section>
+  <section class="panel"><h3>Pedidos a Finanzas</h3>${PEDIDOS.filter(p=>p.est<3).slice(0,5).map(pedRow).join('')||'<p class="note">Sin pedidos abiertos.</p>'}${can('pedir')?'<button class="btn sm pri" data-req="1" style="margin-top:10px">Nueva solicitud a Finanzas</button>':''}</section>
  </div>`;
 }
 function alertRow(a){
  const col={dead:'var(--dead)',crit:'var(--crit)',warn:'var(--warn)',info:'var(--accent)'}[a.k];
- const canPed=a.p&&!a.cad&&can('pedir');
  return `<div class="alert"><span class="bar" style="background:${col}"></span><div><b>${esc(a.t)}</b><p>${esc(a.d)}</p></div>
-  <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${canPed?`<button class="btn sm pri" data-ped="${a.p.id}">Generar pedido</button>`:''}
-  ${ATENDIDAS.has(a.id)?'<span class="chip c-ok">Atendida</span>':`<button class="btn sm" data-ok="${a.id}">Marcar atendida</button>`}</div></div>`;
+  <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${alertActs(a)}
+  ${ATENDIDAS.has(a.id)?'<span class="chip c-ok">Atendida</span>':`<button class="btn sm" data-ok="${esc(a.id)}">Marcar atendida</button>`}</div></div>`;
 }
+function alertActs(a){const b=[];
+ if(a.grp==='stock'&&a.p&&can('pedir'))b.push(`<button class="btn sm pri" data-ped="${a.p.id}">Solicitar a Finanzas</button>`);
+ if(a.cad&&a.k==='dead'&&can('ajuste'))b.push(`<button class="btn sm" data-baja="${a.p.id}|${esc(a.lote)}">Dar de baja</button>`);
+ if(a.sinl&&can('entrada'))b.push(`<button class="btn sm pri" data-ent="${a.p.id}|1">Asignar lote</button>`);
+ if(a.conteo&&can('ajuste'))b.push(`<button class="btn sm pri" data-autc="1">Revisar y autorizar</button>`);
+ if(a.imp&&can('entrada'))b.push(`<button class="btn sm pri" data-imp="1">Importar eOptics</button>`);
+ if(a.cls&&can('entrada'))b.push(`<button class="btn sm" data-goinv="sc">Clasificar</button>`);
+ return b.join('')}
 function pedRow(p){
- return `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b class="mono">${p.id}</b><span>${p.prio==='Urgente'?'<span class="chip c-crit">Urgente</span>':''} <span class="mono">${money(p.monto)}</span></span></div>
-  <div>${esc(p.items)}</div><div class="note">${fmtD(p.fecha)} · ${esc(p.por)} · ${p.monto>3000?'Autoriza Director':'Autoriza Director o Dra. Rivera'}</div>
+ return `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b class="mono">${p.id}</b><span>${p.prio==='Urgente'?'<span class="chip c-crit">Urgente</span>':''} <span class="mono">${p.monto?money(p.monto):'costo por definir'}</span></span></div>
+  <div>${esc(p.items)}</div>${p.nota?`<div class="note">Nota: ${esc(p.nota)}</div>`:''}<div class="note">${fmtD(p.fecha)} · ${esc(p.por)}${p.firma?' · firmado con PIN':''} · ${p.monto>3000?'Autoriza Director':'Autoriza Director o Dra. Rivera'}</div>
   <div class="steps">${PSTEPS.map((s,i)=>`<span class="${i<=p.est?'on':''}">${s}</span>`).join('')}</div>
   ${can('autorizar')&&p.est<3?`<button class="btn sm" style="margin-top:6px" data-adv="${p.id}">Avanzar a “${PSTEPS[p.est+1]}”</button>`:''}</div>`;
 }
@@ -682,17 +743,21 @@ function vInv(){
  if(f==='c90')rows=rows.filter(p=>p.lotes.some(l=>{const n=days(l.cad);return n>30&&n<=90}));
  if(f==='venc')rows=rows.filter(p=>p.lotes.some(l=>days(l.cad)<0));
  if(f==='sc')rows=rows.filter(p=>p.g==='sc');
+ if(f==='sinl')rows=rows.filter(p=>sinLote(p)>0);
+ if(f==='nocap')rows=rows.filter(p=>!p.srv&&!p.cap);
+ if(f==='param')rows=rows.filter(p=>!p.srv&&p.ejp);
+ const canA=can('ajuste'),canEd=canE||eff()==='dir';
  return `<h2>Inventario de Farmacia</h2>
- ${canE?`<div class="import"><b>Último reporte de eOptics:</b><span>11 oct 2026 · 28 claves</span><span class="chip c-mute">1 servicio excluido (Envío paquetería)</span><span class="chip c-info">2 sin clasificar</span><span class="spacer"></span><button class="btn sm" data-demo="Subir el Excel/PDF de toma de inventario de eOptics: se leen Clave, Descripción y Existencia; las claves nuevas piden grupo, lote y caducidad">Importar reporte de eOptics</button></div>`:''}
+ ${canE?`<div class="import"><b>Último reporte de eOptics:</b><span>${LAST_IMPORT?fmtD(LAST_IMPORT.slice(0,10))+' · '+(LAST_IMPORT_N||0)+' claves':'aún no se ha importado'}</span><span class="chip c-mute">${PROD.length} productos en catálogo</span>${PROD.some(p=>p.g==='sc')?`<span class="chip c-info">${PROD.filter(p=>p.g==='sc').length} sin clasificar</span>`:''}<span class="spacer"></span><button class="btn sm pri" data-imp="1">Importar reporte de eOptics</button></div>`:''}
  <div class="toolbar"><input type="search" id="invQ" placeholder="Buscar por clave, nombre o principio activo" value="${esc(invQ)}" style="max-width:340px">
-  <select id="invF" style="max-width:210px">${[['all','Todos'],['crit','Críticos'],['warn','En mínimo'],['dead','Agotados'],['c30','Caducan ≤30 d'],['c90','Caducan 31–90 d'],['venc','Con lote vencido'],['sc','Sin clasificar']].map(([v,t])=>`<option value="${v}" ${v===f?'selected':''}>${t}</option>`).join('')}</select>
+  <select id="invF" style="max-width:210px">${[['all','Todos'],['crit','Críticos'],['warn','En mínimo'],['dead','Agotados'],['c30','Caducan ≤30 d'],['c90','Caducan 31–90 d'],['venc','Con lote vencido'],['sinl','Piezas sin lote'],['nocap','Sin existencia capturada'],['param','Mínimo/precio por definir'],['sc','Sin clasificar']].map(([v,t])=>`<option value="${v}" ${v===f?'selected':''}>${t}</option>`).join('')}</select>
   <span class="spacer"></span>
-  ${canE?`<button class="btn" data-demo="Escanear el código de barras (es la misma Clave de eOptics)">Escanear</button><button class="btn pri" data-demo="Entrada de mercancía: clave, cantidad, lote, caducidad y factura">+ Entrada</button>`:'<span class="note">Solo lectura para este usuario.</span>'}
+  ${canE?`<button class="btn" id="scanBtn" title="Con el lector: escanee el código y se abre la entrada de ese producto">Escanear</button><button class="btn pri" data-ent="0">+ Entrada</button>`:'<span class="note">Solo lectura para este usuario.</span>'}
  </div>
- <div class="panel tbl"><table><thead><tr><th>Clave</th><th>Descripción (eOptics)</th><th>Grupo</th><th class="num">Exist.</th><th>Estado</th><th>Lote / caducidad</th>${!can('costos')?'':'<th class="num">Costo</th><th class="num">Venta</th>'}</tr></thead><tbody>
- ${rows.map(p=>{const ls=[...p.lotes].sort((a,b)=>a.cad.localeCompare(b.cad));return `<tr><td class="mono" style="font-size:12px">${esc(p.cl)}</td><td class="desc"><b>${esc(p.d)}</b>${p.pa&&p.pa!=='—'?`<div class="note">${esc(p.pa)}</div>`:''}</td><td>${p.g==='sc'?chip(['info','Sin clasificar']):esc(GRUPOS[p.g])}</td><td class="num"><b>${p.srv?'—':stock(p)}</b></td><td>${chip(stockState(p))}</td>
-  <td>${p.srv?'—':ls.map(l=>`<div><span class="mono" style="font-size:12px">${l.l}</span> · ${l.q} · ${chip(cadState(l.cad))}</div>`).join('')}</td>${!can('costos')?'':`<td class="num">${p.srv?'—':money(p.c)}</td><td class="num">${money(p.v)}</td>`}</tr>`}).join('')}
- </tbody></table></div><p class="note">Las salidas descuentan del lote que caduca primero. Un lote vencido no cuenta como existencia aunque siga en eOptics.</p>`;
+ <div class="panel tbl"><table class="invt"><thead><tr><th>Clave</th><th>Descripción (eOptics)</th><th>Grupo</th><th class="num">Exist.</th><th>Estado</th><th>Lote / caducidad</th>${!can('costos')?'':'<th class="num">Costo</th><th class="num">Venta</th>'}</tr></thead><tbody>
+ ${rows.map(p=>{const ls=[...p.lotes].sort(lotSort);return `<tr><td class="mono" style="font-size:12px">${esc(p.cl)}${canEd?`<div class="racts">${canE&&!p.srv?`<button class="btn sm" data-ent="${p.id}">+ Entrada</button>`:''}<button class="btn sm" data-edit="${p.id}">Editar</button></div>`:''}</td><td class="desc"><b>${esc(p.d)}</b>${p.pa&&p.pa!=='—'?`<div class="note">${esc(p.pa)}</div>`:''}</td><td>${p.g==='sc'?chip(['info','Sin clasificar']):esc(GRUPOS[p.g])}</td><td class="num"><b>${p.srv?'—':p.cap?stock(p):'—'}</b>${p.srv||!p.cap?'':`<div class="mm">mín ${p.min}<br>crít ${p.cri}</div>`}</td><td>${chip(stockState(p))}${p.ejp&&!p.srv?'<div style="margin-top:3px">'+chip(['info','Por definir'])+'</div>':''}</td>
+  <td>${p.srv?'—':ls.map(l=>`<div class="lotl"><span class="mono" style="font-size:12px">${esc(l.l)}</span> · ${l.q} · ${chip(cadState(l.cad))}${!l.cad&&canE?` <button class="lnk sm" data-ent="${p.id}|1">asignar</button>`:''}${l.cad&&days(l.cad)<0&&canA?` <button class="lnk sm" data-baja="${p.id}|${esc(l.l)}">dar de baja</button>`:''}</div>`).join('')||'<span class="note">—</span>'}</td>${!can('costos')?'':`<td class="num">${p.srv?'—':p.c?money(p.c):'<span class="note">—</span>'}</td><td class="num">${p.v?money(p.v):'<span class="note">—</span>'}</td>`}</tr>`}).join('')||'<tr><td colspan="9" class="note">Sin productos con ese filtro.</td></tr>'}
+ </tbody></table></div><p class="note">Cada reporte de eOptics que importe descuenta las salidas del lote que caduca primero. Las piezas que llegan sin lote quedan como «Sin lote ni caducidad» hasta que se les asigna. Un lote vencido no cuenta como existencia.</p>`;
 }
 
 function vConteo(){
@@ -700,7 +765,7 @@ function vConteo(){
  PROD.forEach(p=>{cats[p.cat][0]+=CONTEO[p.id];cats[p.cat][1]+=sistema(p)});
  const pending=PROD.filter(p=>CONTEO[p.id]!==sistema(p)&&!(JUST[p.id]||'').trim()).length;
  return `<h2>Conteo del lunes · toma de inventario</h2>
- <p class="note">Mismo formato que el reporte de eOptics: Clave, Descripción, Conteo, Existencia y Diferencia. Toda diferencia pide una explicación antes de cuadrar.</p>
+ <p class="note">Mismo formato que el reporte de eOptics: Clave, Descripción, Conteo, Existencia y Diferencia. Escriba lo que hay físicamente en el anaquel; toda diferencia pide una explicación antes de firmar y queda pendiente de autorizar por el Director.</p>
  <div class="panel tbl"><table><thead><tr><th>Clave</th><th>Descripción</th><th class="num">Conteo</th><th class="num">Existencia</th><th class="num">Diferencia</th><th>Explicación</th></tr></thead><tbody>
  ${PROD.map(p=>{const s=sistema(p),c=CONTEO[p.id],df=c-s,venc=p.lotes.filter(l=>days(l.cad)<0).reduce((a,l)=>a+l.q,0);
   return `<tr><td class="mono" style="font-size:12px">${esc(p.cl)}</td><td class="desc">${esc(p.d)}${venc?`<div>${chip(['dead',venc+' vencida · apartar'])}</div>`:''}</td>
@@ -710,14 +775,15 @@ function vConteo(){
  </tbody></table></div>
  <div class="totals"><span></span><span class="note">Conteo</span><span class="note">Existencia</span><span class="note">Diferencia</span>
  ${Object.entries(cats).map(([k,[c,s]])=>`<span>${CAT[k]}</span><b>${c}</b><b>${s}</b><b class="${c-s===0?'diff0':c-s<0?'diffn':'diffp'}">${c-s>0?'+':''}${c-s}</b>`).join('')}</div>
- <div class="toolbar" style="margin-top:16px;justify-content:flex-end"><span class="note">${pending?`Faltan ${pending} explicaciones.`:'Listo para firmar.'}</span><button class="btn pri" id="cuadrar">Cuadrar inventario · firmar con PIN</button></div>`;
+ <div class="toolbar" style="margin-top:16px;justify-content:flex-end"><span class="note">${pending?`Faltan ${pending} explicaciones.`:'Listo para firmar.'}</span><button class="btn pri" id="cuadrar">Cuadrar inventario · firmar con PIN</button></div>
+ ${CONTEOS_PEND.length?`<section class="panel" style="margin-top:16px"><h3>Discrepancias pendientes de autorizar (${CONTEOS_PEND.length})</h3><p class="note">Al autorizar, la existencia del sistema se ajusta al conteo físico.</p>${can('ajuste')?'<button class="btn pri" data-autc="1">Revisar y autorizar con PIN</button>':'<p class="note">Las autoriza el Director.</p>'}</section>`:''}`;
 }
-function vAlert(){return `<h2>Alertas</h2><p class="note">Llegan a la app, por correo al mostrador y a Finanzas, y en resumen diario a las 9:00. WhatsApp queda preparado y apagado.</p>${alerts().map(alertRow).join('')}`}
+function vAlert(){return `<h2>Alertas</h2><p class="note">Las importantes (caducidades, existencias bajas y discrepancias) también aparecen como ventana emergente al entrar y cada vez que surge una nueva.</p>${alerts().map(alertRow).join('')||'<p class="note">Sin alertas.</p>'}`}
 function vPed(){
  const canP=can('pedir');
  return `<h2>Pedidos a Finanzas</h2>
- ${canP?`<div class="panel" style="margin-bottom:14px"><h3>Pedir medicamento que no tenemos</h3><div class="row2"><input type="text" id="pNew" placeholder="Ej. Nepafenaco 0.1% (no está en catálogo)"><div style="display:flex;gap:6px"><input type="number" id="pQty" value="3" min="1" style="max-width:90px"><select id="pPrio" style="max-width:130px"><option>Normal</option><option>Urgente</option></select><button class="btn pri" id="pAdd">Enviar</button></div></div><p class="note">Más de $3,000 lo autoriza el Director; hasta $3,000 también la Dra. Rivera.</p></div>`:''}
- <div class="panel">${PEDIDOS.map(pedRow).join('')}</div>`;
+ ${canP?`<div class="panel" style="margin-bottom:14px;display:flex;gap:14px;align-items:center;flex-wrap:wrap"><div style="flex:1;min-width:220px"><h3 style="margin-bottom:4px">Solicitar a Finanzas</h3><p class="note" style="margin:0">Productos del catálogo o medicamentos que no tenemos. Se firma con su PIN. Más de $3,000 lo autoriza el Director; hasta $3,000 también la Dra. Rivera.</p></div><button class="btn pri" data-req="1">Nueva solicitud</button></div>`:''}
+ <div class="panel">${PEDIDOS.map(pedRow).join('')||'<p class="note">Aún no hay solicitudes.</p>'}</div>`;
 }
 
 /* ===== receta ===== */
@@ -741,7 +807,7 @@ const EMOJIS=['👁️','🦠','🎯','💧','🩹','💊','🔥','🤧','🌸',
 let TPL_EDIT=false,TPL_DB=false;
 const rxHash=()=>JSON.stringify([RX.pac,RX.edad,RX.dx,RX.med,RX.sede,RX.cita,RX.hora,RX.cal,RX.tel,RX.motivo,RX.promos,RX.meds.map(m=>[m.pid,m.eye,m.dose,m.f,m.d,m.taper,m.taper?fasesOf(m):0])]);
 const rxFolio=()=>RX.folio&&RX.saved===rxHash()?RX.folio:'SIN GUARDAR';
-let RX={hora:null,cal:null,tel:'',motivo:'Subsecuente',promos:false,folio:null,saved:null,pac:'María Guadalupe Hernández Ruiz',edad:72,dx:'',med:'vil',sede:'tac',cita:'2026-10-18',meds:[],view:'std'};
+let RX={hora:null,cal:null,tel:'',motivo:'Subsecuente',promos:false,folio:null,saved:null,pac:'',edad:'',dx:'',med:'vil',sede:'tac',cita:'',meds:[],view:'std'};
 function tplMeds(t){const miss=[];const meds=t.meds.map(m=>{const p=PROD.find(x=>x.cl===m.clave);if(!p){miss.push(m.clave);return null}return{pid:p.id,eye:m.ojo,dose:m.gotas,f:m.veces||2,d:m.dias||0,taper:m.reduccion?1:0,...(m.reduccion?{fases:JSON.parse(JSON.stringify(m.fases||defFases(m.gotas)))}:{})}}).filter(Boolean);return{meds,miss}}
 function loadTpl(id,quiet){const t=TPLS.find(x=>String(x.id)===String(id));if(!t)return;const{meds,miss}=tplMeds(t);RX.dx=t.dx||RX.dx;RX.meds=meds;if(!quiet){toast(miss.length?`Plantilla cargada. ${miss.length} medicamento(s) ya no están en el catálogo.`:`Plantilla «${t.nombre}» cargada.`);render()}}
 loadTpl('l1',true);
@@ -749,10 +815,11 @@ loadTpl('l1',true);
 const samePa=(a,b)=>a.pa&&b.pa&&a.pa!=='—'&&b.pa!=='—'&&a.pa.split(' ')[0]===b.pa.split(' ')[0];
 function alts(p){
  if(p.g==='sc')return [];
- return PROD.filter(x=>x.id!==p.id&&RXABLE(x)&&stock(x)>0&&(samePa(x,p)||x.g===p.g)).map(x=>{const fl=firstLot(x);return {x,fl,same:samePa(x,p),d:days(fl.cad)}}).sort((a,b)=>(b.same-a.same)||a.d-b.d);
+ return PROD.filter(x=>x.id!==p.id&&RXABLE(x)&&stock(x)>0&&firstLot(x)&&(samePa(x,p)||x.g===p.g)).map(x=>{const fl=firstLot(x);return {x,fl,same:samePa(x,p),d:days(fl.cad)}}).sort((a,b)=>(b.same-a.same)||a.d-b.d);
 }
 function hint(m){
  const p=PROD.find(x=>x.id===m.pid),s=stock(p),fl=firstLot(p),A=alts(p);
+ if(!p.srv&&!p.cap)return {k:'info',t:'Existencia aún no capturada en farmacia.'};
  if(p.g==='sc')return {k:'info',t:'Producto sin clasificar: aún no tiene equivalentes sugeridos.'};
  if(s===0)return {k:'crit',t:`Sin existencia vigente${p.lotes.some(l=>days(l.cad)<0)?' (lote vencido)':''}. ${A.length?A.length+' opción(es) del mismo mecanismo en farmacia.':'No hay equivalentes en farmacia.'}`,btn:A.length?'Ver opciones':null,ped:1};
  const b=A.find(a=>a.d<=90&&(!fl||a.fl.cad<fl.cad));
@@ -978,15 +1045,16 @@ window.addEventListener('resize',fitPaper);
 function bind(){
  const M=$('#main');
  M.querySelectorAll('[data-ok]').forEach(b=>b.onclick=async()=>{ATENDIDAS.add(b.dataset.ok);render();if(sb)await db(sb.from('far_alertas_atendidas').upsert({alerta_id:b.dataset.ok,atendida_por:ME?ME.nombre:PERFILES[eff()]}),'Alerta')});
- M.querySelectorAll('[data-ped],[data-pedp]').forEach(b=>b.onclick=()=>{MODAL=null;const p=PROD.find(x=>x.id==(b.dataset.ped||b.dataset.pedp));addPedido(p,Math.max(p.min*2-stock(p),2),stock(p)===0?'Urgente':'Normal');render()});
- M.querySelectorAll('[data-adv]').forEach(b=>b.onclick=async()=>{const p=PEDIDOS.find(x=>x.id===b.dataset.adv);p.est++;if(sb){await db(sb.from('far_pedidos').update({estado:p.est,updated_at:new Date().toISOString()}).eq('id',p.dbid),'Pedido');await logDb('pedido_estado',{folio:p.id,estado:PSTEPS[p.est]})}toast(`${p.id}: ${PSTEPS[p.est]}. Se avisó al mostrador.`);render()});
+ bindActs(M);
+ const sc=$('#scanBtn');if(sc)sc.onclick=()=>{const q=$('#invQ');q.value='';invQ='';q.focus();toast('Escanee el código de barras del producto.')};
+ M.querySelectorAll('[data-adv]').forEach(b=>b.onclick=async()=>{const p=PEDIDOS.find(x=>x.id===b.dataset.adv);p.est++;if(sb){await db(sb.from('far_pedidos').update({estado:p.est,updated_at:new Date().toISOString()}).eq('id',p.dbid),'Pedido');await logDb('pedido_estado',{folio:p.id,estado:PSTEPS[p.est]})}toast(p.est===3?`${p.id} recibido. Registre la entrada con lote y caducidad en Inventario.`:`${p.id}: ${PSTEPS[p.est]}.`);render();if(p.est===3&&can('entrada')){const d=(p.det||[]).find(x=>x.producto_id);if(d)entradaDlg(d.producto_id,{qty:d.cantidad,doc:p.id})}});
  M.querySelectorAll('[data-demo]').forEach(b=>b.onclick=()=>toast('En la app final: '+b.dataset.demo));
- const q=$('#invQ');if(q)q.oninput=e=>{invQ=e.target.value;const pos=e.target.selectionStart;render();const n=$('#invQ');n.focus();n.setSelectionRange(pos,pos)};
+ const q=$('#invQ');if(q){q.oninput=e=>{invQ=e.target.value;const pos=e.target.selectionStart;render();const n=$('#invQ');n.focus();n.setSelectionRange(pos,pos)};q.onkeydown=e=>{if(e.key!=='Enter')return;const v=q.value.trim(),p=PROD.find(x=>x.cl===v);if(p&&can('entrada')){invQ='';entradaDlg(p.id)}}}
  const f=$('#invF');if(f)f.onchange=e=>{invFilter=e.target.value;render()};
- M.querySelectorAll('[data-cnt]').forEach(c=>c.onchange=()=>{CONTEO[+c.dataset.cnt]=Math.max(0,+c.value||0);render()});
+ M.querySelectorAll('[data-cnt]').forEach(c=>c.onchange=()=>{CONTEO[+c.dataset.cnt]=Math.max(0,+c.value||0);CEDIT.add(+c.dataset.cnt);render()});
  M.querySelectorAll('[data-just]').forEach(c=>c.oninput=()=>{JUST[+c.dataset.just]=c.value});
- const cu=$('#cuadrar');if(cu)cu.onclick=()=>{const pend=PROD.filter(p=>CONTEO[p.id]!==sistema(p)&&!(JUST[p.id]||'').trim());if(pend.length){toast(`Falta explicar la diferencia de: ${pend.map(p=>p.nm).join(', ')}.`);render();return}if(sb){askPin('Firma del conteo físico').then(ok=>{if(!ok)return;const rows=PROD.map(p=>({producto_id:p.id,conteo:CONTEO[p.id],existencia:sistema(p),explicacion:JUST[p.id]||null,firmado_por:ME?ME.nombre:PERFILES[eff()]}));db(sb.from('far_conteos').insert(rows),'Conteo').then(d=>{if(d!==null){logDb('conteo_firmado',{productos:rows.length});toast('Conteo guardado y firmado. Los ajustes quedan pendientes de autorización del Director.')}})});return}toast('Conteo firmado por el mostrador. Los ajustes quedan pendientes de autorización del Director.')};
- const pa=$('#pAdd');if(pa)pa.onclick=()=>{if(!$('#pNew').value.trim()){toast('Escriba el nombre del medicamento que hace falta.');return}addPedido(null,+$('#pQty').value||1,$('#pPrio').value);render()};
+ const cu=$('#cuadrar');if(cu)cu.onclick=()=>{const pend=PROD.filter(p=>CONTEO[p.id]!==sistema(p)&&!(JUST[p.id]||'').trim());if(pend.length){toast(`Falta explicar la diferencia de: ${pend.map(p=>p.nm).join(', ')}.`);render();return}if(sb){askPin('Firma del conteo físico').then(ok=>{if(!ok)return;const rows=PROD.filter(p=>!p.srv).map(p=>({fecha:ISO(TODAY),producto_id:p.id,conteo:CONTEO[p.id],existencia:sistema(p),explicacion:JUST[p.id]||null,firmado_por:ME?ME.nombre:PERFILES[eff()],autorizado:CONTEO[p.id]===sistema(p)}));db(sb.from('far_conteos').insert(rows),'Conteo').then(async d=>{if(d!==null){const nd=rows.filter(r=>!r.autorizado).length;logDb('conteo_firmado',{productos:rows.length,diferencias:nd});JUST={};CEDIT.clear();await reload();toast(nd?`Conteo firmado. ${nd} diferencia(s) quedan pendientes de autorización del Director.`:'Conteo firmado. Todo cuadra.')}})});return}toast('Conteo firmado por el mostrador. Los ajustes quedan pendientes de autorización del Director.')};
+
  M.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{if(TPL_EDIT){tplDlg(b.dataset.tpl);return}loadTpl(b.dataset.tpl)});
  M.querySelectorAll('[data-tpled]').forEach(b=>b.onclick=()=>tplDlg(b.dataset.tpled));
  M.querySelectorAll('[data-tpldel]').forEach(b=>b.onclick=()=>tplDel(b.dataset.tpldel));
@@ -1043,7 +1111,221 @@ function bind(){
  M.querySelectorAll('[data-du]').forEach(b=>b.onclick=()=>{const[i,v]=b.dataset.du.split(':');RX.meds[+i].d=+v;render()});
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&MODAL){MODAL=null;render()}});
+$('#reqBtn').onclick=()=>reqDlg([]);
 $('#bellBtn').onclick=()=>{if(tabsFor().includes('alert'))go('alert');else toast('Este usuario recibe solo las alertas de pedidos.')};
+/* ===== operación real: entradas, importación eOptics, bajas, ajustes, solicitudes y avisos ===== */
+async function rpc(fn,args){const r=await sb.rpc(fn,args);if(r.error)throw new Error(r.error.message.replace(/^.*?ERROR:\s*/,''));return r.data}
+function needLive(){if(!sb||DEMO||!ME||!ME.token){toast('Disponible solo con conexión.');return false}return true}
+function needPin(){if(ME&&ME.debe_pin){toast('Primero cree su PIN de firma.');openPin(true);return false}return true}
+function dlg(t,html,wide){showMsg(t,html);$('#msgOvl .dlg').classList.toggle('wide',!!wide)}
+const closeDlg=()=>{$('#msgOvl').hidden=true};
+const pinHtml=(lbl,btn)=>`<div class="pinrow"><label style="display:grid;gap:4px;font-size:12.5px;font-weight:600;color:var(--muted)">${lbl}<input id="dPin" class="pinin" type="password" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="••••"></label><button class="btn pri" type="submit" id="dGo">${btn}</button></div><p class="ferr" id="dErr" hidden></p>`;
+const dErr=t=>{const e=$('#dErr');if(e){e.textContent=t;e.hidden=!t}else if(t)toast(t)};
+async function busy(btn,fn){const b=btn;if(b){b.disabled=true;b.dataset.t=b.textContent;b.textContent='Guardando…'}try{await fn()}finally{if(b&&document.body.contains(b)){b.disabled=false;b.textContent=b.dataset.t}}}
+const prodOpts=(sel,flt)=>[...PROD].filter(flt||(p=>!p.srv)).sort((a,b)=>a.nm.localeCompare(b.nm)).map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${esc(p.nm)} · ${esc(p.cl)}</option>`).join('');
+
+function bindActs(R){
+ const sug=p=>({pid:p.id,nombre:p.nm,cant:Math.max((p.min||1)*2-stock(p),1)});
+ R.querySelectorAll('[data-ped],[data-pedp]').forEach(b=>b.onclick=()=>{const p=PROD.find(x=>x.id==(b.dataset.ped||b.dataset.pedp));MODAL=null;closePop();render();reqDlg([sug(p)])});
+ R.querySelectorAll('[data-req]').forEach(b=>b.onclick=()=>{closePop();reqDlg([])});
+ R.querySelectorAll('[data-ent]').forEach(b=>b.onclick=()=>{closePop();const[id,sl]=b.dataset.ent.split('|');entradaDlg(+id||null,{sinl:sl==='1'})});
+ R.querySelectorAll('[data-baja]').forEach(b=>b.onclick=()=>{closePop();const v=b.dataset.baja,i=v.indexOf('|');bajaDlg(+v.slice(0,i),v.slice(i+1))});
+ R.querySelectorAll('[data-autc]').forEach(b=>b.onclick=()=>{closePop();autcDlg()});
+ R.querySelectorAll('[data-imp]').forEach(b=>b.onclick=()=>{closePop();importDlg()});
+ R.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editDlg(+b.dataset.edit));
+ R.querySelectorAll('[data-goinv]').forEach(b=>b.onclick=()=>{closePop();invFilter=b.dataset.goinv;invQ='';go('inv')});
+ R.querySelectorAll('[data-goped]').forEach(b=>b.onclick=()=>{closePop();go('ped')});
+}
+
+/* ---------- Solicitud a Finanzas con PIN ---------- */
+let REQ=null;
+function reqDlg(items){
+ if(!can('pedir')){toast('Su perfil no envía solicitudes a Finanzas.');return}
+ REQ={items:items.length?items.map(i=>({...i})):[{pid:null,nombre:'',cant:1}],prio:items.some(i=>{const p=PROD.find(x=>x.id===i.pid);return p&&p.cap&&stock(p)===0})?'Urgente':'Normal',nota:''};
+ dlg('Solicitud a Finanzas','<form id="rqF" autocomplete="off"><div id="rqBox"></div></form>',true);renderReq();
+}
+function renderReq(){const B=$('#rqBox');if(!B||!REQ)return;
+ const low=PROD.filter(p=>!p.srv&&p.cap&&['dead','crit','warn'].includes(stockState(p)[0])&&!REQ.items.some(i=>i.pid===p.id));
+ let tot=0,sinc=0;REQ.items.filter(i=>i.pid||(i.nombre||'').trim()).forEach(i=>{const p=PROD.find(x=>x.id===i.pid);if(p&&p.c)tot+=p.c*(+i.cant||0);else sinc++});
+ B.innerHTML=`<p class="note" style="margin-top:0">Elija del catálogo o escriba un medicamento que no tenemos. Finanzas recibe el aviso al momento.</p>
+ ${REQ.items.map((i,k)=>{const p=PROD.find(x=>x.id===i.pid);return `<div class="rq-row"><div>${i.pid===0||(!i.pid&&i.nombre)?`<input type="text" data-rqn="${k}" value="${esc(i.nombre)}" placeholder="Nombre, presentación y concentración">`:`<select data-rqp="${k}"><option value="">Elegir producto…</option>${prodOpts(i.pid)}<option value="0">Otro (no está en catálogo)…</option></select>`}</div>
+  <input type="number" min="1" data-rqc="${k}" value="${esc(i.cant)}" aria-label="Cantidad"><button type="button" class="icon-btn" data-rqx="${k}" aria-label="Quitar">✕</button>
+  ${p?`<small>Existencia ${p.cap?stock(p):'sin capturar'} · mínimo ${p.min}${p.c?` · costo ${money(p.c)} c/u`:''}</small>`:''}</div>`}).join('')}
+ <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" id="rqAdd">+ Agregar renglón</button>${low.length?`<button type="button" class="btn sm" id="rqLow">+ Agregar lo que está bajo (${low.length})</button>`:''}</div>
+ <div class="rq-tot"><span>Total estimado</span><span class="mono">${money(tot)}${sinc?` <small class="note">+ ${sinc} sin costo</small>`:''}</span></div>
+ <div class="fgrid"><label>Prioridad<select id="rqPr"><option ${REQ.prio==='Normal'?'selected':''}>Normal</option><option ${REQ.prio==='Urgente'?'selected':''}>Urgente</option></select></label>
+ <label>Nota para Finanzas (opcional)<input type="text" id="rqNo" value="${esc(REQ.nota)}" placeholder="Proveedor, paciente que espera…"></label></div>
+ ${pinHtml('Su PIN para confirmar','Firmar y enviar a Finanzas')}`;
+ B.querySelectorAll('[data-rqp]').forEach(s=>s.onchange=()=>{const k=+s.dataset.rqp;if(s.value==='0'){REQ.items[k]={pid:0,nombre:'',cant:REQ.items[k].cant}}else{const p=PROD.find(x=>x.id===+s.value);REQ.items[k]={pid:p?p.id:null,nombre:p?p.nm:'',cant:p&&REQ.items[k].cant<=1?Math.max((p.min||1)*2-stock(p),1):REQ.items[k].cant}}renderReq();const n=B.querySelector(`[data-rqn="${k}"]`);if(n)n.focus()});
+ B.querySelectorAll('[data-rqn]').forEach(s=>s.oninput=()=>{REQ.items[+s.dataset.rqn].nombre=s.value});
+ B.querySelectorAll('[data-rqc]').forEach(s=>s.oninput=()=>{REQ.items[+s.dataset.rqc].cant=Math.max(1,parseInt(s.value)||1)});
+ B.querySelectorAll('[data-rqc]').forEach(s=>s.onchange=()=>renderReq());
+ B.querySelectorAll('[data-rqx]').forEach(s=>s.onclick=()=>{REQ.items.splice(+s.dataset.rqx,1);if(!REQ.items.length)REQ.items.push({pid:null,nombre:'',cant:1});renderReq()});
+ $('#rqAdd').onclick=()=>{REQ.items.push({pid:null,nombre:'',cant:1});renderReq()};
+ const lw=$('#rqLow');if(lw)lw.onclick=()=>{REQ.items=REQ.items.filter(i=>i.pid||i.nombre);low.forEach(p=>REQ.items.push({pid:p.id,nombre:p.nm,cant:Math.max((p.min||1)*2-stock(p),1)}));if(low.some(p=>stock(p)===0))REQ.prio='Urgente';renderReq()};
+ $('#rqPr').onchange=e=>{REQ.prio=e.target.value};$('#rqNo').oninput=e=>{REQ.nota=e.target.value};
+ $('#rqF').onsubmit=async e=>{e.preventDefault();dErr('');
+  const it=REQ.items.filter(i=>i.pid||(i.nombre||'').trim());
+  if(!it.length){dErr('Agregue al menos un producto.');return}
+  if(it.some(i=>!(+i.cant>0))){dErr('Revise las cantidades.');return}
+  const pin=$('#dPin').value.trim();if(!/^\d{4,6}$/.test(pin)){dErr('Escriba su PIN (4 a 6 números).');$('#dPin').focus();return}
+  if(!needLive()||!needPin())return;
+  const det=it.map(i=>{const p=PROD.find(x=>x.id===i.pid);return {producto_id:p?p.id:null,clave:p?p.cl:null,nombre:p?p.nm:i.nombre.trim(),cantidad:+i.cant,costo:p?p.c:0}});
+  await busy($('#dGo'),async()=>{try{const r=await rpc('far_crear_pedido',{p_token:ME.token,p_pin:pin,p_detalle:det,p_prioridad:REQ.prio,p_nota:REQ.nota||null});closeDlg();REQ=null;toast(`Solicitud ${r.folio} enviada a Finanzas.`);await reload();if(tab!=='ped'&&tabsFor().includes('ped'))go('ped')}catch(er){dErr(er.message);if(/PIN/.test(er.message)){$('#dPin').value='';$('#dPin').focus()}}})};
+}
+
+/* ---------- Entrada de mercancía / asignar lote ---------- */
+function entradaDlg(pid,o){o=o||{};if(!can('entrada')){toast('Su perfil no registra entradas.');return}
+ const E={pid:pid||null,sinl:!!o.sinl,qty:o.qty||'',lote:'',cad:'',costo:'',doc:o.doc||''};
+ const p0=PROD.find(x=>x.id===E.pid);if(p0){if(E.sinl&&!sinLote(p0))E.sinl=false;if(E.sinl&&!E.qty)E.qty=sinLote(p0);E.costo=p0.c||''}
+ dlg(E.sinl?'Asignar lote y caducidad':'Entrada de mercancía','<form id="enF" autocomplete="off"><div id="enBox"></div></form>');
+ const paint=()=>{const p=PROD.find(x=>x.id===E.pid),sl=p?sinLote(p):0;
+  $('#enBox').innerHTML=`<div class="fgrid">
+  <label class="full">Producto<select id="enP" required><option value="">Elegir producto…</option>${prodOpts(E.pid)}</select></label>
+  ${p?`<p class="note full" style="margin:0">Existencia ${p.cap?stock(p):'sin capturar'}${p.lotes.length?' · lotes: '+[...p.lotes].sort(lotSort).map(l=>esc(l.l)+' ('+l.q+')').join(', '):''}</p>`:''}
+  ${sl?`<label class="full" style="display:flex;gap:8px;align-items:center;font-weight:600;color:var(--ink)"><input type="checkbox" id="enSl" ${E.sinl?'checked':''} style="width:auto"> Son ${sl} pieza${sl>1?'s':''} que ya están en existencia sin lote (solo asignar lote y caducidad)</label>`:''}
+  <label>Cantidad (piezas)<input type="number" id="enQ" min="1" required value="${esc(E.qty)}"></label>
+  <label>Lote<input type="text" id="enL" required value="${esc(E.lote)}" style="text-transform:uppercase" placeholder="Como viene en la caja"></label>
+  <label>Caducidad<input type="date" id="enC" required value="${esc(E.cad)}"></label>
+  ${E.sinl?'':`<label>Costo unitario (opcional)<input type="number" id="enCo" min="0" step="0.01" value="${esc(E.costo)}"></label>
+  <label class="full">Factura o documento (opcional)<input type="text" id="enD" value="${esc(E.doc)}" placeholder="Folio de factura o pedido PF-…"></label>`}
+  </div><p class="ferr" id="dErr" hidden></p><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap"><button class="btn" type="button" id="enMore">Guardar y otro lote</button><button class="btn pri" type="submit" id="dGo">Guardar</button></div>`;
+  const keep=()=>{E.qty=$('#enQ').value;E.lote=$('#enL').value;E.cad=$('#enC').value;if($('#enCo'))E.costo=$('#enCo').value;if($('#enD'))E.doc=$('#enD').value};
+  $('#enP').onchange=e=>{keep();E.pid=+e.target.value||null;const p=PROD.find(x=>x.id===E.pid);E.sinl=!!(p&&sinLote(p)&&!p.lotes.some(l=>l.cad));E.qty=E.sinl?sinLote(p):'';E.costo=p&&p.c||'';paint()};
+  const cb=$('#enSl');if(cb)cb.onchange=()=>{keep();E.sinl=cb.checked;if(E.sinl)E.qty=sinLote(PROD.find(x=>x.id===E.pid));paint()};
+  const save=async(more,btn)=>{keep();dErr('');if(!E.pid){dErr('Elija el producto.');return}if(!(+E.qty>0)){dErr('Escriba la cantidad.');return}if(!E.lote.trim()){dErr('Escriba el lote.');return}if(!E.cad){dErr('Escriba la caducidad.');return}
+   if(days(E.cad)<0&&!confirmPast(E.cad))return;if(!needLive())return;
+   await busy(btn,async()=>{try{await rpc('far_entrada',{p_token:ME.token,p_producto_id:E.pid,p_lote:E.lote,p_caducidad:E.cad,p_cantidad:+E.qty,p_costo:E.sinl||!E.costo?null:+E.costo,p_factura:E.doc||null,p_de_sin_lote:E.sinl});
+    const nm=PROD.find(x=>x.id===E.pid).nm;await reload();toast(`${nm}: ${E.qty} pza lote ${E.lote.toUpperCase()} ${E.sinl?'asignadas':'registradas'}.`);
+    if(more){const p=PROD.find(x=>x.id===E.pid);E.lote='';E.cad='';E.sinl=!!(E.sinl&&p&&sinLote(p));E.qty=E.sinl?sinLote(p):'';paint();$('#enL').focus()}else closeDlg()}catch(er){dErr(er.message)}})};
+  $('#enMore').onclick=()=>save(true,$('#enMore'));$('#enF').onsubmit=e=>{e.preventDefault();save(false,$('#dGo'))};
+ };paint();setTimeout(()=>{const f=E.pid?$('#enL'):$('#enP');f&&f.focus()},60);
+}
+let PAST_OK='';function confirmPast(d){if(PAST_OK===d)return true;PAST_OK=d;dErr(`Esa caducidad (${fmtD(d)}) ya pasó. Si es correcta, pulse Guardar otra vez.`);return false}
+
+/* ---------- Importar reporte de eOptics ---------- */
+const nrm=t=>String(t??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+function loadXLSX(){return window.XLSX?Promise.resolve():new Promise((res,rej)=>{const x=document.createElement('script');x.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';x.onload=res;x.onerror=()=>rej(new Error('No se pudo cargar el lector de Excel. Revise la conexión.'));document.head.appendChild(x)})}
+function parseGrid(g){
+ let h=-1,ci=-1,di=-1,ei=-1;
+ for(let r=0;r<Math.min(g.length,40)&&h<0;r++){const row=(g[r]||[]).map(nrm);const c=row.findIndex(x=>x==='clave'||x.startsWith('clave')||x==='codigo'||x.startsWith('codigo'));
+  let e=row.findIndex(x=>x==='existencia'||x==='existencias');if(e<0)e=row.findIndex(x=>x.startsWith('exist'));
+  if(c>=0&&e>=0){h=r;ci=c;ei=e;di=row.findIndex(x=>x.startsWith('descrip'));if(di<0)di=row.findIndex(x=>x.startsWith('producto')||x.startsWith('nombre')||x.startsWith('articulo'))}}
+ if(h<0)throw new Error('No encontré las columnas «Clave» y «Existencia». Use el reporte de toma de inventario de eOptics exportado a Excel.');
+ const out=[],seen=new Set();
+ for(let r=h+1;r<g.length;r++){const row=g[r]||[];const cl=String(row[ci]??'').trim();if(!cl||/total/i.test(cl)||seen.has(cl))continue;
+  const ex=String(row[ei]??'').replace(/[,\s]/g,'');const n=ex===''?null:Number(ex);seen.add(cl);
+  out.push({clave:cl,descripcion:di>=0?String(row[di]??'').trim():'',existencia:Number.isFinite(n)?Math.max(0,Math.floor(n)):null})}
+ if(!out.length)throw new Error('El archivo no trae renglones con clave.');
+ return out;
+}
+function parseText(t){const L=t.replace(/\r/g,'').split('\n').filter(x=>x.trim());const d=L.some(x=>x.includes('\t'))?'\t':(L[0].split(';').length>L[0].split(',').length?';':',');
+ return parseGrid(L.map(x=>x.split(d).map(c=>c.replace(/^"|"$/g,'').trim())))}
+function importDlg(){if(!can('entrada')){toast('Su perfil no importa inventario.');return}
+ dlg('Importar reporte de eOptics',`<p class="note" style="margin-top:0">En eOptics abra la <b>toma de inventario</b> y expórtela a Excel. Se leen las columnas <b>Clave</b>, <b>Descripción</b> y <b>Existencia</b>. Antes de aplicar verá qué cambia.</p>
+ <label class="btn pri" style="display:inline-block;cursor:pointer">Elegir archivo Excel o CSV<input type="file" id="imF" accept=".xlsx,.xls,.csv,.txt" hidden></label>
+ <details style="margin-top:12px"><summary class="note" style="cursor:pointer">O pegar las columnas copiadas</summary><textarea id="imT" rows="6" style="width:100%;margin-top:6px;font-family:var(--f-mono);font-size:12px" placeholder="Clave	Descripción	Existencia"></textarea><button class="btn sm" type="button" id="imTB" style="margin-top:6px">Revisar</button></details>
+ <p class="ferr" id="dErr" hidden></p><div id="imPrev"></div>`,true);
+ let fname=null;
+ $('#imF').onchange=async e=>{const f=e.target.files[0];if(!f)return;fname=f.name;dErr('');$('#imPrev').innerHTML='<p class="note">Leyendo…</p>';
+  try{let rows;if(/\.(csv|txt)$/i.test(f.name))rows=parseText(await f.text());else{await loadXLSX();const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];rows=parseGrid(XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''}))}
+   impPreview(rows,fname)}catch(er){$('#imPrev').innerHTML='';dErr(er.message)}};
+ $('#imTB').onclick=()=>{dErr('');try{fname='pegado '+new Date().toLocaleString('es-MX');impPreview(parseText($('#imT').value),fname)}catch(er){dErr(er.message)}};
+}
+function impPreview(rows,fname){
+ const byCl=Object.fromEntries(PROD.map(p=>[p.cl,p])),byZ=Object.fromEntries(PROD.map(p=>[p.cl.replace(/^0+/,''),p]));
+ rows.forEach(r=>{const p=byCl[r.clave]||byZ[r.clave.replace(/^0+/,'')];if(p){r.clave=p.cl;r.p=p;if(p.srv)r.existencia=null}});
+ const nuevos=rows.filter(r=>!r.p),cam=rows.filter(r=>r.p&&r.existencia!=null&&r.existencia!==sistema(r.p)),fuera=PROD.filter(p=>!p.srv&&!rows.some(r=>r.p===p));
+ const sinEx=rows.filter(r=>r.existencia==null&&!(r.p&&r.p.srv)).length;
+ $('#imPrev').innerHTML=`<div class="cur" style="margin-top:14px">${chip(['info',rows.length+' claves en el archivo'])}${chip(['warn',cam.length+' con cambio de existencia'])}${nuevos.length?chip(['crit',nuevos.length+(nuevos.length>1?' claves nuevas':' clave nueva')]):''}${fuera.length?chip(['mute',fuera.length+' del catálogo no vienen']):''}${sinEx?chip(['mute',sinEx+' sin existencia']):''}</div>
+ <div class="imp-tbl"><table><thead><tr><th>Clave</th><th>Descripción</th><th class="num">Sistema</th><th class="num">eOptics</th><th class="num">Cambio</th></tr></thead><tbody>
+ ${[...nuevos,...cam,...rows.filter(r=>r.p&&!cam.includes(r))].slice(0,400).map(r=>{const s=r.p?sistema(r.p):0,d=r.existencia==null?null:r.existencia-s;return `<tr><td class="mono">${esc(r.clave)}</td><td>${esc(r.p?r.p.nm:r.descripcion)}${r.p?'':' '+chip(['crit','nueva'])}</td><td class="num">${r.p?(r.p.cap?s:'—'):'—'}</td><td class="num">${r.existencia??'—'}</td><td class="num ${d==null||d===0?'':d<0?'diffn':'diffp'}">${d==null?'':d>0?'+'+d:d}</td></tr>`}).join('')}
+ </tbody></table></div>
+ <p class="note">Si eOptics trae <b>menos</b> piezas, se descuentan como salida del lote que caduca primero (alimenta «Más vendidos»). Si trae <b>más</b>, las piezas extra quedan «sin lote» hasta que registre su lote y caducidad. Las claves nuevas se agregan al catálogo como «Sin clasificar».</p>
+ <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn pri" id="imGo">Aplicar importación</button></div>`;
+ $('#imGo').onclick=()=>{if(!needLive())return;busy($('#imGo'),async()=>{try{const r=await rpc('far_importar_eoptics',{p_token:ME.token,p_filas:rows.map(r=>({clave:r.clave,descripcion:r.descripcion,existencia:r.existencia})),p_archivo:fname});
+  await reload();dlg('Importación aplicada',`<p><b>${r.claves}</b> claves leídas · <b>${r.actualizados}</b> productos con cambio · <b>${r.nuevos}</b> claves nuevas.</p>${r.salidas?`<p>${r.salidas} pieza(s) descontadas como salida.</p>`:''}${r.piezas_sin_lote?`<p><b>${r.piezas_sin_lote} pieza(s) quedaron sin lote.</b> Asigne lote y caducidad para que se vigile su vencimiento.</p><button class="btn pri" data-goinv="sinl">Ver piezas sin lote</button>`:''}${r.nuevos?` <button class="btn" data-goinv="sc">Clasificar claves nuevas</button>`:''}`);bindActs($('#msgB'));$('#msgB').querySelectorAll('[data-goinv]').forEach(b=>b.addEventListener('click',closeDlg))}catch(er){dErr(er.message)}})};
+}
+
+/* ---------- Editar producto ---------- */
+function editDlg(pid){const p=PROD.find(x=>x.id===pid);if(!p)return;if(!(can('entrada')||eff()==='dir')){toast('Solo lectura.');return}
+ dlg('Editar producto',`<form id="edF" autocomplete="off"><p class="note" style="margin-top:0"><span class="mono">${esc(p.cl)}</span> · ${esc(p.d)}</p><div class="fgrid">
+ <label class="full">Nombre corto (receta)<input id="edN" required value="${esc(p.nm)}"></label>
+ <label class="full">Principio activo<input id="edPa" value="${esc(p.pa==='—'?'':p.pa)}" placeholder="Ej. moxifloxacino 0.5%"></label>
+ <label>Grupo / mecanismo<select id="edG">${Object.entries(GRUPOS).map(([k,t])=>`<option value="${k}" ${k===p.g?'selected':''}>${t}</option>`).join('')}</select></label>
+ <label>Categoría<select id="edCat">${Object.entries(CAT).map(([k,t])=>`<option value="${k}" ${k===p.cat?'selected':''}>${t}</option>`).join('')}</select></label>
+ <label>Mínimo (avisa al llegar aquí)<input type="number" id="edMin" min="0" value="${p.min}"></label>
+ <label>Crítico<input type="number" id="edCri" min="0" value="${p.cri}"></label>
+ <label>Costo unitario<input type="number" id="edC" min="0" step="0.01" value="${p.c||''}"></label>
+ <label>Precio de venta<input type="number" id="edV" min="0" step="0.01" value="${p.v||''}"></label>
+ <label class="full" style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="edS" ${p.srv?'checked':''} style="width:auto"> Es un servicio (no lleva existencia)</label>
+ </div><p class="ferr" id="dErr" hidden></p><div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn pri" type="submit" id="dGo">Guardar</button></div></form>`);
+ $('#edF').onsubmit=async e=>{e.preventDefault();const mi=+$('#edMin').value||0,cr=+$('#edCri').value||0;if(cr>mi){dErr('El crítico no puede ser mayor que el mínimo.');return}if(!needLive())return;
+  const up={nombre:$('#edN').value.trim()||p.nm,principio:$('#edPa').value.trim(),grupo:$('#edG').value,categoria:$('#edCat').value,minimo:mi,critico:cr,costo:+$('#edC').value||0,venta:+$('#edV').value||0,servicio:$('#edS').checked,ejemplo_parametros:false,updated_at:new Date().toISOString()};
+  await busy($('#dGo'),async()=>{const d=await db(sb.from('far_productos').update(up).eq('id',p.id),'Producto');if(d===null)return;logDb('producto_editado',{clave:p.cl,...up});closeDlg();toast(up.nombre+' actualizado.');await reload()})};
+}
+
+/* ---------- Baja de piezas con PIN ---------- */
+function bajaDlg(pid,lote){const p=PROD.find(x=>x.id===pid),l=p&&p.lotes.find(x=>x.l===lote);if(!l){toast('Ese lote ya no tiene piezas.');return}
+ dlg('Dar de baja',`<form id="bjF" autocomplete="off"><p style="margin-top:0"><b>${esc(p.nm)}</b> · lote <span class="mono">${esc(l.l)}</span> · ${l.q} pza${l.cad?' · '+chip(cadState(l.cad)):''}</p><div class="fgrid">
+ <label>Cantidad<input type="number" id="bjQ" min="1" max="${l.q}" value="${l.q}"></label>
+ <label>Motivo<select id="bjM"><option>Caducidad</option><option>Daño o rotura</option><option>Muestra / cortesía</option><option>Otro</option></select></label>
+ <label class="full">Detalle (opcional)<input id="bjD" placeholder="Ej. retirado del anaquel y destruido"></label></div>
+ ${pinHtml('Su PIN','Firmar baja')}</form>`);
+ if(l.cad&&days(l.cad)>=0)$('#bjM').value='Daño o rotura';
+ $('#bjF').onsubmit=async e=>{e.preventDefault();dErr('');const q=+$('#bjQ').value,pin=$('#dPin').value.trim();if(!(q>0&&q<=l.q)){dErr('Cantidad no válida.');return}if(!/^\d{4,6}$/.test(pin)){dErr('Escriba su PIN.');return}if(!needLive()||!needPin())return;
+  await busy($('#dGo'),async()=>{try{await rpc('far_baja',{p_token:ME.token,p_pin:pin,p_producto_id:p.id,p_lote:l.l,p_cantidad:q,p_motivo:$('#bjM').value+($('#bjD').value.trim()?': '+$('#bjD').value.trim():'')});closeDlg();toast(`Baja registrada: ${p.nm} lote ${l.l} × ${q}.`);await reload()}catch(er){dErr(er.message)}})};
+}
+
+/* ---------- Autorizar discrepancias de conteo ---------- */
+function autcDlg(){if(!can('ajuste')){toast('Las autoriza el Director.');return}if(!CONTEOS_PEND.length){toast('No hay discrepancias pendientes.');return}
+ dlg('Autorizar ajustes de conteo',`<form id="acF"><p class="note" style="margin-top:0">La existencia del sistema quedará igual al conteo físico. Las piezas de más quedan «sin lote»; las de menos se descuentan del lote que caduca primero.</p>
+ <div class="imp-tbl"><table><thead><tr><th></th><th>Producto</th><th class="num">Conteo</th><th class="num">Sistema</th><th class="num">Dif.</th><th>Explicación</th></tr></thead><tbody>
+ ${CONTEOS_PEND.map(c=>{const p=PROD.find(x=>x.id===c.producto_id),df=c.conteo-c.existencia;return `<tr><td><input type="checkbox" data-ac="${c.id}" checked style="width:auto"></td><td>${esc(p?p.nm:'#'+c.producto_id)}<div class="note">${fmtD(c.fecha)} · ${esc(c.firmado_por||'')}</div></td><td class="num">${c.conteo}</td><td class="num">${c.existencia}</td><td class="num ${df<0?'diffn':'diffp'}">${df>0?'+':''}${df}</td><td>${esc(c.explicacion||'—')}</td></tr>`}).join('')}
+ </tbody></table></div>${pinHtml('Su PIN','Autorizar seleccionados')}</form>`,true);
+ $('#acF').onsubmit=async e=>{e.preventDefault();dErr('');const ids=[...document.querySelectorAll('[data-ac]:checked')].map(x=>+x.dataset.ac),pin=$('#dPin').value.trim();if(!ids.length){dErr('Seleccione al menos uno.');return}if(!/^\d{4,6}$/.test(pin)){dErr('Escriba su PIN.');return}if(!needLive()||!needPin())return;
+  await busy($('#dGo'),async()=>{try{const r=await rpc('far_autorizar_conteo',{p_token:ME.token,p_pin:pin,p_ids:ids});closeDlg();toast(`${r.ajustes} ajuste(s) autorizados.`);await reload()}catch(er){dErr(er.message)}})};
+}
+
+/* ---------- Ventanas emergentes de eventos importantes ---------- */
+const POPK=()=>'coe_far_pop_'+(ME?ME.id:0);
+let POP_MEM=new Set();
+function popSeen(){try{return new Set([...JSON.parse(sessionStorage.getItem(POPK())||'[]'),...POP_MEM])}catch(e){return POP_MEM}}
+function popMark(ids){ids.forEach(i=>POP_MEM.add(i));try{sessionStorage.setItem(POPK(),JSON.stringify([...popSeen(),...ids]))}catch(e){}}
+function popEvents(){
+ if(!ME||DEMO||viewAs||!LOADED)return[];
+ const ev=[];
+ if(tabsFor().includes('alert'))alerts().filter(a=>a.grp&&a.grp!=='info'&&!ATENDIDAS.has(a.id)).forEach(a=>ev.push(a));
+ if(can('autorizar'))PEDIDOS.filter(p=>p.est===0&&p.por!==ME.nombre).forEach(p=>ev.push({id:'p'+p.id,k:p.prio==='Urgente'?'crit':'warn',grp:'ped',t:`Solicitud ${p.id} por autorizar${p.prio==='Urgente'?' · URGENTE':''}`,d:`${p.items} · ${p.monto?money(p.monto):'costo por definir'} · ${p.por}${p.nota?' · '+p.nota:''}`}));
+ return ev;
+}
+function closePop(){const o=$('#popOvl');if(o)o.hidden=true}
+function checkPop(force){
+ if(!force&&(MODAL||[...document.querySelectorAll('.ovl')].some(o=>!o.hidden)||!$('#login').hidden))return;
+ const all=popEvents(),seen=popSeen(),nu=force?all:all.filter(e=>!seen.has(e.id));
+ if(!nu.length){if(force)toast('Sin avisos pendientes.');return}
+ showPop(nu,all.length);
+}
+const POPG=[['cad','Caducidades','var(--crit)'],['stock','Existencias bajas','var(--warn)'],['disc','Discrepancias','var(--accent)'],['ped','Solicitudes a Finanzas','var(--ok)']];
+function showPop(list,total){
+ const n=list.length,lim=24;
+ $('#popT').textContent=n===1?'1 aviso importante':`${n} avisos importantes`;
+ $('#popSub').textContent=(total>n?`${total} pendientes en total · `:'')+new Date().toLocaleString('es-MX',{weekday:'long',hour:'numeric',minute:'2-digit'});
+ let shown=0;
+ $('#popB').innerHTML=POPG.map(([g,t,c])=>{const L=list.filter(e=>e.grp===g);if(!L.length)return '';const S=L.slice(0,Math.max(0,lim-shown));shown+=S.length;
+  return `<div class="pop-g"><h4><i style="background:${c}"></i>${t} · ${L.length}</h4>${S.map(e=>g==='ped'?`<div class="alert"><span class="bar" style="background:var(--${e.k})"></span><div><b>${esc(e.t)}</b><p>${esc(e.d)}</p></div><div style="display:flex;gap:6px"><button class="btn sm pri" data-goped="1">Ver y autorizar</button></div></div>`:alertRow(e)).join('')}${L.length>S.length?`<p class="note">y ${L.length-S.length} más en Alertas.</p>`:''}</div>`}).join('');
+ const st=list.filter(e=>e.grp==='stock'&&e.p),inv=list.filter(e=>e.grp!=='ped');
+ $('#popF').innerHTML=`${st.length&&can('pedir')?`<button class="btn pri" id="popReq">Solicitar a Finanzas lo que falta (${st.length})</button>`:''}<button class="btn" id="popLater">Recordar más tarde</button>${inv.length?'<button class="btn" id="popOk">Enterado · marcar atendidas</button>':''}`;
+ const ids=list.map(e=>e.id),done=()=>{popMark(ids);closePop()};
+ $('#popX').onclick=done;$('#popLater').onclick=done;
+ const ok=$('#popOk');if(ok)ok.onclick=async()=>{done();inv.forEach(e=>ATENDIDAS.add(e.id));render();if(sb)await db(sb.from('far_alertas_atendidas').upsert(inv.map(e=>({alerta_id:e.id,atendida_por:ME?ME.nombre:''}))),'Alertas')};
+ const rq=$('#popReq');if(rq)rq.onclick=()=>{done();reqDlg(st.map(e=>({pid:e.p.id,nombre:e.p.nm,cant:Math.max((e.p.min||1)*2-stock(e.p),1)})))};
+ const B=$('#popB');B.querySelectorAll('[data-ok]').forEach(b=>b.onclick=async()=>{ATENDIDAS.add(b.dataset.ok);b.replaceWith(Object.assign(document.createElement('span'),{className:'chip c-ok',textContent:'Atendida'}));if(sb)await db(sb.from('far_alertas_atendidas').upsert({alerta_id:b.dataset.ok,atendida_por:ME?ME.nombre:''}),'Alerta');renderStrip()});
+ bindActs(B);B.querySelectorAll('button').forEach(b=>{if(!b.dataset.ok)b.addEventListener('click',()=>popMark(ids))});
+ $('#popOvl').hidden=false;
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#popOvl').hidden){$('#popX').click()}});
+
 /* ===== conexión con Supabase ===== */
 const SB_URL='https://ckjkdenwqicdjvodflba.supabase.co',SB_KEY='sb_publishable_6kfSTYsmi2KxAeX0AMwymQ_dWPTAxYz';
 let sb=null,DEMO=true;
@@ -1052,22 +1334,28 @@ const logDb=(accion,detalle)=>sb?sb.from('far_log').insert({accion,detalle,usuar
 function setOnline(ok,txt){const o=document.querySelector('.side-foot .online');if(o){o.innerHTML='<i></i>'+txt;o.classList.toggle('off',!ok)}}
 const OLDCL=Object.fromEntries(PROD.map(p=>[p.id,p.cl]));
 async function loadAll(){
- const R=await Promise.all([sb.from('far_productos').select('*').eq('activo',true).order('nombre'),sb.from('far_lotes').select('*'),sb.from('far_pedidos').select('*').order('created_at',{ascending:false}).limit(200),sb.from('far_permisos').select('*'),sb.from('far_alertas_atendidas').select('alerta_id'),sb.from('far_usuarios').select('id,nombre,usuario,perfil,activo,debe_cambiar,debe_pin,ultimo_acceso').order('id'),sb.from('rec_plantillas').select('*').eq('activa',true).order('orden').order('id'),sb.from('rec_recetas').select('folio,paciente,estado,created_at').gte('created_at',new Date(TODAY.getFullYear(),TODAY.getMonth(),TODAY.getDate()).toISOString()).order('created_at',{ascending:false})]);
- R.forEach((r,k)=>{if(r.error&&k!==6)throw r.error});TPL_DB=!R[6].error;
- const [p,l,pe,pm,at,us,pl,rh]=R.map(r=>r.data);RXHOY=rh;if(TPL_DB)TPLS=pl.map(r=>({id:r.id,nombre:r.nombre,icono:r.icono,dx:r.diagnostico||'',meds:r.medicamentos||[]}));
+ const R=await Promise.all([sb.from('far_productos').select('*').eq('activo',true).order('nombre'),sb.from('far_lotes').select('*').eq('ejemplo',false),sb.from('far_pedidos').select('*').order('created_at',{ascending:false}).limit(200),sb.from('far_permisos').select('*'),sb.from('far_alertas_atendidas').select('alerta_id'),sb.from('far_usuarios').select('id,nombre,usuario,perfil,activo,debe_cambiar,debe_pin,ultimo_acceso').order('id'),sb.from('rec_plantillas').select('*').eq('activa',true).order('orden').order('id'),sb.from('rec_recetas').select('folio,paciente,estado,created_at').neq('estado','prueba').gte('created_at',new Date(TODAY.getFullYear(),TODAY.getMonth(),TODAY.getDate()).toISOString()).order('created_at',{ascending:false}),
+  sb.from('far_movimientos').select('producto_id,tipo,cantidad,created_at').eq('tipo','salida').gte('created_at',new Date(Date.now()-28*864e5).toISOString()).limit(5000),
+  sb.from('far_conteos').select('*').eq('autorizado',false).order('id'),
+  sb.from('far_conteos').select('fecha').order('fecha',{ascending:false}).limit(1),
+  sb.from('far_log').select('created_at,detalle').eq('accion','import_eoptics').order('created_at',{ascending:false}).limit(1)]);
+ R.forEach((r,k)=>{if(r.error&&k!==6&&k<8)throw r.error});TPL_DB=!R[6].error;
+ const [p,l,pe,pm,at,us,pl,rh,mv,cp,lc,li]=R.map(r=>r.data||[]);
+ CONTEOS_PEND=cp.filter(c=>c.conteo!==c.existencia);LAST_CONTEO=lc[0]?lc[0].fecha:null;LAST_IMPORT=li[0]?li[0].created_at:null;LAST_IMPORT_N=li[0]&&li[0].detalle?li[0].detalle.claves:0;HAS_SALIDAS=mv.length>0;
+ const SAL={};mv.forEach(m=>{SAL[m.producto_id]=(SAL[m.producto_id]||0)-m.cantidad});RXHOY=rh;if(TPL_DB)TPLS=pl.map(r=>({id:r.id,nombre:r.nombre,icono:r.icono,dx:r.diagnostico||'',meds:r.medicamentos||[]}));
  if(!p.length)throw new Error('vacio');
- PROD=p.map(r=>({id:r.id,cl:r.clave,d:r.descripcion,nm:r.nombre,pa:r.principio||'',g:r.grupo,cat:r.categoria,min:r.minimo,cri:r.critico,c:+r.costo,v:+r.venta,sal:r.ventas_4s||0,srv:r.servicio,lotes:l.filter(x=>x.producto_id===r.id).map(x=>({l:x.lote,cad:x.caducidad,q:x.cantidad}))}));
- PEDIDOS=pe.map(r=>({id:r.folio,dbid:r.id,items:r.items,monto:+r.monto,prio:r.prioridad,est:r.estado,por:r.solicitante||'',fecha:r.created_at.slice(0,10)}));
+ PROD=p.map(r=>({id:r.id,cl:r.clave,d:r.descripcion,nm:r.nombre,pa:r.principio||'',g:r.grupo,cat:r.categoria,min:r.minimo,cri:r.critico,c:+r.costo,v:+r.venta,sal:SAL[r.id]||0,srv:r.servicio,ejp:r.ejemplo_parametros,cat0:r.categoria,cap:l.some(x=>x.producto_id===r.id),lotes:l.filter(x=>x.producto_id===r.id&&x.cantidad>0).map(x=>({id:x.id,l:x.lote,cad:x.caducidad,q:x.cantidad}))}));
+ PEDIDOS=pe.map(r=>({id:r.folio,dbid:r.id,items:r.items,monto:+r.monto,prio:r.prioridad,est:r.estado,por:r.solicitante||'',fecha:r.created_at.slice(0,10),nota:r.nota,firma:!!r.firmado_por,det:r.detalle||[]}));
  pm.forEach(r=>{PERMS[r.perfil]=r.permisos});
  ATENDIDAS=new Set(at.map(r=>r.alerta_id));
  if(us.length)USERS=us.map(r=>({dbid:r.id,n:r.nombre,u:r.usuario,p:r.perfil,a:r.activo?1:0,dc:r.debe_cambiar,dp:r.debe_pin,ua:r.ultimo_acceso}));
- PROD.forEach(p=>{if(!(p.id in CONTEO))CONTEO[p.id]=sistema(p)});
+ PROD.forEach(p=>{if(!CEDIT.has(p.id))CONTEO[p.id]=sistema(p)});
 }
 function remap(){const byCl=Object.fromEntries(PROD.map(p=>[p.cl,p.id]));const fix=id=>byCl[OLDCL[id]]??PROD.find(RXABLE).id;
  RX.meds.forEach(m=>{m.pid=fix(m.pid)});
  CONTEO=Object.fromEntries(PROD.map(p=>[p.id,sistema(p)]));JUST={};}
 let rlT=null;
-async function reload(){try{await loadAll();const typing=MODAL||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName);if(typing)renderStrip();else render()}catch(e){setOnline(false,'Reconectando…')}}
+async function reload(){try{await loadAll();const typing=MODAL||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName);if(typing)renderStrip();else render();checkPop()}catch(e){setOnline(false,'Reconectando…')}}
 function rxText(){const d=DOCS[RX.med];const L=[];
  L.push('CENTRO OCULAR ESPECIALIZADO · Oftalmología');L.push(`${d.n} · ${d.c}`);L.push('');
  L.push(`Paciente: ${RX.pac}${RX.edad?` (${RX.edad} años)`:''}`);L.push(`Fecha: ${fmtD(ISO(TODAY))} · Folio: ${rxFolio()}`);L.push(`Diagnóstico: ${RX.dx||'—'}`);L.push('');L.push('Rp.');
@@ -1124,15 +1412,15 @@ async function logout(msg){const t=ME&&ME.token;ME=null;sSet(null);clearInterval
 async function enter(sess){
  ME=sess;sSet(sess);role=sess.perfil;viewAs=null;tab='dash';
  $('#login').hidden=true;document.body.classList.remove('locked');paintMe();clearInterval(closeT);closeT=setInterval(tick,20000);tick();
- if(!DEMO&&!LOADED){await startData()}else{renderTabs();render()}
- nextStep();
+ if(!DEMO&&!LOADED){await startData()}else{renderTabs();render();if(!DEMO)reload()}
+ nextStep();setTimeout(checkPop,900);
 }
 let LOADED=false;
 async function startData(){
  try{await loadAll();await loadCals();LOADED=true;remap();setOnline(true,'En línea · sincronizado');renderTabs();render();loadBusy(true);setInterval(()=>loadBusy(),5*60000);
   const ch=sb.channel('coe-farmacia');
-  ['far_productos','far_lotes','far_pedidos','far_alertas_atendidas','far_permisos','far_usuarios','rec_recetas','rec_plantillas'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{clearTimeout(rlT);rlT=setTimeout(reload,500)}));
-  ch.subscribe();
+  ['far_productos','far_lotes','far_pedidos','far_alertas_atendidas','far_permisos','far_usuarios','rec_recetas','rec_plantillas','far_conteos'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{clearTimeout(rlT);rlT=setTimeout(reload,500)}));
+  ch.subscribe();setTimeout(checkPop,600);setInterval(checkPop,60000);
  }catch(e){setOnline(false,'Sin conexión');renderTabs();render();toast('No se pudieron cargar los datos. Revise su conexión.')}
 }
 function openPw(first){$('#pwT').textContent=first?'Cambie su contraseña':'Cambiar contraseña';$('#pwSub').textContent=first?'Está usando una contraseña temporal. Elija una propia para continuar.':'Escriba su contraseña actual y la nueva.';$('#pwX').hidden=!!first;$('#pwErr').hidden=true;['pwA','pwN','pwN2'].forEach(k=>$('#'+k).value='');$('#pwOvl').hidden=false;setTimeout(()=>$('#pwA').focus(),50)}
@@ -1223,7 +1511,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610172207';
+const APP_VER='202610172336';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
