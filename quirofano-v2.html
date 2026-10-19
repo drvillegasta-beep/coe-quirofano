@@ -239,6 +239,7 @@ input.inl{width:72px;display:inline-block;padding:3px 6px;min-height:0;margin:0 
 .pq-big{font-size:15px}.pq-big ul{line-height:1.6}
 nav .badge{background:var(--card3)!important;color:var(--ink);border:1px solid var(--linea)}
 .cprow{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--linea)}.cprow:last-child{border-bottom:0}.cpbtn{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex:0 0 auto;max-width:46%}
+.cfgtabs{flex-wrap:wrap}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -1918,29 +1919,30 @@ function vCampana(){
   const ps=(S.campPac||[]).filter(p=>p.campana_id===c.id),dias=diasCamp(c),qq=(S.sub.cpQ||'').toLowerCase();
   const pp=ps.map(p=>({p,...pagoCamp(p)}));
   const lios=ps.filter(p=>p.lio_poder!=null&&p.lio_poder!=='');
-  let html=`<div class="row" style="margin-bottom:6px;align-items:center"><h2 style="flex:3;margin:0">${h(c.nombre)}</h2>${can.config()?`<button class="btn sec" style="flex:0 0 auto" onclick="formCampana('${c.id}')">Días y cupos</button>`:''}</div>
+  const st=lioCampStock(ps,c),nSt=lios.filter(p=>st[p.id]).length,nF=lios.length-nSt;
+  let html=`<div class="row" style="margin-bottom:6px;align-items:center"><h2 style="flex:3;margin:0">${h(c.nombre)}</h2>${can.config()?`<button class="btn sec" style="flex:0 0 auto" onclick="S.tab='mas';S.sub.mas='config';S.sub.cfg='camp';render()">Configurar</button>`:''}</div>
   <div class="muted" style="margin-bottom:12px">${dias.length?dias.map(d=>fCorta(d.fecha)).join(' · '):'Sin días quirúrgicos definidos'}${c.notas?' · '+h(c.notas):''}</div>
   <div class="tiles">
    <div class="tile" style="cursor:default"><span class="tl">Pacientes</span><b>${new Set(ps.map(p=>p.cotizacion_id||p.paciente_nombre)).size}</b><small>${ps.length} ojos</small></div>
    <div class="tile" style="cursor:default"><span class="tl">Liquidados</span><b>${pp.filter(x=>x.liq).length}</b><small>de ${ps.length} ojos</small></div>
    <div class="tile" style="cursor:default"><span class="tl">Con anticipo</span><b>${pp.filter(x=>!x.liq&&x.pag>0).length}</b><small>${pp.filter(x=>!x.pag).length} sin pago</small></div>
-   <div class="tile" style="cursor:default"><span class="tl">Lentes</span><b>${lios.length}</b><small>${[...new Set(lios.map(p=>num(p.lio_poder)))].length} poderes distintos</small></div>
+   <div class="tile" style="cursor:default"><span class="tl">Lentes</span><b>${lios.length}</b><small>${nSt} en stock · ${nF} por pedir</small></div>
   </div>
   <div class="row" style="margin-bottom:10px"><input placeholder="Buscar paciente" value="${h(S.sub.cpQ||'')}" onchange="S.sub.cpQ=this.value;render()"><button class="btn sec" style="flex:0 0 auto" onclick="exportCampana()">Exportar</button><button class="btn sec" style="flex:0 0 auto" onclick="imprimirLiosCamp()">Pedido de lentes</button></div>`;
   const grupos=[...dias.map(d=>({k:d.fecha,t:fFecha(d.fecha),cupo:num(d.cupo)})),{k:'',t:'Sin día asignado',cupo:0}];
   html+=grupos.map(g=>{const l=pp.filter(x=>(x.p.dia||'')===g.k&&(!qq||(x.p.paciente_nombre||'').toLowerCase().includes(qq)));if(!l.length&&g.k==='')return '';
     return `<div class="card"><div class="ph3"><h3>${h(g.t)}</h3><span class="muted">${l.length}${g.cupo?' / '+g.cupo+' cupo':''} ojos · ${l.filter(x=>x.liq).length} liquidados</span></div>
     ${l.map(({p,est,cls,pag,saldo,tot})=>`<div class="cprow"><div class="grow"><b>${h(p.paciente_nombre)}</b> <span class="pill p-azul">${h(p.ojo||'')}</span> <span class="pill ${cls}">${est}${!['Liquidado'].includes(est)&&tot?' · saldo '+money(saldo):''}</span>
-      <div class="muted">${h(p.procedimiento||'')}${lioCamp(p)?' · LIO <b style="color:var(--ink)">'+h(lioCamp(p))+'</b>':''}${p.telefono?' · '+h(fmtTel(p.telefono)):''}</div>
+      <div class="muted">${h(p.procedimiento||'')}${lioCamp(p)?' · LIO <b style="color:var(--ink)">'+h(lioCamp(p))+'</b> '+(st[p.id]?'<span class="pill p-verde">en stock</span>':st[p.id]===null?'<span class="pill p-amar">por pedir</span>':''):''}${p.telefono?' · '+h(fmtTel(p.telefono)):''}</div>
       ${(p.comprobantes||[]).length?`<div class="row" style="gap:6px;margin-top:4px;flex-wrap:wrap">${p.comprobantes.map(x=>`<a href="${h(x.url)}" target="_blank" class="pill">${x.tipo==='liquidacion'?'Liquidación':'Anticipo'} ${money(x.monto)}</a>`).join('')}</div>`:''}
       ${p.notas?`<div class="muted" style="margin-top:2px">📝 ${h(p.notas)}</div>`:''}</div>
       <div class="cpbtn">${p.telefono?`<a class="btn sm sec" target="_blank" href="https://wa.me/${waNum(p.telefono)}?text=${encodeURIComponent('Hola '+p.paciente_nombre+', le escribimos del Centro Ocular Especializado sobre su cirugía de la '+c.nombre+(p.dia?' programada el '+fFecha(p.dia):'')+'.')}">WhatsApp</a>`:''}
       ${can.programar()||can.cotizar()?`<button class="btn sm" onclick="pagoCampana('${p.id}')">Pago</button><button class="btn sm sec" onclick="editCampPac('${p.id}')">Editar</button>`:''}</div></div>`).join('')||'<div class="muted">Sin pacientes</div>'}</div>`}).join('');
   // frecuencia de poderes
   const tipos=[...new Set(lios.map(p=>p.lio_tipo||'LIO'))].sort();
-  html+=`<div class="card"><h3>Lentes requeridos · ${lios.length} en total</h3>${tipos.map(t=>{const lt=lios.filter(p=>(p.lio_tipo||'LIO')===t);const pod=[...new Set(lt.map(p=>num(p.lio_poder)))].sort((a,b)=>a-b);
-    return `<div class="sec-t">${h(t)} · ${lt.length}</div><div class="tblwrap"><table><tr><th>Poder</th><th>Total</th>${dias.map(d=>`<th>${fCorta(d.fecha)}</th>`).join('')}<th>Sin día</th></tr>
-    ${pod.sort((a,b)=>lt.filter(p=>num(p.lio_poder)===b).length-lt.filter(p=>num(p.lio_poder)===a).length||a-b).map(d=>{const n=lt.filter(p=>num(p.lio_poder)===d);return `<tr><td><b>${fmtN(d)} D</b></td><td><b>${n.length}</b></td>${dias.map(x=>`<td>${n.filter(p=>p.dia===x.fecha).length||''}</td>`).join('')}<td>${n.filter(p=>!p.dia).length||''}</td></tr>`}).join('')}</table></div>`}).join('')||'<div class="muted">Aún no hay poderes capturados.</div>'}
+  html+=`<div class="card"><div class="row" style="align-items:center"><h3 style="flex:3;margin:0">Lentes requeridos · ${lios.length} en total</h3>${nF&&can.pedir()?`<button class="btn" style="flex:0 0 auto" onclick="pedirLiosCamp()">Solicitar ${nF} faltantes a Finanzas</button>`:''}</div><div class="muted" style="margin:4px 0 6px">${nSt} en stock y apartables · <b style="color:var(--ink)">${nF} por pedir</b>. Se cuentan los lentes disponibles que no caducan antes del último día de la campaña.</div>${tipos.map(t=>{const lt=lios.filter(p=>(p.lio_tipo||'LIO')===t);const pod=[...new Set(lt.map(p=>num(p.lio_poder)))].sort((a,b)=>a-b);
+    return `<div class="sec-t">${h(t)} · ${lt.length}</div><div class="tblwrap"><table><tr><th>Poder</th><th>Total</th><th>En stock</th><th>Faltan</th>${dias.map(d=>`<th>${fCorta(d.fecha)}</th>`).join('')}<th>Sin día</th></tr>
+    ${pod.sort((a,b)=>lt.filter(p=>num(p.lio_poder)===b).length-lt.filter(p=>num(p.lio_poder)===a).length||a-b).map(d=>{const n=lt.filter(p=>num(p.lio_poder)===d);const ns=n.filter(p=>st[p.id]).length;return `<tr><td><b>${fmtN(d)} D</b></td><td><b>${n.length}</b></td><td>${ns||''}</td><td>${n.length-ns?`<b class="t-a">${n.length-ns}</b>`:'<span class="muted">✓</span>'}</td>${dias.map(x=>`<td>${n.filter(p=>p.dia===x.fecha).length||''}</td>`).join('')}<td>${n.filter(p=>!p.dia).length||''}</td></tr>`}).join('')}</table></div>`}).join('')||'<div class="muted">Aún no hay poderes capturados.</div>'}
   ${ps.length-lios.length?`<div class="muted" style="margin-top:6px">${ps.length-lios.length} ojo(s) sin poder de lente capturado.</div>`:''}</div>`;
   $('#main').innerHTML=html;
 }
@@ -2020,10 +2022,10 @@ function formCampana(id){
 }
 function exportCampana(){const c=campActiva();csv([['Día','Paciente','Teléfono','Ojo','Procedimiento','Tipo LIO','Poder','Total','Pagado','Estado','Nota'],...(S.campPac||[]).filter(p=>p.campana_id===c.id).map(p=>{const f=pagoCamp(p);return [p.dia||'',p.paciente_nombre,p.telefono,p.ojo,p.procedimiento,p.lio_tipo,p.lio_poder,f.tot,f.pag,f.est,p.notas]})],'campana_'+hoyISO()+'.csv')}
 function imprimirLiosCamp(){
-  const c=campActiva(),dias=diasCamp(c),l=(S.campPac||[]).filter(p=>p.campana_id===c.id&&p.lio_poder!=null&&p.lio_poder!=='');
+  const c=campActiva(),dias=diasCamp(c),st=lioCampStock((S.campPac||[]).filter(p=>p.campana_id===c.id),c),l=(S.campPac||[]).filter(p=>p.campana_id===c.id&&p.lio_poder!=null&&p.lio_poder!=='');
   const tipos=[...new Set(l.map(p=>p.lio_tipo||'LIO'))].sort();
   printWin(`${printHead('Lentes requeridos · '+h(c.nombre))}<div style="margin:6px 0">Total: <b>${l.length} lentes</b></div>${tipos.map(t=>{const lt=l.filter(p=>(p.lio_tipo||'LIO')===t),pod=[...new Set(lt.map(p=>num(p.lio_poder)))].sort((a,b)=>a-b);
-   return `<h4>${h(t)} · ${lt.length}</h4><table><tr><th>Poder</th><th>Total</th>${dias.map(d=>`<th>${fCorta(d.fecha)}</th>`).join('')}<th>Sin día</th></tr>${pod.map(d=>{const n=lt.filter(p=>num(p.lio_poder)===d);return `<tr><td>${fmtN(d)} D</td><td><b>${n.length}</b></td>${dias.map(x=>`<td>${n.filter(p=>p.dia===x.fecha).length||''}</td>`).join('')}<td>${n.filter(p=>!p.dia).length||''}</td></tr>`}).join('')}</table>`}).join('')}`);
+   return `<h4>${h(t)} · ${lt.length}</h4><table><tr><th>Poder</th><th>Total</th><th>En stock</th><th>Pedir</th>${dias.map(d=>`<th>${fCorta(d.fecha)}</th>`).join('')}<th>Sin día</th></tr>${pod.map(d=>{const n=lt.filter(p=>num(p.lio_poder)===d),ns=n.filter(p=>st[p.id]).length;return `<tr><td>${fmtN(d)} D</td><td><b>${n.length}</b></td><td>${ns||''}</td><td><b>${n.length-ns||''}</b></td>${dias.map(x=>`<td>${n.filter(p=>p.dia===x.fecha).length||''}</td>`).join('')}<td>${n.filter(p=>!p.dia).length||''}</td></tr>`}).join('')}</table>`}).join('')}`);
 }
 
 /* ============================================================
@@ -2128,8 +2130,8 @@ function vAlertas(){
   }
   $('#main').innerHTML=html;
 }
-function formPedido(mids){
-  const filas=mids.map(id=>{const m=matById(id),s=semaforo(m);const sug=Math.max(1,Math.ceil((num(m.stock_maximo)||num(m.stock_minimo)*2)-s.proy));return {material_id:id,nombre:m.nombre,unidad:m.unidad,cantidad:sug,proveedor_id:m.proveedor_id,costo:num(m.costo),critico:m.critico,nivel:s.nivel}});
+function formPedido(mids,extras){
+  const filas=(extras||[]).map(e=>({material_id:null,nombre:e.nombre,unidad:e.unidad||'pza',cantidad:e.cantidad,especial:true,critico:true})).concat(mids.map(id=>{const m=matById(id),s=semaforo(m);const sug=Math.max(1,Math.ceil((num(m.stock_maximo)||num(m.stock_minimo)*2)-s.proy));return {material_id:id,nombre:m.nombre,unidad:m.unidad,cantidad:sug,proveedor_id:m.proveedor_id,costo:num(m.costo),critico:m.critico,nivel:s.nivel}}));
   const m=modal(`<div id="fp"></div>`);
   const draw=()=>{m.querySelector('#fp').innerHTML=`${mhead('Pedido a COE Finanzas')}<div class="muted">Se envía como solicitud del área Quirófano; Administración la autoriza en COE Finanzas.</div>
   <table style="margin-top:8px"><tr><th>Partida</th><th>Cant.</th><th></th></tr>${filas.map((f,i)=>`<tr><td>${h(f.nombre)} <span class="muted">${h(f.unidad||'')}</span>${f.critico?' <span class="pill p-rojo">crítico</span>':''}</td><td><input class="qty" type="number" step="any" value="${f.cantidad}" onchange="this.closest('.modal')._f[${i}].cantidad=num(this.value)"></td><td><button class="btn sec sm" data-del="${i}">✕</button></td></tr>`).join('')||'<tr><td colspan=3 class="muted">Agrega partidas</td></tr>'}</table>
@@ -2806,7 +2808,6 @@ async function paginaCotPublica(tok){
 function vMas(){
   let items=[['reporte','Reporte semanal'],['paquetes','Paquetes quirúrgicos'],['catalogo','Catálogo de materiales']];
   if(can.precios())items.splice(1,0,['precios','Precios y vigencias']);
-  if(can.config())items.push(['indic','Indicaciones al paciente'],['campanas','Campañas']);
   if(can.usuarios())items.push(['usuarios','Usuarios']);
   if(can.config())items.push(['config','Configuración']);
   items.push(['bitacora','Bitácora']);items.push(['cuenta','Mi cuenta']);
@@ -2931,27 +2932,73 @@ function formUsuario(id){
     if(!id)row.usuario=usr;
     await q(id?sb.from('qx_usuarios').update(row).eq('id',id):sb.from('qx_usuarios').insert(row),'Guardar usuario');await logA(id?'editar_usuario':'crear_usuario','qx_usuarios',id||usr,{rol:row.rol,modulos:row.modulos,permisos:row.permisos});if(id===S.user.id){S.user.modulos=row.modulos;S.user.permisos=row.permisos;S.user.rol=row.rol;safeLS('qx_user',JSON.stringify(S.user))}m.remove();render()};
 }
+/* ============================================================
+   CONFIGURACIÓN (todo lo configurable en un solo lugar)
+   ============================================================ */
+const CFG_SEC=[['general','General'],['cot','Cotizaciones'],['inv','Inventario'],['carro','Carro rojo'],['lio','Stock LIO'],['camp','Campañas'],['qx','Quirófano y papelería'],['indic','Indicaciones'],['msj','Mensajes'],['sedes','Sedes y especialidades']];
+const fI=(k,lab,def,t,extra)=>`<div><label>${lab}</label><input data-k="${k}" ${t?'type="'+t+'"':''} value="${h(cfg(k,def))}" ${extra||''}></div>`;
+const fT=(k,lab,def,hgt)=>`<div style="grid-column:1/-1"><label>${lab}</label><textarea data-k="${k}" style="min-height:${hgt||90}px">${h(cfg(k,def))}</textarea></div>`;
+const fS=(k,lab,def,ops)=>`<div><label>${lab}</label><select data-k="${k}">${ops.map(([v,t])=>`<option value="${v}" ${String(cfg(k,def))===v?'selected':''}>${t}</option>`).join('')}</select></div>`;
+const btnG=`<div class="acts"><button class="btn" onclick="guardarSec()">Guardar con PIN</button></div>`;
 function vConfig(out){
-  out(`<h2>Configuración</h2>
-  <div class="card"><h3>Sedes y ubicaciones</h3>${S.sedes.map(s=>`<div class="sec-t">${h(s.nombre)} ${s.activa?'':'(inactiva)'}</div>${S.ubic.filter(u=>u.sede_id===s.id).sort((a,b)=>a.orden-b.orden).map(u=>`<div class="list-item"><div class="grow">${h(u.nombre)} <span class="pill">${u.tipo==='sala'?'quirófano':'almacén'}</span> ${u.activa?'':'<span class="pill">inactiva</span>'}</div><button class="btn sec sm" onclick="toggleUb('${u.id}')">${u.activa?'Desactivar':'Activar'}</button></div>`).join('')||'<div class="muted">Sin ubicaciones</div>'}<button class="btn sec sm" style="margin-top:6px" onclick="nuevaUb('${s.id}')">＋ Quirófano / almacén</button>`).join('')}
-  <div class="acts" style="justify-content:flex-start"><button class="btn sec sm" onclick="nuevaSede()">＋ Sede</button></div></div>
-  <div class="card"><h3>Especialidades</h3>${S.esp.map(e=>`<span class="pill" style="margin:2px">${h(e.nombre)}</span>`).join('')}<div class="row" style="margin-top:8px"><input id="nEsp" placeholder="Nueva especialidad (p. ej. Cirugía plástica)"><button class="btn sec" style="flex:0 0 auto" onclick="nuevaEsp()">Agregar</button></div></div>
-  <div class="card"><h3>Parámetros</h3><div class="grid3">
-  <div><label>Días de proyección (por agotarse)</label><input id="cDP" type="number" value="${cfg('dias_proyeccion',14)}"></div>
-  <div><label>Conteo de críticos cada (días)</label><input id="cFC" type="number" value="${cfg('freq_criticos',7)}"></div>
-  <div><label>Inventario completo cada (días)</label><input id="cFF" type="number" value="${cfg('freq_completo',15)}"></div>
-  <div><label>Fecha ancla del programa de inventarios</label><input id="cIB" type="date" value="${cfg('inv_base','2026-10-05')}"></div>
-  <div><label>Anticipo mínimo para programar ($)</label><input id="cAM" type="number" value="${cfg('anticipo_minimo_monto',1000)}"></div>
-  <div><label>o % del costo total (se usa el mayor)</label><input id="cAP" type="number" value="${cfg('anticipo_minimo_pct',0)}"></div>
-  <div><label>WhatsApp de la clínica (alertas de pacientes)</label><input id="cWA" value="${h(cfg('whatsapp_clinica','4591345529'))}"></div>
-  <div><label>Teléfono de la clínica en mensajes</label><input id="cTel" value="${h(cfg('tel_clinica','(459) 100 0431'))}"></div>
-  <div><label>Control largo plazo (meses)</label><input id="cMC" type="number" value="${cfg('meses_control',6)}"></div>
-  <div><label>Control con diabetes / glaucoma (meses)</label><input id="cMR" type="number" value="${cfg('meses_control_riesgo',4)}"></div></div>
-  <div class="sec-t">Textos de los mensajes</div><div class="muted">Variables: {nombre} {procedimiento} {ojo} {fecha} {hora} {tel} {link} {fecha_cita} {hora_cita} {meses}</div>
-  ${Object.keys(MSJ_NOM).map(k=>`<label>${MSJ_NOM[k]}</label><textarea data-msg="${k}" style="min-height:90px">${h(cfg('msg_'+k,PLANT[k]))}</textarea>`).join('')}
-  ${S.sedes.map(s=>`<label>Tabla de cotizaciones para ${h(s.nombre)}</label><select data-cot="${h(s.nombre)}"><option value="cotizaciones" ${tablaCotDe(s)==='cotizaciones'?'selected':''}>cotizaciones (Tacámbaro)</option><option value="cotizaciones_s2" ${tablaCotDe(s)==='cotizaciones_s2'?'selected':''}>cotizaciones_s2 (Morelia)</option></select>`).join('')}
-  <div class="acts"><button class="btn" onclick="guardarParams()">Guardar parámetros</button></div></div>
-  <div class="card"><h3>Logo de la clínica</h3>${logoTag()}<div class="muted">Sube el PNG del logo actual del COE; se mostrará en todos los dispositivos y en las impresiones.</div><input type="file" accept="image/png,image/*" id="cLogo" style="margin-top:8px"><div class="acts"><button class="btn sec" onclick="subirLogo()">Subir logo</button></div></div>`);
+  const sec=S.sub.cfg||'general';
+  out(`<h2>Configuración</h2><div class="tabs cfgtabs">${CFG_SEC.map(([k,t])=>`<button class="${sec===k?'on':''}" onclick="S.sub.cfg='${k}';render()">${t}</button>`).join('')}</div>`);
+  if(sec==='general')out(`<div class="card"><h3>Clínica</h3><div class="grid2">
+    ${fI('tels_programar','Teléfonos para programar (principal | WhatsApp)','(459) 100 0431|(459) 134 5529')}${fI('tel_clinica','Teléfono en mensajes','(459) 100 0431')}
+    ${fI('whatsapp_clinica','WhatsApp de la clínica (10 dígitos)','4591345529','','inputmode="tel"')}${fS('qr_destino','El QR de la cotización lleva a','whatsapp',[['whatsapp','WhatsApp de la clínica'],['cotizacion','Página de la cotización']])}
+    ${S.sedes.map(s=>`<div style="grid-column:1/-1"><label>Dirección impresa · ${h(s.nombre)}</label><input data-k="dir_${h(s.nombre)}" value="${h(cfg('dir_'+s.nombre,s.nombre.startsWith('Mor')?'Hospital Victoria, Consultorio 1206, Piso 12, Av. Acueducto 2800, Morelia, Mich.':'Av. Luis Donaldo Colosio 151, Col. La Purísima, Tacámbaro, Mich.'))}"></div>`).join('')}</div>${btnG}</div>
+    <div class="card"><h3>Logo de la clínica</h3>${logoTag()}<input type="file" accept="image/png,image/*" id="cLogo" style="margin-top:8px"><div class="acts"><button class="btn sec" onclick="subirLogo()">Subir logo</button></div></div>
+    <div class="card"><h3>Usuarios y accesos</h3><div class="muted">Módulos y permisos por persona.</div><div class="acts" style="justify-content:flex-start"><button class="btn sec" onclick="S.sub.mas='usuarios';render()">Ir a Usuarios</button></div></div>`);
+  if(sec==='cot')out(`<div class="card"><h3>Cotizaciones</h3><div class="grid3">
+    ${fI('vig_cirugia','Vigencia cirugía (días)',30,'number')}${fI('vig_laser','Vigencia láser (días)',30,'number')}${fI('vig_estudio','Vigencia estudios (días)',30,'number')}
+    ${fI('anticipo_minimo_monto','Anticipo mínimo para programar ($)',1000,'number')}${fI('anticipo_minimo_pct','o % del costo (se usa el mayor)',0,'number')}<div></div>
+    ${fT('medicos','Médicos que cotizan (separados por coma)','Dr. José Antonio Villegas Ávila,Dra. Mónica Rivera Bustos',60)}
+    ${fT('cot_condiciones','Condiciones de la cotización','Precios en pesos mexicanos. Después de la fecha de vigencia los precios pueden cambiar.',70)}
+    ${S.sedes.map(s=>`<div><label>Sistema anterior de cotizaciones · ${h(s.nombre)}</label><select data-k="cot_tabla_${h(s.nombre)}"><option value="cotizaciones" ${tablaCotDe(s)==='cotizaciones'?'selected':''}>cotizaciones (Tacámbaro)</option><option value="cotizaciones_s2" ${tablaCotDe(s)==='cotizaciones_s2'?'selected':''}>cotizaciones_s2 (Morelia)</option></select></div>`).join('')}</div>${btnG}</div>
+    <div class="card"><h3>Precios, paquetes y descuentos máximos</h3><div class="acts" style="justify-content:flex-start"><button class="btn sec" onclick="S.sub.mas='precios';render()">Ir a Precios y vigencias</button></div></div>`);
+  if(sec==='inv')out(`<div class="card"><h3>Inventario de quirófano</h3><div class="grid3">
+    ${fI('freq_criticos','Conteo de críticos cada (días)',7,'number')}${fI('freq_completo','Inventario completo cada (días)',15,'number')}${fI('inv_base','Fecha ancla del programa','2026-10-05','date')}
+    ${fI('dias_proyeccion','Días de proyección (por agotarse)',14,'number')}${fS('conteo_foto','Foto de gaveta obligatoria al cerrar conteo','1',[['1','Sí'],['0','No']])}</div>
+    <div class="muted" style="margin-top:6px">Si un conteo no se hace en su fecha, al día siguiente se avisa a COE Finanzas.</div>${btnG}</div>
+    <div class="card"><h3>Catálogo y paquetes</h3><div class="acts" style="justify-content:flex-start"><button class="btn sec" onclick="S.sub.mas='catalogo';render()">Catálogo de materiales</button><button class="btn sec" onclick="S.sub.mas='paquetes';render()">Paquetes quirúrgicos</button></div></div>`);
+  if(sec==='carro')out(`<div class="card"><h3>Carro rojo</h3><div class="grid2">${fI('carro_aviso_dias','Cambio preventivo: días antes de caducar',180,'number')}${fI('carro_rev_dias','Revisión de sello y equipo cada (días)',7,'number')}</div>
+    <div class="muted" style="margin-top:6px">Vencidos, por vencer y revisión atrasada se avisan a COE Finanzas. Las existencias mínimas se editan en cada medicamento.</div>${btnG}</div>`);
+  if(sec==='lio')out(`<div class="card"><h3>Stock de LIO</h3><div class="grid2">${fI('lio_aviso_dias','Avisar a Finanzas antes de caducar (días)',90,'number')}</div>${btnG}</div>`);
+  if(sec==='camp'){vCampanas(out)}
+  if(sec==='qx')out(`<div class="card"><h3>Quirófano y papelería</h3><div class="grid2">
+    ${fT('medicos_cedulas','Cirujanos para la papelería: nombre | cédula | cédula de especialidad (uno por renglón)','Dr. José Antonio Villegas Ávila|7256707|9457035',80)}
+    ${fI('anestesiologo','Anestesiólogo habitual','')}<div></div>
+    ${fI('meses_control','Control a largo plazo (meses)',6,'number')}${fI('meses_control_riesgo','Control con diabetes o glaucoma (meses)',4,'number')}</div>${btnG}</div>`);
+  if(sec==='indic')vIndic(out);
+  if(sec==='msj')out(`<div class="card"><h3>Textos de los mensajes</h3><div class="muted">Variables: {nombre} {procedimiento} {ojo} {fecha} {hora} {tel} {link} {fecha_cita} {hora_cita} {meses}</div>
+    <div class="grid2">${Object.keys(MSJ_NOM).map(k=>`<div style="grid-column:1/-1"><label>${MSJ_NOM[k]}</label><textarea data-k="msg_${k}" style="min-height:90px">${h(cfg('msg_'+k,PLANT[k]))}</textarea></div>`).join('')}</div>${btnG}</div>`);
+  if(sec==='sedes')out(`<div class="card"><h3>Sedes y ubicaciones</h3>${S.sedes.map(s=>`<div class="sec-t">${h(s.nombre)} ${s.activa?'':'(inactiva)'}</div>${S.ubic.filter(u=>u.sede_id===s.id).sort((a,b)=>a.orden-b.orden).map(u=>`<div class="list-item"><div class="grow">${h(u.nombre)} <span class="pill">${u.tipo==='sala'?'quirófano':u.tipo==='carro'?'carro rojo':'almacén'}</span> ${u.activa?'':'<span class="pill">inactiva</span>'}</div><button class="btn sec sm" onclick="toggleUb('${u.id}')">${u.activa?'Desactivar':'Activar'}</button></div>`).join('')||'<div class="muted">Sin ubicaciones</div>'}<button class="btn sec sm" style="margin-top:6px" onclick="nuevaUb('${s.id}')">＋ Quirófano / almacén</button>`).join('')}
+    <div class="acts" style="justify-content:flex-start"><button class="btn sec sm" onclick="nuevaSede()">＋ Sede</button></div></div>
+    <div class="card"><h3>Especialidades</h3>${S.esp.map(e=>`<span class="pill" style="margin:2px">${h(e.nombre)}</span>`).join('')}<div class="row" style="margin-top:8px"><input id="nEsp" placeholder="Nueva especialidad"><button class="btn sec" style="flex:0 0 auto" onclick="nuevaEsp()">Agregar</button></div></div>`);
+}
+async function guardarSec(){
+  const els=[...document.querySelectorAll('#main [data-k]')];if(!els.length)return;
+  if(!await pedirPIN('Guardar configuración'))return;
+  for(const e of els){let v=e.value;if(e.type==='number')v=String(num(v));if(e.type==='date'&&!v)continue;await setCfg(e.dataset.k,v.trim())}
+  cotCache={};await logA('configuracion','qx_config',null,{claves:els.map(e=>e.dataset.k)});toast('Configuración guardada');render();
+}
+/* ----- LIO de campaña: cuáles hay en stock y cuáles faltan ----- */
+const tipoNorm=t=>normTxt(t||'').replace(/s$/,'');
+function lioCampStock(ps,camp){
+  const ult=diasCamp(camp).slice(-1)[0]?.fecha||hoyISO(),sedeU=ubicIdsSede();
+  const disp=S.lios.filter(l=>l.estado==='disponible'&&sedeU.has(l.ubicacion_id)&&(!l.caducidad||l.caducidad>=ult));
+  const usados=new Set(),res={};
+  const orden=ps.filter(p=>p.lio_poder!=null&&p.lio_poder!=='').slice().sort((a,b)=>(a.dia||'9')<(b.dia||'9')?-1:(a.dia||'9')>(b.dia||'9')?1:0);
+  for(const p of orden){const u=disp.find(l=>!usados.has(l.id)&&Math.abs(num(l.dioptria)-num(p.lio_poder))<0.01&&(!p.lio_tipo||!l.tipo||tipoNorm(l.tipo)===tipoNorm(p.lio_tipo)));
+    if(u){usados.add(u.id);res[p.id]=u}else res[p.id]=null}
+  return res;
+}
+function pedirLiosCamp(){
+  const c=campActiva(),ps=(S.campPac||[]).filter(p=>p.campana_id===c.id),st=lioCampStock(ps,c);
+  const falt={};ps.filter(p=>st[p.id]===null).forEach(p=>{const k=(p.lio_tipo||'LIO')+' '+fmtN(num(p.lio_poder))+' D';falt[k]=(falt[k]||0)+1});
+  const ex=Object.entries(falt).sort().map(([k,n])=>({nombre:'LIO '+k+' · '+c.nombre,cantidad:n,unidad:'pza'}));
+  if(!ex.length)return toast('Todos los lentes de la campaña están en stock');
+  formPedido([],ex);
 }
 const tablaCotDe=s=>cfg('cot_tabla_'+s.nombre,s.nombre.startsWith('Mor')?'cotizaciones_s2':'cotizaciones');
 async function setCfg(k,v){await q(sb.from('qx_config').upsert({clave:k,valor:String(v),updated_at:new Date().toISOString()}));S.config[k]=String(v)}
