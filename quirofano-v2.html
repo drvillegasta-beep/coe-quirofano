@@ -335,7 +335,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.8';
+const VERSION='3.9';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -2071,7 +2071,7 @@ function consentimientoCot(id){
   const its=(cot.items||[]).filter(i=>i.categoria==='cirugia'||i.categoria==='laser');
   const imp=it=>{const oj=(it.ojos||[]);const o=oj.length===2?'AO':(oj[0]||'');const l=oj.map(x=>it.lio?.[x]).find(Boolean);
     const c={id:'cot-'+cot.id,paciente_nombre:cot.paciente_nombre,expediente:cot.expediente,telefono:[cot.telefono1,cot.telefono2].filter(Boolean).join(' / '),
-      fecha:null,hora:null,sala_id:null,procedimiento:it.nombre,ojo:o,cirujano:cot.medico||'',anestesia:'',
+      fecha:null,hora:null,sala_id:null,procedimiento:it.nombre,ojo:o,cirujano:cot.medico||'',anestesia:cot.anestesia==='No'?'Sin anestesia':cot.anestesia==='Sí'?'':(cot.anestesia||''),
       lio_requerido:l?{tipo:normTipo(l.nombre)||l.nombre||'',modelo:'',dioptria:(l.poder||'').toString(),cilindro:'',eje:'',adicion:''}:null,checklist:{}};
     imprimirPapeleria(c,{},['cons','consan'])};
   if(its.length<=1)return its[0]?imp(its[0]):toast('La cotización no tiene cirugía',true);
@@ -2888,7 +2888,9 @@ function calcCot(Q){
 
 /* ----- pantalla Cotizar ----- */
 let Q=null;
-const nuevaQ=()=>({anticipo:null,vigencia:null,paciente_nombre:'',expediente:'',telefono1:'',telefono2:'',motivo:'',medico:S.user?.rol==='consultorio'||S.user?.rol==='director'?'':'',items:[],desc_tipo:'pct',desc_val:'',desc_motivo:'',autorizado:null,notas:'',cat:'cirugia'});
+const ANEST_TIPOS=['Tópica','Local','Retrobulbar','Peribulbar','Subtenoniana','Sedación','General'];
+const anestTxt=a=>!a?'':a==='No'?'Sin anestesia':a==='Sí'?'Con anestesia (tipo por definir)':'Anestesia '+a.toLowerCase();
+const nuevaQ=()=>({anticipo:null,vigencia:null,paciente_nombre:'',expediente:'',telefono1:'',telefono2:'',motivo:'',anestesia:'',medico:S.user?.rol==='consultorio'||S.user?.rol==='director'?'':'',items:[],desc_tipo:'pct',desc_val:'',desc_motivo:'',autorizado:null,notas:'',cat:'cirugia'});
 function vCotizar(){
   if(!can.cotizar())S.sub.cot='lista';
   const st=subtabs('cot',can.cotizar()?[['nueva','Nueva cotización'],['lista','Cotizaciones']]:[['lista','Cotizaciones']],'nueva');
@@ -2904,6 +2906,8 @@ function vCotizar(){
     <div><label for="qT2">Tel. familiar</label><input id="qT2" inputmode="tel" value="${h(Q.telefono2)}" placeholder="10 dígitos" oninput="Q.telefono2=this.value"></div>
     <div><label for="qE">Expediente</label><input id="qE" value="${h(Q.expediente)}" oninput="Q.expediente=this.value"></div>
     <div><label for="qM">Médico</label><input id="qM" list="dlMed" value="${h(Q.medico)}" oninput="Q.medico=this.value"><datalist id="dlMed">${meds.map(m=>`<option value="${h(m)}">`).join('')}</datalist></div>
+    <div><label>Anestesia</label><div class="seg" id="qAn">${['No lleva','Sí lleva'].map(o=>`<button type="button" class="${(o==='No lleva'?Q.anestesia==='No':(Q.anestesia&&Q.anestesia!=='No'))?'on':''}" onclick="Q.anestesia=${o==='No lleva'?"'No'":"(Q.anestesia&&Q.anestesia!=='No'?Q.anestesia:'Sí')"};vCotizar()">${o}</button>`).join('')}</div>
+    ${Q.anestesia&&Q.anestesia!=='No'?`<select style="margin-top:6px" onchange="Q.anestesia=this.value||'Sí'">${[['Sí','Tipo por definir'],...ANEST_TIPOS.map(t=>[t,t])].map(([v,t])=>`<option value="${v}" ${Q.anestesia===v?'selected':''}>${t}</option>`).join('')}</select>`:''}</div>
     <div style="grid-column:1/-1"><label for="qMo">Diagnóstico / motivo</label><input id="qMo" placeholder="Ej. Catarata OD" value="${h(Q.motivo)}" oninput="Q.motivo=this.value"></div></div>
    </div>
    <div class="card"><h3>Agregar concepto</h3>
@@ -3044,6 +3048,7 @@ async function guardarCot(){
   if(t1.length!==10)return toast('El teléfono 1 debe tener 10 dígitos',true);
   if(t2&&t2.length!==10)return toast('El teléfono 2 debe tener 10 dígitos',true);
   if(!Q.motivo.trim())return toast('Escribe el motivo del estudio o diagnóstico',true);
+  if(Q.items.some(i=>i.categoria==='cirugia')&&!Q.anestesia)return toast('Indica si lleva anestesia',true);
   if(!Q.items.length)return toast('Agrega al menos un concepto',true);
   if(Q.vigencia&&Q.vigencia<hoyISO())return toast('La fecha de validez ya pasó',true);
   if(r.descuento>0&&!Q.desc_motivo.trim())return toast('Escribe el motivo del descuento',true);
@@ -3051,7 +3056,7 @@ async function guardarCot(){
   if(r.descuento>0&&r.requiereAut&&!can.descuento()){autor=await autorizarDescDir();if(!autor)return}
   if(!await pedirPIN((r.descuento?'Descuento '+money(r.descuento)+' · ':'')+'Guardar cotización de '+Q.paciente_nombre))return;
   if(r.descuento>0&&!autor)autor=S.user.nombre;
-  const row={folio:'COT-'+folio('').slice(1),token:randTok(),sede_id:S.sede,paciente_nombre:Q.paciente_nombre.trim(),expediente:Q.expediente||null,telefono1:t1,telefono2:t2||null,motivo:Q.motivo.trim(),medico:Q.medico||null,
+  const row={folio:'COT-'+folio('').slice(1),token:randTok(),sede_id:S.sede,paciente_nombre:Q.paciente_nombre.trim(),expediente:Q.expediente||null,telefono1:t1,telefono2:t2||null,motivo:Q.motivo.trim(),anestesia:Q.anestesia||null,medico:Q.medico||null,
     items:Q.items,subtotal:r.subtotal,descuento:r.descuento,descuento_motivo:r.descuento?Q.desc_motivo:null,descuento_autorizado_por:r.descuento?autor:null,total:r.total,anticipo:Q.anticipo!=null?num(Q.anticipo):r.anticipo,
     vigencia_hasta:Q.vigencia||r.vigencia,estado:'vigente',notas:Q.notas||null,elaboro:S.user.nombre,elaboro_id:S.user.id};
   try{const c=(await q(sb.from('qx_cotizaciones').insert(row).select(),'Guardar cotización'))[0];
@@ -3103,6 +3108,17 @@ async function hojaCot(c){
     ${campActiva()&&est!=='vencida'&&(c.items||[]).some(i=>i.categoria==='cirugia')&&(can.cotizar()||can.programar())?`<button class="btn" onclick="enviarCampana('${c.id}')">Enviar a campaña</button>`:''}`;
   printWin(inner,extra);
 }
+/* ---- segmentación de cotizaciones ---- */
+const TIPOS_CX=[['catarata','Catarata',/faco|catarat|\blio\b|cristalin/],['retina','Retina / vítreo',/vitre|retin|endol|silic|intravit|antiang|vegf|desprend/],['glaucoma','Glaucoma',/trabe|glauc|valvul|ahmed|ciclo/],
+  ['pterigion','Pterigión',/pteri|pterig/],['parpados','Párpados y vía lagrimal',/blefar|chala|ptosis|parpad|lagrim|dacrio|evisc|enucl|entrop|ectrop/],['cornea','Córnea',/querat|cornea|córnea|crosslink|cross-link|anillo|transplant|trasplant/],
+  ['laser','Láser',/laser|láser|yag|slt|panfoto|diodo|iridotom|capsulotom/],['estudios','Estudios',/\boct\b|campo|campimetr|topograf|biometr|paquimetr|ultrason|especular|fondo de ojo|estudio/],['orl','Otorrino',/septo|rino|amigdal|senos|adenoid|timpan/]];
+function tiposCot(c){const s=new Set();(c.items||[]).forEach(it=>{const n=normTxt(it.nombre);const t=TIPOS_CX.find(([,,re])=>re.test(n));s.add(t?t[0]:(it.categoria==='estudio'?'estudios':it.categoria==='laser'?'laser':'otra'))});return s}
+const T_CAP=[['7','Últimos 7 días',0,7],['30','8 a 30 días',8,30],['90','31 a 90 días',31,90],['mas','Más de 90 días',91,1e5]];
+function capCot(c){const d=-diasHasta(String(c.created_at).slice(0,10));return (T_CAP.find(([,,a,b])=>d>=a&&d<=b)||T_CAP[3])[0]}
+function pagadoCot(c){return (c.cirugia_ids||[]).reduce((a,id)=>a+(S.cotEv||[]).filter(e=>e.cirugia_id===id&&['anticipo','abono','liquidacion'].includes(e.tipo)).reduce((x,e)=>x+num(e.monto),0),0)}
+function antCot(c){const p=pagadoCot(c);return p<=0?'sin':p>=num(c.total)-0.5&&num(c.total)>0?'liq':'ant'}
+function segOk(c,sg,skip){return (skip==='t'||!sg.t||capCot(c)===sg.t)&&(skip==='a'||!sg.a||antCot(c)===sg.a)&&(skip==='c'||!sg.c||tiposCot(c).has(sg.c))}
+function exportSegCot(){const l=S._cotVista||[];csv([['Folio','Fecha','Paciente','Teléfono 1','Teléfono 2','Procedimientos','Anestesia','Total','Pagado','Estado'],...l.map(c=>[c.folio,String(c.created_at).slice(0,10),c.paciente_nombre,c.telefono1,c.telefono2||'',(c.items||[]).map(i=>i.nombre+' '+(i.ojos||[]).join('/')).join(' · '),anestTxt(c.anestesia),c.total,pagadoCot(c),EST_COT[estadoCot(c)][1]])],'cotizaciones-segmento.csv')}
 async function cargarCotLista(){
   const el=$('#cotLista');if(!el)return;
   const r=await sb.from('qx_cotizaciones').select('*').order('created_at',{ascending:false}).limit(2000);
@@ -3110,12 +3126,29 @@ async function cargarCotLista(){
   S.cots=all.filter(c=>vs==='todas'||!c.sede_id||c.sede_id===vs);
   const sedeChips=`<div class="tabs" style="margin-bottom:6px"><span class="muted" style="align-self:center;margin-right:4px">Sede:</span>${S.sedes.filter(s=>s.activa!==false).map(s=>`<button class="${vs===s.id?'on':''}" onclick="S.sub.cotSede='${s.id}';cargarCotLista()">${h(s.nombre)} ${all.filter(c=>c.sede_id===s.id).length}</button>`).join('')}<button class="${vs==='todas'?'on':''}" onclick="S.sub.cotSede='todas';cargarCotLista()">Ambas ${all.length}</button></div>`;
   const f=S.sub.cotF||'vigente',qq=(S.sub.cotQ||'').toLowerCase();
-  const l=S.cots.filter(c=>(f==='todas'||estadoCot(c)===f)&&(!qq||[c.paciente_nombre,c.folio,c.telefono1,c.expediente].join(' ').toLowerCase().includes(qq)));
+  const ids=[...new Set(all.flatMap(c=>c.cirugia_ids||[]))];
+  if(ids.length&&!S.cotEvOk){S.cotEv=await sb.from('qx_cirugia_evidencias').select('cirugia_id,tipo,monto').in('cirugia_id',ids).then(r=>r.data||[]);S.cotEvOk=true;setTimeout(()=>S.cotEvOk=false,60000)}
+  const sg=S.sub.cotSeg||(S.sub.cotSeg={t:'',a:'',c:'',open:false});
+  const base=S.cots.filter(c=>(f==='todas'||estadoCot(c)===f)&&(!qq||[c.paciente_nombre,c.folio,c.telefono1,c.expediente].join(' ').toLowerCase().includes(qq)));
+  const l=base.filter(c=>segOk(c,sg));S._cotVista=l;
+  const nSeg=(k,v)=>base.filter(c=>segOk(c,{...sg,[k]:v},k)&&(k==='t'?capCot(c)===v:k==='a'?antCot(c)===v:tiposCot(c).has(v))).length;
+  const chip=(k,v,t)=>{const n=nSeg(k,v);return `<button class="${sg[k]===v?'on':''}" ${n||sg[k]===v?'':'disabled style="opacity:.45"'} onclick="S.sub.cotSeg.${k}=S.sub.cotSeg.${k}==='${v}'?'':'${v}';cargarCotLista()">${t} <b>${n}</b></button>`};
+  const activos=[sg.t&&T_CAP.find(x=>x[0]===sg.t)[1],sg.a&&{sin:'Sin anticipo',ant:'Con anticipo',liq:'Liquidadas'}[sg.a],sg.c&&(TIPOS_CX.find(x=>x[0]===sg.c)||[0,'Otra'])[1]].filter(Boolean);
+  const segHTML=`<div class="row" style="margin:8px 0;align-items:center;gap:8px"><button class="btn sec sm" style="flex:0 0 auto" onclick="S.sub.cotSeg.open=!S.sub.cotSeg.open;cargarCotLista()">${sg.open?'▴':'▾'} Segmentar</button>
+    <div class="muted" style="flex:3">${activos.length?'Filtrando: <b>'+activos.join(' · ')+'</b> · '+l.length+' de '+base.length:l.length+' cotizaciones'}</div>
+    ${activos.length?`<button class="btn sec sm" style="flex:0 0 auto" onclick="S.sub.cotSeg={t:'',a:'',c:'',open:S.sub.cotSeg.open};cargarCotLista()">Quitar filtros</button>`:''}
+    ${l.length?`<button class="btn sec sm" style="flex:0 0 auto" onclick="exportSegCot()">Exportar lista</button>`:''}</div>
+   ${sg.open?`<div class="card" style="display:grid;gap:10px">
+     <div><div class="sec-t" style="margin-top:0">Tiempo desde la captura</div><div class="tabs">${T_CAP.map(([v,t])=>chip('t',v,t)).join('')}</div></div>
+     <div><div class="sec-t" style="margin-top:0">Anticipo</div><div class="tabs">${chip('a','sin','Sin anticipo')}${chip('a','ant','Con anticipo')}${chip('a','liq','Liquidadas')}</div></div>
+     <div><div class="sec-t" style="margin-top:0">Tipo de cirugía</div><div class="tabs">${[...TIPOS_CX.map(([v,t])=>[v,t]),['otra','Otra']].map(([v,t])=>chip('c',v,t)).join('')}</div></div>
+   </div>`:''}`;
   const n=k=>S.cots.filter(c=>estadoCot(c)===k).length;
   el.innerHTML=`<div class="row" style="margin-bottom:10px"><input id="cotQ" placeholder="Buscar paciente, folio o teléfono" value="${h(S.sub.cotQ||'')}" onchange="S.sub.cotQ=this.value;cargarCotLista()"></div>
   ${sedeChips}<div class="tabs">${[['vigente','Vigentes'],['vencida','Vencidas'],['programada','Programadas'],['realizada','Realizadas'],['cancelada','Canceladas'],['todas','Todas']].map(([k,t])=>`<button class="${f===k?'on':''}" onclick="S.sub.cotF='${k}';cargarCotLista()">${t}${k!=='todas'?' '+n(k):''}</button>`).join('')}</div>
+  ${segHTML}
   ${l.map(c=>{const e=estadoCot(c),d=diasHasta(c.vigencia_hasta);return `<div class="card" style="cursor:pointer" onclick="hojaCot(S.cots.find(x=>x.id==='${c.id}'))"><div class="row" style="flex-wrap:nowrap"><div style="flex:3;min-width:0"><b>${h(c.paciente_nombre)}</b> <span class="muted">${h(c.folio)}</span>
-   <div class="muted">${(c.items||[]).map(it=>h(it.nombre)+(it.lateralidad!=='sin_lado'?' '+ojosTxt(it):'')).join(' · ')}</div><div class="muted">${fCorta(c.created_at)} · ${h(c.elaboro||'')} · Tel. ${h(c.telefono1||'')}${c.telefono2?' / '+h(c.telefono2):''}</div></div>
+   <div class="muted">${(c.items||[]).map(it=>h(it.nombre)+(it.lateralidad!=='sin_lado'?' '+ojosTxt(it):'')).join(' · ')}</div><div class="muted">${fCorta(c.created_at)} · ${h(c.elaboro||'')} · Tel. ${h(c.telefono1||'')}${c.telefono2?' / '+h(c.telefono2):''}${c.anestesia?' · '+h(anestTxt(c.anestesia)):''}${pagadoCot(c)?' · pagado '+money(pagadoCot(c)):''}</div></div>
    <div style="text-align:right;flex:0 0 auto"><b>${money(c.total)}</b><div><span class="pill ${EST_COT[e][0]}">${EST_COT[e][1]}${e==='vigente'?' · '+d+' d':''}</span></div>${num(c.descuento)?`<div class="muted">desc. ${money(c.descuento)}</div>`:''}</div></div></div>`}).join('')||'<div class="card empty">Sin cotizaciones en esta vista</div>'}`;
 }
 async function renovarCot(id){
@@ -3142,7 +3175,7 @@ function usarCot2(c,i,o){
   const descF=num(c.descuento)?(1-num(c.descuento)/Math.max(1,(c.items||[]).reduce((a,x)=>a+calcItem(x).descontable,0))):1;
   const share=((k.base/n)+num(it.lio?.[o]?.precio))*descF;
   Object.assign(F,{cotizacion_id:c.id,cotizacion_tabla:'qx_cotizaciones',paciente_nombre:c.paciente_nombre,expediente:c.expediente||'',telefono:c.telefono1||'',procedimiento:it.nombre,ojo:o==='N/A'?'N/A':o,
-    especialidad_id:it.especialidad_id||F.especialidad_id,costo_total:Math.round(share),costoNota:'Tomado de la cotización '+c.folio+(n===2?' (parte de este ojo)':'')});
+    especialidad_id:it.especialidad_id||F.especialidad_id,anestesia:c.anestesia&&!['No','Sí'].includes(c.anestesia)?c.anestesia:F.anestesia,costo_total:Math.round(share),costoNota:'Tomado de la cotización '+c.folio+(n===2?' (parte de este ojo)':'')});
   if(it.requiere_lio&&it.lio?.[o]){F.requiere_lio=true;F.lio={tipo:normTipo(it.lio[o].nombre),modelo:'',dioptria:String(it.lio[o].poder||'').replace(/[^\d.\-+]/g,''),cilindro:'',eje:'',adicion:''}}
   if(it.paquete_id)cargarPaquete(it.paquete_id);else renderForm();
 }
