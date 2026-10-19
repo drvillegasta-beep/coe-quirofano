@@ -258,6 +258,48 @@ i.dot{flex:0 0 10px;height:10px;border-radius:50%;margin-top:6px;align-self:flex
 .ecx{border:1px solid var(--linea);border-radius:14px;padding:10px 12px;margin:8px 0;cursor:pointer;background:var(--card2)}.ecx.ok{border-color:rgba(63,185,80,.5)}.ecx.done{opacity:.6}
 .ecx-h{display:flex;gap:10px;align-items:center}.ecx-h .grow{flex:1;min-width:0}.ecx .hr{font-family:var(--mo);font-size:18px}.ecx .ojo{font-size:22px;font-weight:700;color:var(--ink);flex:0 0 auto}.ecx-l{font-size:13px;margin-top:4px;color:var(--gris)}
 .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}.chip{font-size:11px;padding:2px 7px;border-radius:12px;border:1px solid var(--linea)}.chip.ok{color:var(--verde);border-color:rgba(63,185,80,.35)}.chip.no{color:var(--amar);border-color:rgba(227,179,65,.5);background:var(--amar2)}
+/* ===== Temas: colores habituales sobrios; semáforo solo para existencias ===== */
+:root,[data-tema="grafito"]{--fondo:#141517;--card:#1B1D20;--card2:#202327;--card3:#272A2F;--linea:#2F3338;--linea2:#454A52;--ink:#E7E5E0;--gris:#9A9C9F;
+ --pr:#8DB8A5;--pr2:rgba(141,184,165,.13);--on-pr:#0F1A15;--azul:#A9B7C6;--azul2:rgba(169,183,198,.12);--morado:#B9AFC9;--morado2:rgba(185,175,201,.12);
+ --d1:#8DB8A5;--d2:#5F8879;--d3:#3B4F48;--d4:#5B6068;color-scheme:dark}
+[data-tema="noche"]{--fondo:#0E1420;--card:#141C2B;--card2:#182234;--card3:#1E2A3F;--linea:#28354C;--linea2:#3D4E6B;--ink:#DDE4EE;--gris:#8E9BB0;
+ --pr:#86ABE0;--pr2:rgba(134,171,224,.14);--on-pr:#0B1322;--azul:#A8BBD6;--azul2:rgba(168,187,214,.12);--morado:#B5ACD6;--morado2:rgba(181,172,214,.12);
+ --d1:#86ABE0;--d2:#5576A8;--d3:#35496B;--d4:#56627A;color-scheme:dark}
+[data-tema="pizarra"]{--fondo:#111214;--card:#18191C;--card2:#1D1F22;--card3:#24262A;--linea:#2D2F34;--linea2:#43464C;--ink:#ECE8E1;--gris:#9B9890;
+ --pr:#C9AE7C;--pr2:rgba(201,174,124,.13);--on-pr:#1A140A;--azul:#B6B1A6;--azul2:rgba(182,177,166,.12);--morado:#BFB2A0;--morado2:rgba(191,178,160,.12);
+ --d1:#C9AE7C;--d2:#8F7D5B;--d3:#5A5040;--d4:#5E6066;color-scheme:dark}
+[data-tema="claro"]{--fondo:#F3F1EC;--card:#FFFFFF;--card2:#FBFAF7;--card3:#EEEBE5;--linea:#E3DFD7;--linea2:#CBC5B9;--ink:#24272B;--gris:#6B6E73;
+ --pr:#2F6F66;--pr2:rgba(47,111,102,.10);--on-pr:#FFFFFF;--azul:#4C5E73;--azul2:rgba(76,94,115,.09);--morado:#5E5672;--morado2:rgba(94,86,114,.09);
+ --d1:#2F6F66;--d2:#7FA9A2;--d3:#C7DBD7;--d4:#B9B4AA;
+ --rojo:#C2413A;--rojo2:rgba(194,65,58,.10);--amar:#A8730F;--amar2:rgba(168,115,15,.11);--verde:#2E7D46;--verde2:rgba(46,125,70,.10);color-scheme:light}
+/* estados habituales: jerarquía por relleno, no por semáforo */
+.p-verde{background:var(--pr2);color:var(--pr)}
+.p-amar{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--linea2)}
+.p-rojo{background:var(--pr);color:var(--on-pr)}
+.p-azul,.p-morado,.p-neutro{background:var(--card3);color:var(--ink)}
+.banner.rojo{background:var(--card);color:var(--ink);border:1px solid var(--linea);border-left:4px solid var(--pr)}
+.banner.amar{background:var(--card);color:var(--ink);border:1px solid var(--linea);border-left:4px solid var(--linea2)}
+.tile,.kp{background:var(--card)!important}.tile.t-rojo{border-color:var(--linea)}
+.tile em,.kp em{color:var(--gris)!important;background:var(--card3)!important}
+.tile.t-rojo em,.kp.t-rojo em{color:var(--on-pr)!important;background:var(--pr)!important}
+.tile.t-amar em,.kp.t-amar em{color:var(--ink)!important;background:transparent!important;box-shadow:inset 0 0 0 1px var(--linea2)}
+.kp.k-rojo em{color:#fff!important;background:var(--rojo)!important}.kp.k-amar em{color:var(--amar)!important;background:var(--amar2)!important;box-shadow:none}
+.s-ok,.s-pr{background:var(--d1)}.s-warn{background:var(--d2)}.s-ser,.s-crit{background:var(--d3)}.s-neu{background:var(--d4)}
+.chip.ok{color:var(--gris);border-color:var(--linea)}.chip.no{color:var(--ink);border-color:var(--pr);background:var(--pr2)}
+i.dot.hi{background:var(--pr)}i.dot.lo{background:var(--linea2)}
+.paso.act i{background:var(--pr);color:var(--on-pr);border-color:var(--pr)}.paso.act{color:var(--pr)}.paso.ok i{background:var(--card3);color:var(--pr);border-color:var(--pr)}
+.ecx.ok{border-color:var(--pr)}
+.c-critico .critsec-h{border-left-color:var(--pr)}
+.btn.rojo{background:transparent;color:var(--rojo);border:1px solid var(--rojo)}
+/* semáforo exclusivo de existencias, caducidades y carro rojo */
+.k-ok{background:var(--verde2);color:var(--verde)}.k-warn{background:var(--amar2);color:var(--amar)}.k-crit{background:var(--rojo2);color:var(--rojo)}
+.k-cat{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--linea2)}
+.sb-ok{background:var(--verde)}.sb-warn{background:var(--amar)}.sb-ser{background:#C9853E}.sb-crit{background:var(--rojo)}
+.temas{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.tema-op{display:flex;gap:8px;align-items:center;border:1px solid var(--linea);background:var(--card2);border-radius:12px;padding:10px;cursor:pointer;color:var(--ink)}.tema-op.on{border-color:var(--pr)}
+.tema-op .sw4{width:28px;height:18px;border-radius:5px;flex:0 0 auto}
+.tema-op[data-tm="grafito"] .sw4{background:linear-gradient(90deg,#1B1D20 50%,#8DB8A5 50%)}.tema-op[data-tm="noche"] .sw4{background:linear-gradient(90deg,#141C2B 50%,#86ABE0 50%)}.tema-op[data-tm="pizarra"] .sw4{background:linear-gradient(90deg,#18191C 50%,#C9AE7C 50%)}.tema-op[data-tm="claro"] .sw4{background:linear-gradient(90deg,#FFFFFF 50%,#2F6F66 50%);border:1px solid #ccc}
+
+[data-tema="claro"] header img,[data-tema="claro"] .login img:not(.thumb),[data-tema="claro"] .hello img{filter:invert(1) brightness(.35)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -270,7 +312,9 @@ i.dot{flex:0 0 10px;height:10px;border-radius:50%;margin-top:6px;align-self:flex
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='2.5';
+const VERSION='3.0';
+const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
+const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','grafito')}catch(e){}};
 let sb=null;
 
 /* ---------- utilidades ---------- */
@@ -391,7 +435,7 @@ function semaforo(m){
   else if(st-dem<=num(m.stock_minimo))nivel='agotarse';
   return {st,dem,nivel,proy:st-dem}
 }
-const NIV={critico:['p-amar','Nivel crítico'],minimo:['p-amar','En mínimo'],agotarse:['p-morado','Por agotarse'],ok:['p-verde','Suficiente']};
+const NIV={critico:['k-crit','Nivel crítico'],minimo:['k-warn','En mínimo'],agotarse:['k-warn','Por agotarse'],ok:['k-ok','Suficiente']};
 function alertasMat(){return matsQX().map(m=>({m,...semaforo(m)})).filter(x=>x.nivel!=='ok').sort((a,b)=>(CRIT_ORD.indexOf(critOf(a.m))-CRIT_ORD.indexOf(critOf(b.m)))||(['critico','minimo','agotarse'].indexOf(a.nivel)-['critico','minimo','agotarse'].indexOf(b.nivel)))}
 function lecturaUlt(tid){return S.lect.find(l=>l.tanque_id===tid)}
 function nivelTanque(t){const l=lecturaUlt(t.id);if(!l)return 'sin';const p=num(l.presion);return p<=num(t.presion_critica)?'critico':p<=num(t.presion_alerta)?'minimo':'ok'}
@@ -592,6 +636,7 @@ async function iniciar(){
 /* ---------- estructura ---------- */
 const TABS=[['inicio','','Inicio'],['agenda','📅','Agenda'],['cotizar','🧾','Cotizar'],['campana','','Campaña'],['inventario','📦','Inventario'],['carro','','Carro rojo'],['lio','👁','Stock LIO'],['tanques','🫧','Tanques'],['alertas','⚠️','Alertas'],['mas','☰','Más']];
 function render(){
+  aplicarTema();
   if(!S.user)return pantallaLogin();
   const sedesOpt=S.sedes.filter(s=>s.activa).map(s=>`<option value="${s.id}" ${s.id===S.sede?'selected':''}>${h(s.nombre)}</option>`).join('');
   const mm=modsOf(S.user);const tabsRol=TABS.filter(t=>(mm.includes(t[0])||t[0]==='mas')&&(t[0]!=='campana'||campActiva()));
@@ -613,7 +658,7 @@ function subtabs(key,items,def){const cur=S.sub[key]||def;return {cur,html:`<div
 const CRIT={critico:['Crítico','p-rojo','Sin él no se opera o se pone en riesgo al paciente'],no_critico:['No crítico','p-neutro','Consumible general: se puede sustituir o diferir']};
 const CRIT_ORD=['critico','no_critico'];
 const critOf=m=>(m?.criticidad==='critico'||(!m?.criticidad&&m?.critico))?'critico':'no_critico';
-const critPill=m=>critOf(m)==='critico'?'<span class="pill p-rojo">crítico</span>':'';
+const critPill=m=>critOf(m)==='critico'?'<span class="pill k-cat">crítico</span>':'';
 const INV_TIPOS={completo:'Inventario completo',criticos:'Conteo de críticos'};
 const _dd=(a,b)=>Math.round((new Date(a+'T12:00:00')-new Date(b+'T12:00:00'))/864e5);
 function programaInv(desde,hasta){
@@ -691,7 +736,7 @@ function vInicio(){
   $('#main').innerHTML=html;
 }
 /* ----- piezas visuales ----- */
-const kp=(lab,big,sub,go,st)=>`<button class="kp ${st||''}" ${go?`onclick="${go}"`:'style="cursor:default"'}><span class="kl">${lab}</span><b>${big}</b>${sub?`<small>${sub}</small>`:''}${st==='t-rojo'?'<em>Atender</em>':st==='t-amar'?'<em class="a">Revisar</em>':''}</button>`;
+const kp=(lab,big,sub,go,st)=>`<button class="kp ${st||''}" ${go?`onclick="${go}"`:'style="cursor:default"'}><span class="kl">${lab}</span><b>${big}</b>${sub?`<small>${sub}</small>`:''}${/rojo/.test(st||'')?'<em>Atender</em>':/amar/.test(st||'')?'<em class="a">Revisar</em>':''}</button>`;
 function sbar(lab,segs,go){const tot=segs.reduce((a,s)=>a+s.n,0);
   return `<div class="sbar" ${go?`onclick="${go}" style="cursor:pointer"`:''}><div class="sbar-h"><span>${lab}</span><b>${tot}</b></div><div class="sbar-t">${tot?segs.filter(s=>s.n).map(s=>`<i class="${s.c}" style="flex:${s.n}" title="${h(s.t)}: ${s.n}"></i>`).join(''):'<i style="flex:1;background:var(--card3)"></i>'}</div>
   <div class="sbar-l">${segs.map(s=>`<span><i class="${s.c}"></i>${h(s.t)} <b>${s.n}</b></span>`).join('')}</div></div>`}
@@ -700,12 +745,12 @@ function colChart(cols,leg){const mx=Math.max(1,...cols.map(c=>c.segs.reduce((a,
   return `<div class="cch">${cols.map(c=>{const t=c.segs.reduce((a,s)=>a+s.n,0);return `<div class="cc ${c.hoy?'hoy':''}" title="${h(c.tip)}" ${c.go?`onclick="${c.go}"`:''}><div class="ccv">${t||''}</div><div class="ccb">${c.segs.filter(s=>s.n).map(s=>`<i class="${s.c}" style="height:${s.n/mx*100}%"></i>`).join('')}</div><div class="ccl">${c.l1}<br><span>${c.l2}</span></div></div>`}).join('')}</div>${leg?`<div class="sbar-l" style="margin-top:6px">${leg.map(([c,t])=>`<span><i class="${c}"></i>${t}</span>`).join('')}</div>`:''}`}
 function saludInv(){
   const ms=matsQX().map(m=>({m,...semaforo(m)}));
-  const seg=arr=>[{t:'Suficiente',n:arr.filter(x=>x.nivel==='ok').length,c:'s-ok'},{t:'Bajo mínimo',n:arr.filter(x=>x.nivel!=='ok'&&!(x.st<=0&&num(x.m.stock_minimo)>0)).length,c:'s-warn'},{t:'Agotado',n:arr.filter(x=>x.st<=0&&num(x.m.stock_minimo)>0).length,c:'s-crit'}];
+  const seg=arr=>[{t:'Suficiente',n:arr.filter(x=>x.nivel==='ok').length,c:'sb-ok'},{t:'Bajo mínimo',n:arr.filter(x=>x.nivel!=='ok'&&!(x.st<=0&&num(x.m.stock_minimo)>0)).length,c:'sb-warn'},{t:'Agotado',n:arr.filter(x=>x.st<=0&&num(x.m.stock_minimo)>0).length,c:'sb-crit'}];
   const R=carroUb()?carroResumen():null,la=lioAlertas(),sedeU=ubicIdsSede();
   const lact=S.lios.filter(l=>sedeU.has(l.ubicacion_id)&&['disponible','reservado'].includes(l.estado));
   let s=sbar('Material crítico',seg(ms.filter(x=>critOf(x.m)==='critico')),"S.tab='inventario';S.sub.inv='criticos';render()")+sbar('Material no crítico',seg(ms.filter(x=>critOf(x.m)!=='critico')),"S.tab='inventario';S.sub.inv='exist';render()");
-  if(R)s+=sbar('Carro rojo',[{t:'Completo y vigente',n:R.e.filter(x=>x.nivel==='ok'&&!x.venc.length&&!x.camb.length).length,c:'s-ok'},{t:'Por vencer',n:R.e.filter(x=>x.nivel==='ok'&&!x.venc.length&&x.camb.length).length,c:'s-warn'},{t:'Falta',n:R.e.filter(x=>x.nivel!=='ok'&&!x.venc.length).length,c:'s-ser'},{t:'Vencido',n:R.e.filter(x=>x.venc.length).length,c:'s-crit'}],"S.tab='carro';render()");
-  s+=sbar('Stock de LIO',[{t:'Vigente',n:lact.length-la.prox.length-la.venc.length,c:'s-ok'},{t:'Por caducar',n:la.prox.length,c:'s-warn'},{t:'Vencido',n:la.venc.length,c:'s-crit'}],"S.tab='lio';render()");
+  if(R)s+=sbar('Carro rojo',[{t:'Completo y vigente',n:R.e.filter(x=>x.nivel==='ok'&&!x.venc.length&&!x.camb.length).length,c:'sb-ok'},{t:'Por vencer',n:R.e.filter(x=>x.nivel==='ok'&&!x.venc.length&&x.camb.length).length,c:'sb-warn'},{t:'Falta',n:R.e.filter(x=>x.nivel!=='ok'&&!x.venc.length).length,c:'sb-ser'},{t:'Vencido',n:R.e.filter(x=>x.venc.length).length,c:'sb-crit'}],"S.tab='carro';render()");
+  s+=sbar('Stock de LIO',[{t:'Vigente',n:lact.length-la.prox.length-la.venc.length,c:'sb-ok'},{t:'Por caducar',n:la.prox.length,c:'sb-warn'},{t:'Vencido',n:la.venc.length,c:'sb-crit'}],"S.tab='lio';render()");
   return s;
 }
 function cumplInv(){const hoy=hoyISO(),ev=programaInv(addDays(hoy,-30),addDays(hoy,-1)).map(estadoInv),ok=ev.filter(e=>e.st==='realizado').length;
@@ -744,7 +789,7 @@ function dashDir(){
    ${kp('Inventarios a tiempo · 30 días',ci.ev?pct(ci.ok,ci.ev)+'%':'—',`${ci.ok} de ${ci.ev} conteos${ci.pr!=null?' · precisión '+ci.pr+'%':''}`,"S.tab='inventario';S.sub.inv='conteo';render()",ci.ev&&ci.ok<ci.ev?'t-rojo':'')}
   </div>
   <div class="dgrid">
-   <div class="card"><div class="ph3"><h3>Requiere su atención</h3><span class="cnt">${urg.length}</span></div>${urg.map(u=>`<div class="list-item" style="cursor:pointer" onclick="${u.go}"><i class="dot ${u.r?'s-crit':'s-warn'}"></i><div class="grow"><b>${h(u.t)}</b><div class="muted">${h(u.d)}</div></div><span class="muted">›</span></div>`).join('')||'<div class="muted">Todo en orden.</div>'}</div>
+   <div class="card"><div class="ph3"><h3>Requiere su atención</h3><span class="cnt">${urg.length}</span></div>${urg.map(u=>`<div class="list-item" style="cursor:pointer" onclick="${u.go}"><i class="dot ${u.r?'hi':'lo'}"></i><div class="grow"><b>${h(u.t)}</b><div class="muted">${h(u.d)}</div></div><span class="muted">›</span></div>`).join('')||'<div class="muted">Todo en orden.</div>'}</div>
    <div class="card"><h3>Agenda de los próximos 14 días</h3>${colChart(cols,[['s-ok','Lista para operar'],['s-warn','Liquidada, con pendientes'],['s-ser','Sin liquidar']])}</div>
   </div>
   <div class="dgrid">
@@ -798,12 +843,12 @@ function dashEnf(){
   let html=`<div class="kps">
    ${kp('Cirugías hoy',ch.length,ch.length?`${listas} listas · ${ch.length-listas} con pendientes`:'Sin cirugías',"S.tab='agenda';S.sub.agenda='dia';S.fecha=hoyISO();render()",ch.length&&listas<ch.length?'t-rojo':'')}
    ${kp('Conteo de hoy',prog?(prog.st==='realizado'?'✓':prog.hechas+'/'+prog.total):'—',prog?INV_TIPOS[prog.tipo]:'No toca conteo hoy',"S.tab='inventario';S.sub.inv='conteo';render()",prog&&prog.st!=='realizado'?'t-amar':'')}
-   ${kp('Material que no alcanza',falt.length,'para cirugías de los próximos 3 días',"S.tab='inventario';S.sub.inv='criticos';render()",falt.some(x=>critOf(x.m)==='critico')?'t-rojo':falt.length?'t-amar':'')}
-   ${kp('Caducan en 7 días',cad7.length,`${vencL.length} ya vencidos en quirófano`,"S.tab='inventario';S.sub.inv='cal';render()",vencL.length?'t-rojo':cad7.length?'t-amar':'')}
+   ${kp('Material que no alcanza',falt.length,'para cirugías de los próximos 3 días',"S.tab='inventario';S.sub.inv='criticos';render()",falt.some(x=>critOf(x.m)==='critico')?'k-rojo':falt.length?'k-amar':'')}
+   ${kp('Caducan en 7 días',cad7.length,`${vencL.length} ya vencidos en quirófano`,"S.tab='inventario';S.sub.inv='cal';render()",vencL.length?'k-rojo':cad7.length?'k-amar':'')}
   </div>
   <div class="dgrid">
    <div class="card"><div class="ph3"><h3>Hoy en quirófano</h3><span class="cnt">${ch.length}</span></div>${ch.map(cxCardE).join('')||'<div class="muted">Sin cirugías hoy.</div>'}</div>
-   <div class="card"><div class="ph3"><h3>Pendientes de hoy</h3><span class="cnt">${tareas.length}</span></div>${tareas.map(t=>`<div class="list-item" style="cursor:pointer" onclick="${t.go}"><i class="dot ${t.r?'s-crit':'s-warn'}"></i><div class="grow"><b>${h(t.t)}</b><div class="muted">${h(t.d)}</div></div><span class="muted">›</span></div>`).join('')||'<div class="muted">Sin pendientes. ✓</div>'}
+   <div class="card"><div class="ph3"><h3>Pendientes de hoy</h3><span class="cnt">${tareas.length}</span></div>${tareas.map(t=>`<div class="list-item" style="cursor:pointer" onclick="${t.go}"><i class="dot ${t.r?'hi':'lo'}"></i><div class="grow"><b>${h(t.t)}</b><div class="muted">${h(t.d)}</div></div><span class="muted">›</span></div>`).join('')||'<div class="muted">Sin pendientes. ✓</div>'}
     ${falt.length?`<div class="sec-t">No alcanza para los próximos 3 días</div><table><tr><th>Material</th><th>Necesario</th><th>Existencia</th></tr>${falt.map(x=>`<tr onclick="verMaterial('${x.m.id}')" style="cursor:pointer"><td>${h(x.m.nombre)} ${critPill(x.m)}</td><td>${fmtN(x.n)}</td><td><b class="${x.st<=0?'t-r':'t-a'}">${fmtN(x.st)}</b></td></tr>`).join('')}</table>`:''}</div>
   </div>
   <div class="dgrid">
@@ -858,7 +903,7 @@ async function guardarAviso(k,v){if(!await pedirPIN('Cambiar días de aviso'))re
 const inpAviso=(k,v)=>can.aprobar()?`<input type="number" min="7" max="720" value="${v}" class="inl" onchange="guardarAviso('${k}',this.value)">`:v;
 function lioAvisoCard(){const a=lioAlertas(),l=[...a.venc,...a.prox].sort((x,y)=>x.caducidad<y.caducidad?-1:1);
   return `<div class="card"><div class="row" style="align-items:center"><h3 style="flex:3;margin:0">Por caducar</h3><span class="muted" style="flex:0 0 auto">Aviso a Finanzas ${inpAviso('lio_aviso_dias',lioAviso())} días antes</span></div>
-  ${l.map(x=>`<div class="list-item" onclick="verLIO('${x.id}')" style="cursor:pointer"><div class="grow">${h(x.marca||'')} ${h(x.modelo)} <b>${fmtN(x.dioptria)} D</b><div class="muted">Serie ${h(x.serie||'—')} · ${x.estado}${x.paciente_nombre?' · '+h(x.paciente_nombre):''}</div></div><span class="pill ${diasHasta(x.caducidad)<0?'p-rojo':'p-amar'}">${diasHasta(x.caducidad)<0?'Vencido':'Caduca'} ${fCorta(x.caducidad)}</span></div>`).join('')||'<div class="muted" style="margin-top:6px">Ningún lente caduca en ese plazo.</div>'}</div>`}
+  ${l.map(x=>`<div class="list-item" onclick="verLIO('${x.id}')" style="cursor:pointer"><div class="grow">${h(x.marca||'')} ${h(x.modelo)} <b>${fmtN(x.dioptria)} D</b><div class="muted">Serie ${h(x.serie||'—')} · ${x.estado}${x.paciente_nombre?' · '+h(x.paciente_nombre):''}</div></div><span class="pill ${diasHasta(x.caducidad)<0?'k-crit':'k-warn'}">${diasHasta(x.caducidad)<0?'Vencido':'Caduca'} ${fCorta(x.caducidad)}</span></div>`).join('')||'<div class="muted" style="margin-top:6px">Ningún lente caduca en ese plazo.</div>'}</div>`}
 function vCriticos(){
   const ord=['critico','minimo','agotarse','ok'];
   const ms=matsQX().filter(m=>critOf(m)==='critico').map(m=>({m,...semaforo(m)})).sort((a,b)=>(a.st<=0?-1:0)-(b.st<=0?-1:0)||ord.indexOf(a.nivel)-ord.indexOf(b.nivel)||a.m.nombre.localeCompare(b.m.nombre));
@@ -866,7 +911,7 @@ function vCriticos(){
   return `<div class="row" style="margin:4px 0 10px;align-items:center"><div class="muted" style="flex:3">${ms.length} materiales críticos · <b>${bajos.length}</b> bajo mínimo</div>${can.pedir()&&bajos.length?`<button class="btn" style="flex:0 0 auto" onclick="formPedido([...document.querySelectorAll('.selC:checked')].map(x=>x.value))">Solicitar marcados</button>`:''}</div>
   <div class="card" style="padding:4px 10px"><div class="tblwrap"><table><tr><th></th><th>Material</th><th>Gaveta</th><th>Exist.</th><th>Mín.</th><th>Estado</th></tr>${ms.map(x=>{const pa=pedidoAbierto(x.m.id);return `<tr><td>${x.nivel!=='ok'&&can.pedir()&&!pa?`<input type="checkbox" class="selC" value="${x.m.id}" checked style="width:20px;height:20px;min-height:0">`:''}</td><td onclick="verMaterial('${x.m.id}')" style="cursor:pointer"><b>${h(x.m.nombre)}</b></td><td class="muted">${h(x.m.gaveta||'')}</td><td><b>${fmtN(x.st)}</b></td><td>${fmtN(x.m.stock_minimo)}</td><td>${pa?`<span class="pill p-azul">pedido ${h(pa.estado||'')}</span>`:estPill(x)}</td></tr>`}).join('')}</table></div></div>`;
 }
-const estPill=x=>x.st<=0&&num(x.m.stock_minimo)>0?'<span class="pill p-rojo">Agotado</span>':`<span class="pill ${NIV[x.nivel][0]}">${NIV[x.nivel][1]}</span>`;
+const estPill=x=>x.st<=0&&num(x.m.stock_minimo)>0?'<span class="pill k-crit">Agotado</span>':`<span class="pill ${NIV[x.nivel][0]}">${NIV[x.nivel][1]}</span>`;
 async function escalarFin(items,tipo,titulo,prioridad){
   const nuevos=items.filter(x=>!S.escal.some(e=>e.clave===x.clave));if(!nuevos.length)return;
   const r=await sb.from('qx_escalamientos').upsert(nuevos.map(x=>({clave:x.clave,tipo,sede_id:S.sede,fecha_programada:x.fecha||hoyISO(),detalle:x.txt})),{onConflict:'clave',ignoreDuplicates:true}).select();
@@ -899,7 +944,7 @@ function vCalInv(){
    </div>
   </div></div>
   <div class="card" id="cadSec"><h3>Caducidades</h3>
-   ${[['Vencidos: retirar y registrar merma',c=>c.fecha<hoy,'p-rojo'],['Próximos 7 días',c=>c.fecha>=hoy&&_dd(c.fecha,hoy)<=7,'p-rojo'],['8 a 30 días',c=>_dd(c.fecha,hoy)>7&&_dd(c.fecha,hoy)<=30,'p-amar'],['31 a 90 días',c=>_dd(c.fecha,hoy)>30&&_dd(c.fecha,hoy)<=90,'p-azul']].map(([t,f,cls])=>{const l=cads.filter(f);return l.length?`<div class="sec-t">${t} <span class="pill ${cls}">${l.length}</span></div>${l.map(c=>`<div class="list-item"><div class="grow"><b>${h(c.txt)}</b> ${c.tipo==='lote'&&c.crit!=='no_critico'?`<span class="pill ${CRIT[c.crit][1]}">${'crítico'}</span>`:''}<div class="muted">${h(c.det)}</div></div><span class="pill ${cls}">${fCorta(c.fecha)}</span>${c.fecha<hoy&&c.tipo==='lote'&&can.inventario()?`<button class="btn sm rojo" onclick="formMerma()">Merma</button>`:''}</div>`).join('')}`:''}).join('')||'<div class="muted">Nada por caducar en 90 días</div>'}
+   ${[['Vencidos: retirar y registrar merma',c=>c.fecha<hoy,'k-crit'],['Próximos 7 días',c=>c.fecha>=hoy&&_dd(c.fecha,hoy)<=7,'k-crit'],['8 a 30 días',c=>_dd(c.fecha,hoy)>7&&_dd(c.fecha,hoy)<=30,'k-warn'],['31 a 90 días',c=>_dd(c.fecha,hoy)>30&&_dd(c.fecha,hoy)<=90,'']].map(([t,f,cls])=>{const l=cads.filter(f);return l.length?`<div class="sec-t">${t} <span class="pill ${cls}">${l.length}</span></div>${l.map(c=>`<div class="list-item"><div class="grow"><b>${h(c.txt)}</b> ${c.tipo==='lote'&&c.crit!=='no_critico'?`<span class="pill ${CRIT[c.crit][1]}">${'crítico'}</span>`:''}<div class="muted">${h(c.det)}</div></div><span class="pill ${cls}">${fCorta(c.fecha)}</span>${c.fecha<hoy&&c.tipo==='lote'&&can.inventario()?`<button class="btn sm rojo" onclick="formMerma()">Merma</button>`:''}</div>`).join('')}`:''}).join('')||'<div class="muted">Nada por caducar en 90 días</div>'}
   </div>`;
   return html
 }
@@ -960,7 +1005,7 @@ function cxCard(c){
   const urge=c.fecha<=addDays(hoyISO(),1)?'p-rojo':'p-amar';
   if(c.lio_requerido&&!c.lio_unidad_id&&c.estado!=='cancelada'&&!c.consumo_cerrado)pills.push(`<span class="pill ${urge}">LIO sin asignar</span>`);
   if(lio)pills.push(`<span class="pill p-azul">LIO ${h(lio.modelo)} ${fmtN(lio.dioptria)}D${lio.propiedad==='consignacion'?' · consig.':''}</span>`);
-  if(faltan.length&&!c.consumo_cerrado&&c.estado!=='cancelada')pills.push(`<span class="pill ${urge}">Falta material (${faltan.length})</span>`);
+  if(faltan.length&&!c.consumo_cerrado&&c.estado!=='cancelada')pills.push(`<span class="pill k-crit">Falta material (${faltan.length})</span>`);
   if(c.consumo_cerrado)pills.push('<span class="pill p-verde">Consumo cerrado</span>');
   if(c.estado!=='cancelada'){const rd=readiness(c);pills.unshift(`<span class="pill ${rd.f.cls}">${h(rd.f.est)}</span>`);
     if(!c.consumo_cerrado)pills.push(rd.listo?'<span class="pill p-verde">✓ Lista para operar</span>':`<span class="pill ${urge}">Pendientes: ${rd.pend.length}</span>`);
@@ -1507,7 +1552,7 @@ function invTablas(mats,uSet,ubs,fu){
   const cats=[...new Set(mats.map(m=>m.categoria||'General'))].sort();
   return cats.map(cat=>`<div class="sec-t">${h(cat)}</div><div class="card" style="padding:4px 10px"><div class="tblwrap"><table><tr><th>Material</th><th>Existencia</th>${fu==='todas'?ubs.map(u=>`<th>${h(u.nombre.replace('Quirófano','Q').replace('Almacén de quirófano','Almacén'))}</th>`).join(''):''}<th>Mín/Crít</th><th>Estado</th><th>Próx. cad.</th></tr>
       ${mats.filter(m=>(m.categoria||'General')===cat).map(m=>{const sm=semaforo(m),stv=stockMat(m.id,uSet);const cad=S.lotes.filter(l=>l.material_id===m.id&&uSet.has(l.ubicacion_id)&&num(l.cantidad)>0&&l.caducidad).sort((a,b)=>a.caducidad<b.caducidad?-1:1)[0];const dc=cad?diasHasta(cad.caducidad):null;
-      return `<tr onclick="verMaterial('${m.id}')" style="cursor:pointer"><td>${h(m.nombre)}<div class="muted">${h(m.codigo||'')} ${h(m.unidad)}</div></td><td><b>${fmtN(stv)}</b></td>${fu==='todas'?ubs.map(u=>`<td>${fmtN(stockUbic(m.id,u.id))}</td>`).join(''):''}<td class="muted">${fmtN(m.stock_minimo)} / ${fmtN(m.stock_critico)}</td><td>${estPill({m,st:stv,nivel:sm.nivel})}</td><td>${cad?`<span class="pill ${dc<0?'p-rojo':dc<=60?'p-amar':''}">${fCorta(cad.caducidad)}</span>`:'—'}</td></tr>`}).join('')}</table></div></div>`).join('')
+      return `<tr onclick="verMaterial('${m.id}')" style="cursor:pointer"><td>${h(m.nombre)}<div class="muted">${h(m.codigo||'')} ${h(m.unidad)}</div></td><td><b>${fmtN(stv)}</b></td>${fu==='todas'?ubs.map(u=>`<td>${fmtN(stockUbic(m.id,u.id))}</td>`).join(''):''}<td class="muted">${fmtN(m.stock_minimo)} / ${fmtN(m.stock_critico)}</td><td>${estPill({m,st:stv,nivel:sm.nivel})}</td><td>${cad?`<span class="pill ${dc<0?'k-crit':dc<=60?'k-warn':''}">${fCorta(cad.caducidad)}</span>`:'—'}</td></tr>`}).join('')}</table></div></div>`).join('')
 }
 function exportExist(){const ubs=ubicSede();csv([['Material','Código','Categoría','Unidad','Criticidad','Total',...ubs.map(u=>u.nombre),'Mínimo','Nivel crítico','Estado'],...matsQX().map(m=>{const s=semaforo(m);return [m.nombre,m.codigo,m.categoria,m.unidad,CRIT[critOf(m)][0],stockMat(m.id,ubicIdsSede()),...ubs.map(u=>stockUbic(m.id,u.id)),m.stock_minimo,m.stock_critico,NIV[s.nivel][1]]})],'existencias_quirofano_'+hoyISO()+'.csv')}
 async function cargarMovs(mid){
@@ -1761,7 +1806,7 @@ function carroResumen(){
   const selloRoto=!!ult&&ult.tipo==='uso';
   return {e,falt,venc,camb,ult,ultSello,ultRev,dRev,revVencida,selloRoto,alerta:carroUb()?e.filter(x=>(x.nivel!=='ok'&&critOf(x.m)==='critico')||x.venc.length).length+(revVencida?1:0)+(selloRoto?1:0):0}
 }
-const CR_EST={falta:['p-rojo','Falta'],bajo:['p-amar','Bajo mínimo'],ok:['p-verde','Completo']};
+const CR_EST={falta:['k-crit','Falta'],bajo:['k-warn','Bajo mínimo'],ok:['k-ok','Completo']};
 /* ----- carro rojo: prioridad conteo, faltantes, vencidos y por vencer ----- */
 function vCarro(){
   const cu=carroUb(),R=carroResumen(),qq=(S.sub.crQ||'').toLowerCase();
@@ -1775,9 +1820,9 @@ function vCarro(){
   const row=(x,extra)=>`<div class="list-item" onclick="verCarroMat('${x.m.id}')" style="cursor:pointer"><div class="grow"><b>${h(x.m.nombre)}</b><div class="muted">${h(x.m.categoria||'')}</div></div>${extra}</div>`;
   const falt=R.falt.slice().sort((a,b)=>(critOf(a.m)==='critico'?0:1)-(critOf(b.m)==='critico'?0:1));
   html+=`<div class="prio">
-   <div class="card"><div class="ph3"><h3>Faltantes</h3><span class="cnt">${R.falt.length}</span></div>${falt.map(x=>row(x,`<span class="muted" style="flex:0 0 auto">${fmtN(x.vig)} / ${fmtN(x.min)}</span>${critOf(x.m)==='critico'?'<span class="pill p-rojo">crítico</span>':''}`)).join('')||'<div class="muted">Nada falta</div>'}</div>
-   <div class="card"><div class="ph3"><h3>Vencidos</h3><span class="cnt">${R.venc.length}</span></div>${R.venc.map(x=>row(x,`<span class="pill p-rojo">${x.venc.map(l=>fCorta(l.caducidad)).join(', ')}</span>`)).join('')||'<div class="muted">Sin vencidos</div>'}</div>
-   <div class="card"><div class="ph3"><h3>Por vencer</h3><span class="cnt">${R.camb.length}</span></div><div class="muted" style="margin-bottom:4px">Cambio ${inpAviso('carro_aviso_dias',avisoCarro())} días antes de caducar</div>${R.camb.map(x=>row(x,`<span class="pill p-amar">${fCorta(x.camb[0].caducidad)}</span>`)).join('')||'<div class="muted">Nada por vencer</div>'}</div>
+   <div class="card"><div class="ph3"><h3>Faltantes</h3><span class="cnt">${R.falt.length}</span></div>${falt.map(x=>row(x,`<span class="muted" style="flex:0 0 auto">${fmtN(x.vig)} / ${fmtN(x.min)}</span>${critOf(x.m)==='critico'?'<span class="pill k-crit">crítico</span>':''}`)).join('')||'<div class="muted">Nada falta</div>'}</div>
+   <div class="card"><div class="ph3"><h3>Vencidos</h3><span class="cnt">${R.venc.length}</span></div>${R.venc.map(x=>row(x,`<span class="pill k-crit">${x.venc.map(l=>fCorta(l.caducidad)).join(', ')}</span>`)).join('')||'<div class="muted">Sin vencidos</div>'}</div>
+   <div class="card"><div class="ph3"><h3>Por vencer</h3><span class="cnt">${R.camb.length}</span></div><div class="muted" style="margin-bottom:4px">Cambio ${inpAviso('carro_aviso_dias',avisoCarro())} días antes de caducar</div>${R.camb.map(x=>row(x,`<span class="pill k-warn">${fCorta(x.camb[0].caducidad)}</span>`)).join('')||'<div class="muted">Nada por vencer</div>'}</div>
   </div>`;
   if(can.pedir()&&(R.falt.length||R.venc.length||R.camb.length))html+=`<button class="btn sec" style="margin-bottom:12px" onclick="formPedido([...new Set([...R_ids('falt'),...R_ids('venc'),...R_ids('camb')])])">Solicitar a Finanzas</button>`;
   const lista=R.e.filter(x=>!qq||(x.m.nombre+' '+x.ls.map(l=>l.lote).join(' ')+' '+(x.m.categoria||'')).toLowerCase().includes(qq));
@@ -1796,7 +1841,7 @@ function verCarroMat(mid){
   const m=matById(mid),e=carroEstado(m);
   modal(`${mhead(h(m.nombre))}<div class="muted">${h(m.categoria||'')} · ${CRIT[critOf(m)][0]}${num(m.costo)?' · costo '+money(m.costo):''}</div>
   <div class="kpis" style="margin-top:8px"><div class="kpi"><b>${fmtN(e.vig)}</b><span>Vigentes</span></div><div class="kpi"><b>${fmtN(e.min)}</b><span>Existencia mínima</span></div><div class="kpi"><span class="pill ${CR_EST[e.nivel][0]}">${CR_EST[e.nivel][1]}</span></div></div>
-  <div class="sec-t">Lotes en el carro</div><table><tr><th>Lote</th><th>Caducidad</th><th>Cant.</th><th></th></tr>${e.ls.map(l=>{const d=l.caducidad?diasHasta(l.caducidad):null;return `<tr><td>${h(l.lote||'—')}</td><td>${l.caducidad?`<span class="pill ${d<0?'p-rojo':d<=avisoCarro()?'p-amar':''}">${fCorta(l.caducidad)}</span>`:'—'}</td><td>${fmtN(l.cantidad)}</td><td>${can.inventario()?`<button class="btn sm sec" onclick="retirarLoteCarro('${l.id}')">Retirar</button>`:''}</td></tr>`}).join('')||'<tr><td colspan=4 class="muted">Sin existencia</td></tr>'}</table>
+  <div class="sec-t">Lotes en el carro</div><table><tr><th>Lote</th><th>Caducidad</th><th>Cant.</th><th></th></tr>${e.ls.map(l=>{const d=l.caducidad?diasHasta(l.caducidad):null;return `<tr><td>${h(l.lote||'—')}</td><td>${l.caducidad?`<span class="pill ${d<0?'k-crit':d<=avisoCarro()?'k-warn':''}">${fCorta(l.caducidad)}</span>`:'—'}</td><td>${fmtN(l.cantidad)}</td><td>${can.inventario()?`<button class="btn sm sec" onclick="retirarLoteCarro('${l.id}')">Retirar</button>`:''}</td></tr>`}).join('')||'<tr><td colspan=4 class="muted">Sin existencia</td></tr>'}</table>
   <div class="acts">${can.catalogo()?`<button class="btn sec" onclick="this.closest('.modal').remove();formMaterial('${mid}')">Editar ficha / mínimo</button>`:''}${can.inventario()?`<button class="btn" onclick="this.closest('.modal').remove();formCarroEntrada('${mid}')">Reponer</button>`:''}</div>`,'sm');
 }
 async function retirarLoteCarro(lid,sinPIN){
@@ -2978,7 +3023,7 @@ function vMas(){
   $('#main').innerHTML=html;
   if(st.cur==='bitacora')cargarBitacora();
 }
-function vCuenta(out){out(`<div class="card"><h3>${h(S.user.nombre)}</h3><div class="muted">${h(S.user.usuario)} · ${h(ROLES[S.user.rol])}</div><div class="acts" style="justify-content:flex-start"><button class="btn sec" onclick="cambiarCredenciales(false)">Cambiar contraseña / PIN</button><button class="btn rojo" onclick="salir()">Cerrar sesión</button></div></div><div class="muted">COE Quirófano v${VERSION}</div>`)}
+function vCuenta(out){out(`<div class="card"><h3>Apariencia</h3><div class="temas">${TEMAS.map(([k,t])=>`<button class="tema-op ${document.documentElement.dataset.tema===k?'on':''}" data-tm="${k}" onclick="safeLS('qx_tema','${k}');render()"><span class="sw4"></span>${t}</button>`).join('')}</div><div class="muted">Se guarda en este dispositivo.</div></div><div class="card"><h3>${h(S.user.nombre)}</h3><div class="muted">${h(S.user.usuario)} · ${h(ROLES[S.user.rol])}</div><div class="acts" style="justify-content:flex-start"><button class="btn sec" onclick="cambiarCredenciales(false)">Cambiar contraseña / PIN</button><button class="btn rojo" onclick="salir()">Cerrar sesión</button></div></div><div class="muted">COE Quirófano v${VERSION}</div>`)}
 function vPaquetes(out){
   out(`<div class="row" style="margin-bottom:10px"><h2 style="flex:3">Paquetes quirúrgicos</h2>${can.catalogo()?`<button class="btn" style="flex:0 0 auto" onclick="formPaquete()">＋ Paquete</button>`:''}</div>`);
   const byEsp=S.esp.map(e=>[e,S.paq.filter(p=>p.especialidad_id===e.id)]).concat([[{nombre:'Sin especialidad'},S.paq.filter(p=>!p.especialidad_id)]]);
@@ -3103,7 +3148,7 @@ function vConfig(out){
   out(`<h2>Configuración</h2><div class="tabs cfgtabs">${CFG_SEC.map(([k,t])=>`<button class="${sec===k?'on':''}" onclick="S.sub.cfg='${k}';render()">${t}</button>`).join('')}</div>`);
   if(sec==='general')out(`<div class="card"><h3>Clínica</h3><div class="grid2">
     ${fI('tels_programar','Teléfonos para programar (principal | WhatsApp)','(459) 100 0431|(459) 134 5529')}${fI('tel_clinica','Teléfono en mensajes','(459) 100 0431')}
-    ${fI('whatsapp_clinica','WhatsApp de la clínica (10 dígitos)','4591345529','','inputmode="tel"')}${fS('qr_destino','El QR de la cotización lleva a','whatsapp',[['whatsapp','WhatsApp de la clínica'],['cotizacion','Página de la cotización']])}
+    ${fI('whatsapp_clinica','WhatsApp de la clínica (10 dígitos)','4591345529','','inputmode="tel"')}${fS('qr_destino','El QR de la cotización lleva a','whatsapp',[['whatsapp','WhatsApp de la clínica'],['cotizacion','Página de la cotización']])}${fS('tema','Tema de colores por omisión','grafito',TEMAS)}
     ${S.sedes.map(s=>`<div style="grid-column:1/-1"><label>Dirección impresa · ${h(s.nombre)}</label><input data-k="dir_${h(s.nombre)}" value="${h(cfg('dir_'+s.nombre,s.nombre.startsWith('Mor')?'Hospital Victoria, Consultorio 1206, Piso 12, Av. Acueducto 2800, Morelia, Mich.':'Av. Luis Donaldo Colosio 151, Col. La Purísima, Tacámbaro, Mich.'))}"></div>`).join('')}</div>${btnG}</div>
     <div class="card"><h3>Logo de la clínica</h3>${logoTag()}<input type="file" accept="image/png,image/*" id="cLogo" style="margin-top:8px"><div class="acts"><button class="btn sec" onclick="subirLogo()">Subir logo</button></div></div>
     <div class="card"><h3>Usuarios y accesos</h3><div class="muted">Módulos y permisos por persona.</div><div class="acts" style="justify-content:flex-start"><button class="btn sec" onclick="S.sub.mas='usuarios';render()">Ir a Usuarios</button></div></div>`);
