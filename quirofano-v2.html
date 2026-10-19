@@ -335,7 +335,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.3';
+const VERSION='3.4';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -593,12 +593,16 @@ function pedirTexto(tit,lab,def){return new Promise(res=>{const m=modal(`${mhead
 /* ---------- acceso ---------- */
 function pantallaLogin(msg){
   $('#app').innerHTML=`<div class="login"><div class="card">${logoTag()}<h2 style="text-align:center;margin-bottom:2px">COE Quirófano</h2><div class="muted" style="text-align:center">Centro Ocular Especializado</div>
-  <label>Usuario</label><input id="lu" autocapitalize="none" autocomplete="username">
+  <label>Usuario</label><select id="lu"><option value="">Cargando usuarios…</option></select>
   <label>Contraseña</label><input id="lp" type="password" autocomplete="current-password">
   <div id="lerr" class="muted" style="color:var(--rojo);margin-top:8px">${h(msg||'')}</div>
   <button class="btn" style="width:100%;margin-top:14px" id="lb">Entrar</button></div><div class="muted" style="text-align:center">v${VERSION}</div></div>`;
+  sb.from('qx_usuarios').select('usuario,nombre').eq('activo',true).order('nombre').then(r=>{const el=$('#lu');if(!el)return;
+    if(r.error){el.outerHTML='<input id="lu" autocapitalize="none" autocomplete="username" placeholder="usuario">';$('#lerr').textContent='No se pudo cargar la lista de usuarios: '+r.error.message;return}
+    const ult=safeLS('qx_ultimo')||'';el.innerHTML='<option value="">Elige tu nombre…</option>'+(r.data||[]).map(x=>`<option value="${h(x.usuario)}" ${x.usuario===ult?'selected':''}>${h(x.nombre)}</option>`).join('');
+    if(ult&&el.value===ult)$('#lp').focus()});
   const go=async()=>{
-    const u=$('#lu').value.trim().toLowerCase(),p=$('#lp').value;if(!u||!p)return;
+    const u=$('#lu').value.trim().toLowerCase(),p=$('#lp').value;if(!u){$('#lerr').textContent='Elige tu usuario';return}if(!p)return;
     $('#lb').disabled=true;
     try{
       const r=await sb.from('qx_usuarios').select('*').eq('usuario',u).maybeSingle();
@@ -610,7 +614,7 @@ function pantallaLogin(msg){
         await sb.from('qx_usuarios').update({intentos_fallidos:n,bloqueado_hasta:n>=5?new Date(Date.now()+15*60e3).toISOString():null}).eq('id',usr.id);
         $('#lerr').textContent='Contraseña incorrecta'+(n>=5?' — usuario bloqueado 15 minutos':'');$('#lb').disabled=false;return}
       await sb.from('qx_usuarios').update({intentos_fallidos:0,bloqueado_hasta:null}).eq('id',usr.id);
-      S.user={id:usr.id,nombre:usr.nombre,usuario:usr.usuario,rol:usr.rol,modulos:usr.modulos||null,permisos:usr.permisos||null};safeLS('qx_user',JSON.stringify(S.user));
+      S.user={id:usr.id,nombre:usr.nombre,usuario:usr.usuario,rol:usr.rol,modulos:usr.modulos||null,permisos:usr.permisos||null};safeLS('qx_user',JSON.stringify(S.user));safeLS('qx_ultimo',u);safeLS('qx_login_at',new Date().toISOString());
       if(usr.debe_cambiar)return cambiarCredenciales(true);
       await iniciar();
     }catch(e){$('#lerr').textContent='Error de conexión: '+(e.message||e);$('#lb').disabled=false}
@@ -635,9 +639,20 @@ function cambiarCredenciales(obligatorio){
     m.remove();toast('Credenciales actualizadas');if(obligatorio)await iniciar();
   };
 }
-function salir(){safeLS('qx_user',null);S.user=null;pantallaLogin()}
+function salir(msg){safeLS('qx_user',null);safeLS('qx_login_at',null);S.user=null;pantallaLogin(msg)}
+/* cierre automático de sesión a las 14:30 y 18:30 (configurable en Configuración: cierres_sesion) */
+function cierresSesion(){return String(cfg('cierres_sesion','14:30,18:30')).split(',').map(s=>s.trim()).filter(s=>/^\d{1,2}:\d{2}$/.test(s))}
+function cierrePendiente(){
+  if(!S.user)return null;const ini=new Date(safeLS('qx_login_at')||0),now=new Date();
+  for(const c of cierresSesion()){const [hh,mm]=c.split(':').map(Number);const t=new Date();t.setHours(hh,mm,0,0);
+    for(const d of [t,new Date(t.getTime()-864e5)])if(ini<d&&now>=d)return c}
+  return null}
+function vigilaCierre(){const c=cierrePendiente();if(c)salir('Sesión cerrada automáticamente a las '+c+'. Vuelve a entrar.')}
+setInterval(vigilaCierre,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)vigilaCierre()});
 let rtChan=null;
 async function iniciar(){
+  if(!safeLS('qx_login_at'))safeLS('qx_login_at',new Date().toISOString());
+  {const c=cierrePendiente();if(c)return salir('Sesión cerrada automáticamente a las '+c+'. Vuelve a entrar.')}
   $('#app').innerHTML='<div class="empty">Cargando…</div>';
   try{const r=await sb.from('qx_usuarios').select('id,nombre,rol,activo,debe_cambiar,modulos,permisos').eq('id',S.user.id).maybeSingle();
     if(r.data&&(!r.data.activo)){return salir()}
@@ -3348,7 +3363,7 @@ function vConfig(out){
   out(`<h2>Configuración</h2><div class="tabs cfgtabs">${CFG_SEC.map(([k,t])=>`<button class="${sec===k?'on':''}" onclick="S.sub.cfg='${k}';render()">${t}</button>`).join('')}</div>`);
   if(sec==='general')out(`<div class="card"><h3>Clínica</h3><div class="grid2">
     ${fI('tels_programar','Teléfonos para programar (principal | WhatsApp)','(459) 100 0431|(459) 134 5529')}${fI('tel_clinica','Teléfono en mensajes','(459) 100 0431')}
-    ${fI('whatsapp_clinica','WhatsApp de la clínica (10 dígitos)','4591345529','','inputmode="tel"')}${fS('qr_destino','El QR de la cotización lleva a','whatsapp',[['whatsapp','WhatsApp de la clínica'],['cotizacion','Página de la cotización']])}${fS('tema','Tema de colores por omisión','claro',TEMAS)}
+    ${fI('whatsapp_clinica','WhatsApp de la clínica (10 dígitos)','4591345529','','inputmode="tel"')}${fS('qr_destino','El QR de la cotización lleva a','whatsapp',[['whatsapp','WhatsApp de la clínica'],['cotizacion','Página de la cotización']])}${fS('tema','Tema de colores por omisión','claro',TEMAS)}${fI('cierres_sesion','Cierre automático de sesión (horas, separadas por coma)','14:30,18:30')}
     ${S.sedes.map(s=>`<div style="grid-column:1/-1"><label>Dirección impresa · ${h(s.nombre)}</label><input data-k="dir_${h(s.nombre)}" value="${h(cfg('dir_'+s.nombre,s.nombre.startsWith('Mor')?'Hospital Victoria, Consultorio 1206, Piso 12, Av. Acueducto 2800, Morelia, Mich.':'Av. Luis Donaldo Colosio 151, Col. La Purísima, Tacámbaro, Mich.'))}"></div>`).join('')}</div>${btnG}</div>
     <div class="card"><h3>Logo de la clínica</h3>${logoTag()}<input type="file" accept="image/png,image/*" id="cLogo" style="margin-top:8px"><div class="acts"><button class="btn sec" onclick="subirLogo()">Subir logo</button></div></div>
     <div class="card"><h3>Usuarios y accesos</h3><div class="muted">Módulos y permisos por persona.</div><div class="acts" style="justify-content:flex-start"><button class="btn sec" onclick="S.sub.mas='usuarios';render()">Ir a Usuarios</button></div></div>`);
