@@ -335,7 +335,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.7';
+const VERSION='3.8';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -514,6 +514,7 @@ function readiness(c){
     {k:'confirmacion',t:'Confirmación con paciente (24–48 h, ayuno e indicaciones)',ok:!!ck.confirmacion,grupo:'seg'}];
   if(req)it.push(
     {k:'biometria',t:'Biometría / cálculo de LIO adjunto',ok:evidCx(c.id,'biometria').length>0,grupo:'lio'},
+    {k:'lio_poder',t:'Poder del lente capturado',ok:c.lio_requerido.dioptria!==''&&c.lio_requerido.dioptria!=null,grupo:'lio'},
     {k:'lio_asignado',t:'LIO asignado del inventario',ok:!!lio,grupo:'lio'},
     {k:'lio_coincide',t:'Poder del LIO asignado = poder indicado',ok:!!lio&&powerMatch(lio,c.lio_requerido),grupo:'lio'},
     {k:'lio_verificado',t:'Poder verificado por segunda persona',ok:!!c.lio_verificado_por,grupo:'lio'},
@@ -1127,7 +1128,7 @@ function renderForm(){
   ${F.requiere_lio?`<div class="grid3">
     <div><label>Tipo</label><select onchange="F.lio.tipo=this.value;renderForm()">${['','Monofocal','Tórico','Multifocal','Multifocal tórico','EDOF','EDOF tórico','Cámara anterior','Fijación escleral','Fijación iridiana','Otro'].map(o=>`<option ${o===F.lio.tipo?'selected':''}>${o}</option>`).join('')}</select></div>
     <div><label>Modelo preferido</label><input value="${h(F.lio.modelo)}" oninput="F.lio.modelo=this.value"></div>
-    <div><label>Dioptría (D)</label><input inputmode="decimal" value="${h(F.lio.dioptria)}" onchange="F.lio.dioptria=this.value;renderForm()"></div>
+    <div><label>Dioptría (D) <span class="muted" style="text-transform:none;letter-spacing:0">· opcional, se puede capturar después</span></label><input inputmode="decimal" placeholder="Pendiente" value="${h(F.lio.dioptria)}" onchange="F.lio.dioptria=this.value;renderForm()"></div>
     <div><label>Cilindro</label><input inputmode="decimal" value="${h(F.lio.cilindro)}" oninput="F.lio.cilindro=this.value"></div>
     <div><label>Eje</label><input inputmode="numeric" value="${h(F.lio.eje)}" oninput="F.lio.eje=this.value"></div>
     <div><label>Adición</label><input inputmode="decimal" value="${h(F.lio.adicion)}" oninput="F.lio.adicion=this.value"></div></div>
@@ -1215,7 +1216,6 @@ async function guardarCirugia(){
   if(!F.paciente_nombre.trim())return toast('Falta el nombre del paciente',true);
   if(!F.sala_id||!F.fecha||!F.hora)return toast('Falta quirófano, fecha u hora',true);
   if(!F.ojo)return toast('Indica el ojo o lado a operar',true);
-  if(F.requiere_lio&&(F.lio.dioptria===''||F.lio.dioptria==null))return toast('Indica el poder del lente (dioptría)',true);
   let override=null,sinCot=null;
   if(!F.id&&!F.cotizacion_id){
     if(F.origen!=='manual'||!tiene('aprobar'))return toast('Primero llama la cotización del paciente: no se puede programar sin cotización.',true);
@@ -1336,7 +1336,7 @@ function verCirugia(id){
   ${lio?`<div class="muted" style="margin-top:6px">LIO asignado: ${h(lio.marca||'')} ${h(lio.modelo)} ${fmtN(lio.dioptria)} D · Serie ${h(lio.serie||'—')} · ${lio.estado} · ${lio.propiedad}</div>`:''}
   ${c.notas?`<div class="sec-t">Notas</div><div>${h(c.notas)}</div>`:''}
   <div class="acts">
-   <button class="btn sec" onclick="imprimirHoja('${id}')">Hoja de programación</button><button class="btn sec" onclick="papeleriaCx('${id}')">Papelería quirúrgica</button>
+   <button class="btn sec" onclick="imprimirHoja('${id}')">Hoja de programación</button><button class="btn sec" onclick="papeleriaCx('${id}')">Papelería quirúrgica</button><button class="btn sec" onclick="consentimientoCx('${id}')">Consentimiento informado</button>
    ${ed?`
     <button class="btn sec" onclick="this.closest('.modal').remove();formCirugia('${id}')">Editar</button>
     ${c.estado==='programada'?`<button class="btn sec" onclick="estadoCx('${id}','confirmada')">Confirmar</button>`:''}
@@ -2065,6 +2065,18 @@ const DOCS_QX=[['frontal','Hoja frontal del expediente quirúrgico','COE-QX-01']
 function medInfo(nombre){const ls=String(cfg('medicos_cedulas','Dr. José Antonio Villegas Ávila|7256707|9457035')).split('\n').map(l=>l.split('|').map(x=>x.trim())).filter(l=>l[0]);
   const n=normTxt(nombre||'');const f=ls.find(l=>normTxt(l[0]).split(/\s+/).filter(w=>w.length>3&&!/^(dr|dra)\.?$/.test(w)).some(w=>n.includes(w)))||(!nombre?ls[0]:null);
   return f?{nombre:f[0],ced:f[1]||'',esp:f[2]||''}:{nombre:nombre||'',ced:'',esp:''}}
+function consentimientoCx(id){const c=S.cx.find(x=>x.id===id);imprimirPapeleria(c,c.checklist?.papeleria||{},['cons','consan'])}
+function consentimientoCot(id){
+  const cot=(S.cots||[]).find(x=>x.id===id)||(S.cotsDash||[]).find(x=>x.id===id);if(!cot)return toast('No encontré la cotización',true);
+  const its=(cot.items||[]).filter(i=>i.categoria==='cirugia'||i.categoria==='laser');
+  const imp=it=>{const oj=(it.ojos||[]);const o=oj.length===2?'AO':(oj[0]||'');const l=oj.map(x=>it.lio?.[x]).find(Boolean);
+    const c={id:'cot-'+cot.id,paciente_nombre:cot.paciente_nombre,expediente:cot.expediente,telefono:[cot.telefono1,cot.telefono2].filter(Boolean).join(' / '),
+      fecha:null,hora:null,sala_id:null,procedimiento:it.nombre,ojo:o,cirujano:cot.medico||'',anestesia:'',
+      lio_requerido:l?{tipo:normTipo(l.nombre)||l.nombre||'',modelo:'',dioptria:(l.poder||'').toString(),cilindro:'',eje:'',adicion:''}:null,checklist:{}};
+    imprimirPapeleria(c,{},['cons','consan'])};
+  if(its.length<=1)return its[0]?imp(its[0]):toast('La cotización no tiene cirugía',true);
+  const m=modal(`${mhead('¿Para qué procedimiento?')}${its.map((it,k)=>`<button class="btn sec" style="width:100%;margin-bottom:6px" data-k="${k}">${h(it.nombre)} · ${(it.ojos||[]).join(' y ')||'—'}</button>`).join('')}`,'sm');
+  m.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{m.remove();imp(its[+b.dataset.k])})}
 function papeleriaCx(id){
   const c=S.cx.find(x=>x.id===id),pp=c.checklist?.papeleria||{};
   const m=modal(`${mhead('Papelería quirúrgica')}<div class="muted">Se llena con los datos del paciente, la clínica y el cirujano. Lo que falte se completa a mano.</div>
@@ -3087,6 +3099,7 @@ async function hojaCot(c){
   const extra=`<a class="btn sec" target="_blank" href="https://wa.me/${waNum(c.telefono1)}?text=${encodeURIComponent('Hola '+c.paciente_nombre+', le compartimos su cotización '+c.folio+' del Centro Ocular Especializado, vigente hasta el '+fFecha(c.vigencia_hasta)+'. Puede consultarla aquí: '+linkCot(c))}">Enviar por WhatsApp</a>
    ${est==='vigente'&&(c.items||[]).some(i=>i.categoria==='cirugia')&&can.programar()?`<button class="btn sec" onclick="programarDesdeCot('${c.id}')">Programar cirugía</button>`:''}
    ${est==='vencida'?`<button class="btn sec" onclick="renovarCot('${c.id}')">Renovar con precios actuales</button>`:''}
+   ${(c.items||[]).some(i=>i.categoria==='cirugia'||i.categoria==='laser')?`<button class="btn sec" onclick="consentimientoCot('${c.id}')">Consentimiento informado</button>`:''}
     ${campActiva()&&est!=='vencida'&&(c.items||[]).some(i=>i.categoria==='cirugia')&&(can.cotizar()||can.programar())?`<button class="btn" onclick="enviarCampana('${c.id}')">Enviar a campaña</button>`:''}`;
   printWin(inner,extra);
 }
