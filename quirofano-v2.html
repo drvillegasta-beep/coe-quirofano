@@ -335,7 +335,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.6';
+const VERSION='3.7';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -3093,12 +3093,14 @@ async function hojaCot(c){
 async function cargarCotLista(){
   const el=$('#cotLista');if(!el)return;
   const r=await sb.from('qx_cotizaciones').select('*').order('created_at',{ascending:false}).limit(2000);
-  S.cots=(r.data||[]).filter(c=>!c.sede_id||c.sede_id===S.sede);
+  const all=r.data||[],vs=S.sub.cotSede||S.sede;
+  S.cots=all.filter(c=>vs==='todas'||!c.sede_id||c.sede_id===vs);
+  const sedeChips=`<div class="tabs" style="margin-bottom:6px"><span class="muted" style="align-self:center;margin-right:4px">Sede:</span>${S.sedes.filter(s=>s.activa!==false).map(s=>`<button class="${vs===s.id?'on':''}" onclick="S.sub.cotSede='${s.id}';cargarCotLista()">${h(s.nombre)} ${all.filter(c=>c.sede_id===s.id).length}</button>`).join('')}<button class="${vs==='todas'?'on':''}" onclick="S.sub.cotSede='todas';cargarCotLista()">Ambas ${all.length}</button></div>`;
   const f=S.sub.cotF||'vigente',qq=(S.sub.cotQ||'').toLowerCase();
   const l=S.cots.filter(c=>(f==='todas'||estadoCot(c)===f)&&(!qq||[c.paciente_nombre,c.folio,c.telefono1,c.expediente].join(' ').toLowerCase().includes(qq)));
   const n=k=>S.cots.filter(c=>estadoCot(c)===k).length;
   el.innerHTML=`<div class="row" style="margin-bottom:10px"><input id="cotQ" placeholder="Buscar paciente, folio o teléfono" value="${h(S.sub.cotQ||'')}" onchange="S.sub.cotQ=this.value;cargarCotLista()"></div>
-  <div class="tabs">${[['vigente','Vigentes'],['vencida','Vencidas'],['programada','Programadas'],['realizada','Realizadas'],['cancelada','Canceladas'],['todas','Todas']].map(([k,t])=>`<button class="${f===k?'on':''}" onclick="S.sub.cotF='${k}';cargarCotLista()">${t}${k!=='todas'?' '+n(k):''}</button>`).join('')}</div>
+  ${sedeChips}<div class="tabs">${[['vigente','Vigentes'],['vencida','Vencidas'],['programada','Programadas'],['realizada','Realizadas'],['cancelada','Canceladas'],['todas','Todas']].map(([k,t])=>`<button class="${f===k?'on':''}" onclick="S.sub.cotF='${k}';cargarCotLista()">${t}${k!=='todas'?' '+n(k):''}</button>`).join('')}</div>
   ${l.map(c=>{const e=estadoCot(c),d=diasHasta(c.vigencia_hasta);return `<div class="card" style="cursor:pointer" onclick="hojaCot(S.cots.find(x=>x.id==='${c.id}'))"><div class="row" style="flex-wrap:nowrap"><div style="flex:3;min-width:0"><b>${h(c.paciente_nombre)}</b> <span class="muted">${h(c.folio)}</span>
    <div class="muted">${(c.items||[]).map(it=>h(it.nombre)+(it.lateralidad!=='sin_lado'?' '+ojosTxt(it):'')).join(' · ')}</div><div class="muted">${fCorta(c.created_at)} · ${h(c.elaboro||'')} · Tel. ${h(c.telefono1||'')}${c.telefono2?' / '+h(c.telefono2):''}</div></div>
    <div style="text-align:right;flex:0 0 auto"><b>${money(c.total)}</b><div><span class="pill ${EST_COT[e][0]}">${EST_COT[e][1]}${e==='vigente'?' · '+d+' d':''}</span></div>${num(c.descuento)?`<div class="muted">desc. ${money(c.descuento)}</div>`:''}</div></div></div>`}).join('')||'<div class="card empty">Sin cotizaciones en esta vista</div>'}`;
