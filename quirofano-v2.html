@@ -300,6 +300,10 @@ i.dot.hi{background:var(--pr)}i.dot.lo{background:var(--linea2)}
 .tema-op[data-tm="grafito"] .sw4{background:linear-gradient(90deg,#1B1D20 50%,#8DB8A5 50%)}.tema-op[data-tm="noche"] .sw4{background:linear-gradient(90deg,#141C2B 50%,#86ABE0 50%)}.tema-op[data-tm="pizarra"] .sw4{background:linear-gradient(90deg,#18191C 50%,#C9AE7C 50%)}.tema-op[data-tm="claro"] .sw4{background:linear-gradient(90deg,#FFFFFF 50%,#2F6F66 50%);border:1px solid #ccc}
 
 [data-tema="claro"] header img,[data-tema="claro"] .login img:not(.thumb),[data-tema="claro"] .hello img{filter:invert(1) brightness(.35)}
+.lect{margin-top:6px;padding:8px 10px;border-radius:10px;background:var(--card3);font-size:13px;line-height:1.45}.lect.ok{background:var(--pr2);color:var(--ink)}.lect.bad{box-shadow:inset 3px 0 0 var(--pr);background:var(--card3)}.lect.warn{color:var(--gris)}
+.lect-c{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center}.chipb{border:1px solid var(--linea2);background:var(--card);color:var(--ink);border-radius:14px;padding:3px 10px;font-size:12px;cursor:pointer}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--linea2);border-top-color:var(--pr);border-radius:50%;animation:gira .8s linear infinite;vertical-align:-2px;margin-right:4px}@keyframes gira{to{transform:rotate(360deg)}}
+.cuadre{margin-top:10px;border:1px solid var(--linea);border-radius:12px;overflow:hidden}.cuadre:empty{display:none}.cq{display:flex;justify-content:space-between;padding:6px 12px;font-size:14px;border-bottom:1px solid var(--linea)}.cq:last-child{border-bottom:0}.cq span{color:var(--gris)}.cq b{font-family:var(--mo);font-weight:500}.cq.tot{background:var(--card2)}.cq.ok b{color:var(--pr)}.cq.bad{background:var(--pr2)}.cq.bad b{color:var(--ink)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -312,9 +316,9 @@ i.dot.hi{background:var(--pr)}i.dot.lo{background:var(--linea2)}
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.0';
+const VERSION='3.1';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
-const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','grafito')}catch(e){}};
+const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
 
 /* ---------- utilidades ---------- */
@@ -772,6 +776,7 @@ function dashDir(){
   const perd=programaInv(addDays(hoy,-30),addDays(hoy,-1)).map(estadoInv).filter(e=>e.st==='no_realizado');
   if(perd.length)urg.push({t:`${perd.length} conteo(s) de inventario no realizados`,d:'Escalados a COE Finanzas',go:"S.tab='inventario';S.sub.inv='conteo';render()",r:true});
   if(R&&(R.selloRoto||R.venc.length))urg.push({t:'Carro rojo',d:(R.selloRoto?'abierto sin sello nuevo · ':'')+R.venc.length+' medicamentos vencidos',go:"S.tab='carro';render()",r:true});
+  const dif=S.evid.filter(e=>e.lectura&&e.lectura.coincide===false&&!e.validado_at);if(dif.length)urg.push({t:`${dif.length} comprobante(s) con monto distinto`,d:dif.map(e=>money(e.monto)+' vs '+(e.lectura.monto_leido?money(e.lectura.monto_leido):'sin leer')).join(' · '),go:"S.tab='alertas';S.sub.al='alertas';render()",r:true});
   if(pv.length)urg.push({t:`${pv.length} pago(s) sin validar`,d:'Contabilidad debe confirmar los comprobantes',go:"S.tab='alertas';S.sub.al='alertas';render()",r:false});
   // agenda 14 días
   const cols=Array.from({length:14},(_,i)=>{const f=addDays(hoy,i),l=cxs.filter(x=>x.c.fecha===f),d=new Date(f+'T12:00:00');
@@ -1098,15 +1103,18 @@ function renderForm(){
   <div class="sec-t">Pago ${F.id?'':'— requisito para programar'}</div>
   <div class="grid3"><div><label>Costo total de la cirugía</label><input type="number" inputmode="decimal" value="${h(F.costo_total)}" ${F.cotizacion_tabla==='qx_cotizaciones'&&!tiene('aprobar')?'readonly title="Tomado de la cotización"':''} onchange="F.costo_total=this.value;renderForm()">${F.costoNota?`<div class="muted">${h(F.costoNota)}</div>`:''}</div>
   ${F.id?(()=>{const c0=S.cx.find(x=>x.id===F.id),f=finCx({...c0,costo_total:num(F.costo_total)});return `<div><label>Pagado</label><div style="padding:10px 0"><b>${money(f.pag)}</b> · saldo ${money(f.saldo)}</div></div><div><label>Estatus</label><div style="padding:10px 0"><span class="pill ${f.cls}">${h(f.est)}</span></div></div></div><div class="muted">Los abonos y la liquidación se registran desde el detalle de la cirugía.</div>`})()
-  :`<div><label>Anticipo recibido</label><input type="number" inputmode="decimal" value="${h(F.pago.monto)}" onchange="F.pago.monto=this.value;renderForm()"></div>
+  :`<div><label>Anticipo recibido</label><input type="number" inputmode="decimal" value="${h(F.pago.monto)}" onchange="F.pago.monto=this.value;renderForm()">${num(F.costo_total)&&num(F.pago.monto)>num(F.costo_total)?`<div class="lect bad">Excede el costo total por ${money(num(F.pago.monto)-num(F.costo_total))}</div>`:''}</div>
   <div><label>Método</label><select onchange="F.pago.metodo=this.value">${['Efectivo','Tarjeta','Transferencia','Depósito','Otro'].map(o=>`<option ${o===F.pago.metodo?'selected':''}>${o}</option>`).join('')}</select></div>
   <div><label>Folio de venta eOptics / referencia</label><input value="${h(F.pago.folio)}" oninput="F.pago.folio=this.value"></div>
-  <div style="grid-column:span 2"><label>Comprobante (foto del ticket, voucher o transferencia)</label><input type="file" accept="image/*,application/pdf" capture="environment" onchange="F.pago.file=this.files[0]||null;F.pago.url=F.pago.file?null:F.pago.url;renderForm()">
-   ${F.pago.file?`<div class="pill p-verde" style="margin-top:6px">Archivo: ${h(F.pago.file.name)}</div>`:F.pago.url?`<div style="margin-top:6px" class="row"><img class="thumb" style="flex:0 0 64px" src="${h(F.pago.url)}" onerror="this.style.display='none'"><span class="pill p-verde">Comprobante tomado de Cotizaciones</span></div>`:''}</div></div>
+  <div style="grid-column:span 2"><label>Comprobante (foto del ticket, voucher o transferencia)</label><input type="file" accept="image/*,application/pdf" capture="environment" onchange="F.pago.file=this.files[0]||null;F.pago.url=F.pago.file?null:F.pago.url;leerF()">
+   ${F.pago.file?`<div class="pill p-verde" style="margin-top:6px">Archivo: ${h(F.pago.file.name)}</div>${lecturaHTML(F.pago.lectura,F.pago.monto)}`:F.pago.url?`<div style="margin-top:6px" class="row"><img class="thumb" style="flex:0 0 64px" src="${h(F.pago.url)}" onerror="this.style.display='none'"><span class="pill p-verde">Comprobante tomado de Cotizaciones</span></div>`:''}</div></div>
   ${(()=>{const min=anticipoMin(F.costo_total),ok=num(F.pago.monto)>=min&&num(F.pago.monto)>0&&(F.pago.file||F.pago.url);return `<div class="pill ${ok?'p-verde':'p-rojo'}" style="margin-top:8px;white-space:normal">${ok?'✓ Anticipo suficiente con comprobante':'Anticipo mínimo para programar: '+money(min)+' con comprobante'}${num(F.costo_total)?' · saldo a liquidar '+money(Math.max(0,num(F.costo_total)-num(F.pago.monto))):''}</div>`})()}`}
   <label>Notas</label><textarea oninput="F.notas=this.value">${h(F.notas)}</textarea>
   <div class="acts"><button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancelar</button><button class="btn" onclick="guardarCirugia()">Guardar con PIN</button></div>`;
+  box.querySelectorAll('[data-usar]').forEach(b=>b.onclick=()=>{F.pago.monto=b.dataset.usar;renderForm()});
 }
+function leerF(){const f=F.pago.file;if(!f){F.pago.lectura=null;return renderForm()}F.pago.lectura={leyendo:true};renderForm();
+  leerComprobante(f).then(l=>{if(F.pago.file!==f)return;F.pago.lectura=l;if(!num(F.pago.monto)&&l.montos.length)F.pago.monto=l.montos[0];if(!F.pago.folio&&l.folio)F.pago.folio=l.folio;renderForm()}).catch(e=>{if(F.pago.file===f){F.pago.lectura={error:e.message||'sin conexión'};renderForm()}})}
 const toMin=t=>{const [a,b]=(t||'0:0').split(':');return num(a)*60+num(b)};
 function renderItemsF(){
   if(!F.items.length)return '<div class="muted" style="margin-top:6px">Sin materiales. Elige un paquete o agrega materiales.</div>';
@@ -1183,6 +1191,8 @@ async function guardarCirugia(){
       if(!num(F.costo_total)){if(!await confirmar('No capturaste el costo total. ¿Esta cirugía es <b>cortesía sin costo</b>? Si no, cancela y captura el costo.'))return;F.cortesia=true}
     }
   }
+  if(!F.id&&num(F.costo_total)&&num(F.pago.monto)>num(F.costo_total)+0.5)return toast('El anticipo excede el costo total de la cirugía',true);
+  let lectAnt=null;if(!F.id&&F.pago.file&&num(F.pago.monto)>0){lectAnt=await confirmarLectura(F.pago.lectura,F.pago.monto);if(!lectAnt)return}
   if(!await pedirPIN((override?'AUTORIZO programar sin anticipo · ':'Programar cirugía de ')+F.paciente_nombre))return;
   let urlPago=F.pago.url;
   if(!F.id&&F.pago.file){try{toast('Subiendo comprobante…');urlPago=await subirArchivo(F.pago.file,'evidencias/pagos')}catch(e){return dbErr(e,'Subir comprobante')}}
@@ -1198,7 +1208,7 @@ async function guardarCirugia(){
     let id=F.id;
     if(id)await q(sb.from('qx_cirugias').update(row).eq('id',id),'Guardar cirugía');
     else{row.folio=folio('CX');row.creado_por=S.user.id;row.estado='programada';id=(await q(sb.from('qx_cirugias').insert(row).select(),'Guardar cirugía'))[0].id;
-      if(num(F.pago.monto)>0)await q(sb.from('qx_cirugia_evidencias').insert({cirugia_id:id,tipo:'anticipo',monto:num(F.pago.monto),metodo:F.pago.metodo,folio:F.pago.folio||null,url:urlPago||null,usuario_id:S.user.id,usuario_nombre:S.user.nombre,nota:F.pago.url&&!F.pago.file?'Comprobante de Cotizaciones':null}),'Guardar anticipo')}
+      if(num(F.pago.monto)>0)await q(sb.from('qx_cirugia_evidencias').insert({cirugia_id:id,tipo:'anticipo',monto:num(F.pago.monto),metodo:F.pago.metodo,folio:F.pago.folio||null,url:urlPago||null,lectura:lectAnt,usuario_id:S.user.id,usuario_nombre:S.user.nombre,nota:F.pago.url&&!F.pago.file?'Comprobante de Cotizaciones':null}),'Guardar anticipo')}
     await q(sb.from('qx_cirugia_items').delete().eq('cirugia_id',id).is('cantidad_usada',null));
     if(F.items.length)await q(sb.from('qx_cirugia_items').insert(F.items.filter(i=>i.cantidad>0).map(i=>({cirugia_id:id,material_id:i.material_id,cantidad_plan:i.cantidad,es_extra:!!i.extra}))));
     if(F.lio_original&&F.lio_original!==row.lio_unidad_id)await q(sb.from('qx_lio_unidades').update({estado:'disponible',cirugia_id:null,paciente_nombre:null}).eq('id',F.lio_original));
@@ -1279,7 +1289,7 @@ function verCirugia(id){
   </div>
   ${pasosCx(c,rd,ed)}
   <div class="row" style="margin:6px 0"><h3 style="margin:0;flex:3">Lista de verificación</h3><span class="pill ${rd.listo?'p-verde':c.fecha<=addDays(hoyISO(),1)?'p-rojo':'p-amar'}" style="flex:0 0 auto">${rd.listo?'✓ Lista para operar':rd.pend.length+' pendientes'}</span></div>
-  ${grupos.map(([g,t])=>{const its=rd.it.filter(x=>x.grupo===g);return its.length?`<div class="sec-t">${t}</div>${its.map(x=>`<div class="list-item"><span style="font-size:20px;flex:0 0 26px">${x.ok?'✅':'⬜'}</span><div class="grow">${h(x.t)}${det[x.k]?`<div class="muted">${det[x.k]}</div>`:''}${evs.filter(e=>e.tipo===x.k||(x.k==='anticipo'&&['anticipo','abono','reembolso'].includes(e.tipo))||(x.k==='liquidado'&&e.tipo==='liquidacion')).map(e=>`<div class="row" style="margin-top:6px;gap:8px">${evidThumb(e)}<span class="muted" style="flex:3">${e.monto?(e.tipo==='reembolso'?'−':'')+money(e.monto)+' · ':''}${h(e.tipo)}${e.metodo?' · '+h(e.metodo):''}${e.folio?' · folio '+h(e.folio):''}<br>${h(e.usuario_nombre||'')} · ${fDT(e.created_at)}${e.validado_at?` · <b style="color:var(--verde)">✓ validó ${h(e.validado_por)}</b>`:''}</span>${!e.validado_at&&['anticipo','abono','liquidacion','reembolso'].includes(e.tipo)&&can.validar()?`<button class="btn sm verde" style="flex:0 0 auto" onclick="validarPago('${e.id}','${id}')">Validar</button>`:''}</div>`).join('')}</div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${acc[x.k]||''}</div></div>`).join('')}`:''}).join('')}
+  ${grupos.map(([g,t])=>{const its=rd.it.filter(x=>x.grupo===g);return its.length?`<div class="sec-t">${t}</div>${its.map(x=>`<div class="list-item"><span style="font-size:20px;flex:0 0 26px">${x.ok?'✅':'⬜'}</span><div class="grow">${h(x.t)}${det[x.k]?`<div class="muted">${det[x.k]}</div>`:''}${evs.filter(e=>e.tipo===x.k||(x.k==='anticipo'&&['anticipo','abono','reembolso'].includes(e.tipo))||(x.k==='liquidado'&&e.tipo==='liquidacion')).map(e=>`<div class="row" style="margin-top:6px;gap:8px">${evidThumb(e)}<span class="muted" style="flex:3">${e.monto?(e.tipo==='reembolso'?'−':'')+money(e.monto)+' · ':''}${h(e.tipo)}${e.metodo?' · '+h(e.metodo):''}${e.folio?' · folio '+h(e.folio):''} ${lectPill(e.lectura)}<br>${h(e.usuario_nombre||'')} · ${fDT(e.created_at)}${e.validado_at?` · <b style="color:var(--verde)">✓ validó ${h(e.validado_por)}</b>`:''}</span>${!e.validado_at&&['anticipo','abono','liquidacion','reembolso'].includes(e.tipo)&&can.validar()?`<button class="btn sm verde" style="flex:0 0 auto" onclick="validarPago('${e.id}','${id}')">Validar</button>`:''}</div>`).join('')}</div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${acc[x.k]||''}</div></div>`).join('')}`:''}).join('')}
   ${c.consumo_cerrado?`<div class="sec-t">Posoperatorio</div><div class="list-item"><div class="grow">Cita subsecuente: <b>${c.cita_subsecuente?fFecha(localISO(c.cita_subsecuente))+' '+(()=>{const d=new Date(c.cita_subsecuente);return pad(d.getHours())+':'+pad(d.getMinutes())})():'sin agendar'}</b></div>${can.programar()?`<button class="btn sm" onclick="citaSubsecuente('${id}')">${c.cita_subsecuente?'Cambiar':'Agendar'}</button>`:''}</div><div id="posop_${id}" class="muted">Cargando mensajes…</div>`:''}
   ${c.timeout?`<div class="sec-t">Pausa de seguridad</div><div class="pill p-morado">Realizada por ${h(c.timeout.nombre)} · ${fDT(c.timeout.at)}${c.timeout.override?' · con saldo autorizado por '+h(c.timeout.override.nombre):''}</div>${evidCx(id,'lio_caja').map(e=>`<div class="row" style="margin-top:6px;gap:8px">${evidThumb(e)}<span class="muted">Caja del LIO</span></div>`).join('')}`:''}
   ${c.paquete_nombre?`<div class="sec-t">Material · paquete ${h(c.paquete_nombre)}</div>`:'<div class="sec-t">Material</div>'}
@@ -1308,7 +1318,7 @@ function pasosCx(c,rd,ed){
 function _posop(id){setTimeout(()=>posopDetalle(id),0)}
 async function validarPago(eid,cid){
   const e=S.evid.find(x=>x.id===eid);
-  if(!await confirmar(`¿Confirmas que el ${h(e.tipo)} de <b>${money(e.monto)}</b>${e.folio?' (folio '+h(e.folio)+')':''} ingresó realmente (eOptics / depositador / estado de cuenta)?`))return;
+  if(!await confirmar(`¿Confirmas que el ${h(e.tipo)} de <b>${money(e.monto)}</b>${e.folio?' (folio '+h(e.folio)+')':''} ingresó realmente (eOptics / depositador / estado de cuenta)?${e.lectura&&e.lectura.coincide===false?`<br><br><b>Atención:</b> el comprobante dice ${e.lectura.monto_leido?money(e.lectura.monto_leido):'otro monto'}. Motivo: ${h(e.lectura.motivo||'')}`:e.lectura&&e.lectura.coincide?'<br>✓ El monto coincide con el comprobante.':''}`))return;
   if(!await pedirPIN('Validar pago'))return;
   await q(sb.from('qx_cirugia_evidencias').update({validado_por:S.user.nombre,validado_at:new Date().toISOString()}).eq('id',eid));
   await logA('validar_pago','qx_cirugia_evidencias',eid,{monto:e.monto});if(cid)refrescarDetalle(cid);else{await loadAll();render()}
@@ -1325,18 +1335,26 @@ function formPago(id,tipoDef){
   <div><label>Monto</label><input id="gM" type="number" inputmode="decimal" value="${tipoDef==='liquidacion'?f.saldo:''}"></div>
   <div><label>Método</label><select id="gMe">${['Efectivo','Tarjeta','Transferencia','Depósito','Otro'].map(o=>`<option>${o}</option>`).join('')}</select></div>
   <div><label>Folio eOptics / referencia</label><input id="gF"></div></div>
-  <label>Comprobante (obligatorio)</label><input type="file" id="gA" accept="image/*,application/pdf" capture="environment">
+  <label>Comprobante (obligatorio · se lee solo)</label><input type="file" id="gA" accept="image/*,application/pdf" capture="environment">
+  <div id="gRes" class="cuadre"></div>
   <div class="acts"><button class="btn" id="ok">Guardar con PIN</button></div>`,'sm');
+  const cuadre=()=>{const t=m.querySelector('#gT').value,mo=num(m.querySelector('#gM').value),sg=t==='reembolso'?-1:1,nuevo=f.pag+sg*mo,sal=f.total-nuevo;
+    m.querySelector('#gRes').innerHTML=f.total?`<div class="cq"><span>Pagado</span><b>${money(f.pag)}</b></div><div class="cq"><span>${t==='reembolso'?'Devolución':'Este pago'}</span><b>${sg<0?'− ':'+ '}${money(mo)}</b></div><div class="cq tot"><span>Quedaría pagado</span><b>${money(nuevo)} de ${money(f.total)}</b></div><div class="cq ${Math.abs(sal)<=0.5?'ok':sal<0?'bad':''}"><span>${sal<-0.5?'Excede el total por':'Saldo'}</span><b>${money(Math.abs(sal))}</b></div>`:''};
+  m.querySelector('#gM').addEventListener('input',cuadre);m.querySelector('#gT').addEventListener('change',()=>{if(m.querySelector('#gT').value==='liquidacion'&&!num(m.querySelector('#gM').value))m.querySelector('#gM').value=f.saldo;cuadre()});cuadre();
+  ligarComprobante(m,'#gA','#gM','#gF');
   m.querySelector('#ok').onclick=async()=>{
     const tipo=m.querySelector('#gT').value,monto=num(m.querySelector('#gM').value),file=m.querySelector('#gA').files[0];
     if(monto<=0&&!(tipo==='liquidacion'&&f.total===0))return toast('Captura el monto',true);
     if(!file)return toast('El comprobante es obligatorio',true);
+    if(tipo!=='reembolso'&&f.total>0&&f.pag+monto>f.total+0.5)return toast(`El pago excede el total por ${money(f.pag+monto-f.total)}. El saldo es ${money(f.saldo)}.`,true);
+    if(tipo==='reembolso'&&monto>f.pag+0.5)return toast('La devolución no puede ser mayor a lo pagado ('+money(f.pag)+')',true);
+    const lectura=await confirmarLectura(m._lect,monto);if(!lectura)return;
     if(tipo==='liquidacion'&&f.total>0&&f.pag+monto<f.total-0.5&&!await confirmar(`Con este pago quedan ${money(f.total-f.pag-monto)} pendientes. ¿Registrarlo como abono?`))return;
     if(!await pedirPIN('Registrar '+tipo+' de '+money(monto)))return;
     m.querySelector('#ok').disabled=true;
     try{const url=await subirArchivo(file,'evidencias/pagos');
       const t=tipo==='liquidacion'&&f.total>0&&f.pag+monto<f.total-0.5?'abono':tipo;
-      await q(sb.from('qx_cirugia_evidencias').insert({cirugia_id:id,tipo:t,monto,metodo:m.querySelector('#gMe').value,folio:m.querySelector('#gF').value||null,url,usuario_id:S.user.id,usuario_nombre:S.user.nombre}),'Guardar pago');
+      await q(sb.from('qx_cirugia_evidencias').insert({cirugia_id:id,tipo:t,monto,metodo:m.querySelector('#gMe').value,folio:m.querySelector('#gF').value||null,url,lectura,usuario_id:S.user.id,usuario_nombre:S.user.nombre}),'Guardar pago');
       await logA('pago_'+t,'qx_cirugias',id,{monto});toast('Pago registrado');refrescarDetalle(id)}catch(e){m.querySelector('#ok').disabled=false}
   };
 }
@@ -2137,7 +2155,7 @@ function vCampana(){
     return `<div class="card"><div class="ph3"><h3>${h(g.t)}</h3><span class="muted">${l.length}${g.cupo?' / '+g.cupo+' cupo':''} ojos · ${l.filter(x=>x.liq).length} liquidados</span></div>
     ${l.map(({p,est,cls,pag,saldo,tot})=>`<div class="cprow"><div class="grow"><b>${h(p.paciente_nombre)}</b> <span class="pill p-azul">${h(p.ojo||'')}</span> <span class="pill ${cls}">${est}${!['Liquidado'].includes(est)&&tot?' · saldo '+money(saldo):''}</span>
       <div class="muted">${h(p.procedimiento||'')}${lioCamp(p)?' · LIO <b style="color:var(--ink)">'+h(lioCamp(p))+'</b> '+(st[p.id]?'<span class="pill p-verde">en stock</span>':st[p.id]===null?'<span class="pill p-amar">por pedir</span>':''):''}${p.telefono?' · '+h(fmtTel(p.telefono)):''}</div>
-      ${(p.comprobantes||[]).length?`<div class="row" style="gap:6px;margin-top:4px;flex-wrap:wrap">${p.comprobantes.map(x=>`<a href="${h(x.url)}" target="_blank" class="pill">${x.tipo==='liquidacion'?'Liquidación':'Anticipo'} ${money(x.monto)}</a>`).join('')}</div>`:''}
+      ${(p.comprobantes||[]).length?`<div class="row" style="gap:6px;margin-top:4px;flex-wrap:wrap">${p.comprobantes.map(x=>`<a href="${h(x.url)}" target="_blank" class="pill">${x.tipo==='liquidacion'?'Liquidación':'Anticipo'} ${money(x.monto)}</a>${x.lectura?lectPill(x.lectura):''}`).join('')}</div>`:''}
       ${p.notas?`<div class="muted" style="margin-top:2px">📝 ${h(p.notas)}</div>`:''}</div>
       <div class="cpbtn">${p.telefono?`<a class="btn sm sec" target="_blank" href="https://wa.me/${waNum(p.telefono)}?text=${encodeURIComponent('Hola '+p.paciente_nombre+', le escribimos del Centro Ocular Especializado sobre su cirugía de la '+c.nombre+(p.dia?' programada el '+fFecha(p.dia):'')+'.')}">WhatsApp</a>`:''}
       ${can.programar()||can.cotizar()?`<button class="btn sm" onclick="pagoCampana('${p.id}')">Pago</button><button class="btn sm sec" onclick="editCampPac('${p.id}')">Editar</button>`:''}</div></div>`).join('')||'<div class="muted">Sin pacientes</div>'}</div>`}).join('');
@@ -2173,13 +2191,16 @@ function pagoCampana(id){
   const m=modal(`${mhead('Pago · '+h(p.paciente_nombre)+' '+h(p.ojo||''))}<div class="muted">Total ${money(f.tot)} · pagado ${money(f.pag)} · saldo <b>${money(f.saldo)}</b></div>
   <div class="grid2"><div><label>Tipo</label><select id="cgT"><option value="anticipo">Anticipo</option><option value="liquidacion" ${f.pag?'selected':''}>Liquidación</option></select></div><div><label>Monto</label><input id="cgM" type="number" inputmode="decimal" value="${f.pag?f.saldo:''}"></div>
   <div><label>Método</label><select id="cgMe">${['Efectivo','Tarjeta','Transferencia','Depósito'].map(o=>`<option>${o}</option>`).join('')}</select></div><div><label>Folio / referencia</label><input id="cgF"></div></div>
-  <label>Comprobante (obligatorio)</label><input type="file" id="cgA" accept="image/*,application/pdf" capture="environment">
+  <label>Comprobante (obligatorio · se lee solo)</label><input type="file" id="cgA" accept="image/*,application/pdf" capture="environment">
   <div class="acts"><button class="btn" id="ok">Guardar con PIN</button></div>`,'sm');
+  ligarComprobante(m,'#cgA','#cgM','#cgF');
   m.querySelector('#ok').onclick=async()=>{const t=m.querySelector('#cgT').value,mo=num(m.querySelector('#cgM').value),file=m.querySelector('#cgA').files[0];
     if(mo<=0)return toast('Captura el monto',true);if(!file)return toast('El comprobante es obligatorio',true);
+    if(f.tot&&f.pag+mo>f.tot+0.5)return toast(`Excede el total por ${money(f.pag+mo-f.tot)}. El saldo es ${money(f.saldo)}.`,true);
+    const lectura=await confirmarLectura(m._lect,mo);if(!lectura)return;
     if(t==='liquidacion'&&f.tot&&f.pag+mo<f.tot-0.5&&!await confirmar(`Quedan ${money(f.tot-f.pag-mo)} pendientes. ¿Registrarlo como liquidación de todos modos?`))return;
     if(!await pedirPIN('Pago de campaña '+money(mo)))return;m.querySelector('#ok').disabled=true;
-    try{const url=await subirArchivo(file,'campana');const cs=[...(p.comprobantes||[]),{tipo:t,monto:mo,metodo:m.querySelector('#cgMe').value,folio:m.querySelector('#cgF').value||null,url,por:S.user.nombre,at:new Date().toISOString()}];
+    try{const url=await subirArchivo(file,'campana');const cs=[...(p.comprobantes||[]),{tipo:t,monto:mo,metodo:m.querySelector('#cgMe').value,folio:m.querySelector('#cgF').value||null,url,lectura,por:S.user.nombre,at:new Date().toISOString()}];
       await q(sb.from('qx_campana_pacientes').update({comprobantes:cs,updated_at:new Date().toISOString()}).eq('id',id));await logA('campana_pago','qx_campana_pacientes',id,{tipo:t,monto:mo});m.remove();toast('Pago registrado');await loadAll();render()}catch(e){m.querySelector('#ok').disabled=false}};
 }
 function editCampPac(id){
@@ -2230,6 +2251,77 @@ function imprimirLiosCamp(){
   printWin(`${printHead('Lentes requeridos · '+h(c.nombre))}<div style="margin:6px 0">Total: <b>${l.length} lentes</b></div>${tipos.map(t=>{const lt=l.filter(p=>(p.lio_tipo||'LIO')===t),pod=[...new Set(lt.map(p=>num(p.lio_poder)))].sort((a,b)=>a-b);
    return `<h4>${h(t)} · ${lt.length}</h4><table><tr><th>Poder</th><th>Total</th><th>En stock</th><th>Pedir</th>${dias.map(d=>`<th>${fCorta(d.fecha)}</th>`).join('')}<th>Sin día</th></tr>${pod.map(d=>{const n=lt.filter(p=>num(p.lio_poder)===d),ns=n.filter(p=>st[p.id]).length;return `<tr><td>${fmtN(d)} D</td><td><b>${n.length}</b></td><td>${ns||''}</td><td><b>${n.length-ns||''}</b></td>${dias.map(x=>`<td>${n.filter(p=>p.dia===x.fecha).length||''}</td>`).join('')}<td>${n.filter(p=>!p.dia).length||''}</td></tr>`}).join('')}</table>`}).join('')}`);
 }
+
+/* ============================================================
+   LECTURA DE COMPROBANTES (OCR en el dispositivo) Y CUADRE DE MONTOS
+   ============================================================ */
+const OCR_V={t:'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',w:'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',c:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',l:'https://cdn.jsdelivr.net/npm/@tesseract.js-data/spa@1.0.0/4.0.0_best_int',pdf:'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',pdfw:'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'};
+const _scr={};
+function cargarScript(u){return _scr[u]||(_scr[u]=new Promise((res,rej)=>{const s=document.createElement('script');s.src=u;s.onload=res;s.onerror=()=>{delete _scr[u];rej(new Error('No se pudo cargar el lector'))};document.head.appendChild(s)}))}
+let _ocrW=null;
+async function ocrWorker(){if(!_ocrW){await cargarScript(OCR_V.t);_ocrW=Tesseract.createWorker('spa',1,{workerPath:OCR_V.w,corePath:OCR_V.c,langPath:OCR_V.l})}return _ocrW}
+async function imagenComprobante(file){
+  if(!/pdf/i.test(file.type||'')&&!/\.pdf$/i.test(file.name||''))return file;
+  await cargarScript(OCR_V.pdf);pdfjsLib.GlobalWorkerOptions.workerSrc=OCR_V.pdfw;
+  const doc=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise,pg=await doc.getPage(1),vp=pg.getViewport({scale:2.2});
+  const cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;return cv;
+}
+const MES_N={ene:1,feb:2,mar:3,abr:4,may:5,jun:6,jul:7,ago:8,sep:9,set:9,oct:10,nov:11,dic:12};
+function analizarTexto(t){
+  const txt=String(t||'').replace(/[Oo](?=\d)|(?<=\d)[Oo]/g,'0').replace(/(?<=\d)[lI](?=\d)/g,'1');
+  const cand=[];const clave=/(importe|monto|total|cantidad|pagado|pago|abono|anticipo|transferido|cargo|neto)/i;
+  const re=/(\$|mxn|m\.n\.)?\s*(\d{1,3}(?:[,\s]\d{3})+(?:\.\d{1,2})?|\d{1,3}(?:\.\d{3})+(?:,\d{2})|\d+[.,]\d{2}\b|\d{3,7}\b)/gi;let m;
+  while((m=re.exec(txt))){let s=m[2].replace(/\s/g,'');
+    if(/^\d{1,3}(\.\d{3})+,\d{2}$/.test(s))s=s.replace(/\./g,'').replace(',','.');else s=s.replace(/,(?=\d{3}(\D|$))/g,'').replace(',','.');
+    const v=parseFloat(s);if(!(v>=50&&v<=2e6))continue;
+    const ant=txt.slice(Math.max(0,m.index-40),m.index),des=txt.slice(m.index,m.index+m[0].length+3);
+    if(/\d[\/\-]\d|\d{2}:\d{2}/.test(des)||(!m[1]&&!/[.,]\d{2}$/.test(m[2])&&(/^(19|20)\d{2}$/.test(s)||/(tel|cel|cuenta|clabe|tarjeta|folio|ref|autoriz|rastreo|no\.|núm)/i.test(ant))))continue;
+    let sc=0;if(m[1])sc+=3;if(/[.,]\d{2}$/.test(m[2]))sc+=1;if(clave.test(ant))sc+=3;if(/total|importe|monto/i.test(ant))sc+=1;
+    const e=cand.find(x=>Math.abs(x.v-v)<0.005);if(e)e.sc=Math.max(e.sc,sc)+1;else cand.push({v,sc})}
+  cand.sort((a,b)=>b.sc-a.sc||b.v-a.v);
+  const fo=txt.match(/(folio|referencia|ref\.?|rastreo|autorizaci[oó]n|operaci[oó]n|transacci[oó]n)\s*(?:no\.?|n[uú]m\.?|de rastreo)?\s*[:#]?\s*([A-Z0-9][A-Z0-9\-]{3,})/i);
+  const fe=txt.match(/(\d{1,2})[\/\-. ](\d{1,2}|ene|feb|mar|abr|may|jun|jul|ago|sep|set|oct|nov|dic)[a-z]*[\/\-. ,]+(\d{2,4})/i);
+  let fecha=null;if(fe){const mm=isNaN(fe[2])?MES_N[fe[2].toLowerCase().slice(0,3)]:num(fe[2]);let y=num(fe[3]);if(y<100)y+=2000;if(mm>=1&&mm<=12&&num(fe[1])<=31)fecha=`${y}-${pad(mm)}-${pad(num(fe[1]))}`}
+  return {montos:cand.slice(0,5).map(x=>x.v),folio:fo?fo[2]:null,fecha}
+}
+async function leerComprobante(file){
+  const w=await ocrWorker(),img=await imagenComprobante(file);
+  const {data}=await w.recognize(img);
+  return {...analizarTexto(data.text),conf:Math.round(data.confidence||0),texto:String(data.text||'').slice(0,1500),at:new Date().toISOString()};
+}
+/* estado visible bajo el campo del comprobante */
+function lecturaHTML(l,monto){
+  if(!l)return '';
+  if(l.leyendo)return '<div class="lect"><span class="spin"></span> Leyendo el comprobante…</div>';
+  if(l.error)return `<div class="lect warn">No se pudo leer automáticamente (${h(l.error)}). Revisa el monto a mano.</div>`;
+  if(!l.montos||!l.montos.length)return '<div class="lect warn">No se encontró ningún monto en el comprobante. Toma una foto más clara o revisa a mano.</div>';
+  const mo=num(monto),ok=mo>0&&l.montos.some(v=>Math.abs(v-mo)<=0.5);
+  return `<div class="lect ${ok?'ok':mo>0?'bad':''}">${ok?`✓ El comprobante dice <b>${money(mo)}</b>: coincide con lo capturado.`:mo>0?`El comprobante dice <b>${money(l.montos[0])}</b> y capturaste <b>${money(mo)}</b>.`:`Monto leído: <b>${money(l.montos[0])}</b>.`}
+   ${l.montos.length>1||!ok?`<div class="lect-c">Montos encontrados: ${l.montos.map(v=>`<button type="button" class="chipb" data-usar="${v}">${money(v)}</button>`).join('')}</div>`:''}
+   ${l.folio||l.fecha?`<div class="muted">${l.folio?'Referencia '+h(l.folio):''}${l.folio&&l.fecha?' · ':''}${l.fecha?'Fecha '+fCorta(l.fecha):''}</div>`:''}</div>`;
+}
+/* liga un campo de archivo + monto dentro de un modal */
+function ligarComprobante(box,fileSel,montoSel,folioSel){
+  const fi=box.querySelector(fileSel),mi=box.querySelector(montoSel),st=document.createElement('div');fi.after(st);
+  const pinta=()=>{st.innerHTML=lecturaHTML(box._lect,mi.value);st.querySelectorAll('[data-usar]').forEach(b=>b.onclick=()=>{mi.value=b.dataset.usar;mi.dispatchEvent(new Event('input'));pinta()})};
+  fi.addEventListener('change',async()=>{const f=fi.files[0];if(!f){box._lect=null;return pinta()}
+    box._lect={leyendo:true};pinta();
+    try{const l=await leerComprobante(f);if(fi.files[0]!==f)return;box._lect=l;
+      if(!num(mi.value)&&l.montos.length){mi.value=l.montos[0];mi.dispatchEvent(new Event('input'))}
+      if(folioSel&&l.folio){const fo=box.querySelector(folioSel);if(fo&&!fo.value)fo.value=l.folio}}
+    catch(e){box._lect={error:e.message||'sin conexión'}}pinta()});
+  mi.addEventListener('input',pinta);
+}
+/* al guardar: el monto debe cuadrar con el comprobante o justificarse */
+async function confirmarLectura(l,monto){
+  if(!l||l.leyendo){if(l&&l.leyendo&&!await confirmar('Aún se está leyendo el comprobante. ¿Guardar sin esperar la verificación?'))return null;return {sin_lectura:true}}
+  if(l.error||!l.montos||!l.montos.length){const mot=await pedirTexto('No se pudo leer el monto','¿Por qué se guarda sin verificar? (foto borrosa, comprobante manual…)');if(!mot)return null;return {...l,coincide:false,motivo:mot}}
+  const ok=l.montos.some(v=>Math.abs(v-num(monto))<=0.5);
+  if(ok)return {...l,coincide:true,monto_leido:num(monto),texto:undefined};
+  const mot=await pedirTexto('El monto no coincide',`El comprobante dice ${money(l.montos[0])} y capturaste ${money(monto)}. Explica la diferencia (pago parcial, comisión, dos comprobantes…)`);if(!mot)return null;
+  return {...l,coincide:false,monto_leido:l.montos[0],motivo:mot,texto:undefined};
+}
+const lectPill=l=>!l?'':l.coincide?'<span class="pill p-verde" title="Monto verificado contra el comprobante">✓ monto verificado</span>':l.sin_lectura?'<span class="pill p-amar">sin verificar</span>':`<span class="pill p-rojo" title="${h(l.motivo||'')}">⚠ comprobante dice ${l.monto_leido?money(l.monto_leido):'—'}</span>`;
 
 /* ============================================================
    LIO
@@ -2316,7 +2408,7 @@ function vAlertas(){
     const tabla=(arr)=>`<div class="tblwrap"><table><tr><th></th><th>Material</th><th>Exist.</th><th>Apartado</th><th>Mín/Crít</th><th>Estado</th><th>Pedido</th></tr>${arr.map(a=>{const pa=pedidoAbierto(a.m.id);return `<tr><td>${can.pedir()&&!pa?`<input type="checkbox" class="selP" value="${a.m.id}" style="width:22px;height:22px;min-height:0" ${a.nivel==='critico'||a.m.critico?'checked':''}>`:''}</td><td>${h(a.m.nombre)}</td><td><b>${fmtN(a.st)}</b></td><td>${fmtN(a.dem)}</td><td class="muted">${fmtN(a.m.stock_minimo)}/${fmtN(a.m.stock_critico)}</td><td><span class="pill ${NIV[a.nivel][0]}">${NIV[a.nivel][1]}</span></td><td>${pa?`<span class="pill p-azul">${h(pa.folio)} · ${h(pa.estado)}</span>`:'—'}</td></tr>`}).join('')}</table></div>`;
     const alp=alarmasPend();if(alp.length)html+=`<div class="card" style="border-color:var(--rojo);background:var(--rojo2)"><h3>🔴 ${alp.length} paciente(s) operado(s) con datos de alarma</h3>${alp.map(m=>`<div>${h(m.paciente_nombre)} · ojo ${h(m.ojo||'')}: <b>${sintomas(m.respuesta).join(', ')}</b></div>`).join('')}<button class="btn rojo" style="margin-top:8px" onclick="S.tab='mensajes';render()">Atender</button></div>`;
     const pv=S.evid.filter(e=>['anticipo','abono','liquidacion','reembolso'].includes(e.tipo)&&!e.validado_at);
-    if(pv.length&&can.validar())html+=`<div class="card"><h3>Pagos por validar (Contabilidad)</h3>${pv.map(e=>{const c=S.cx.find(x=>x.id===e.cirugia_id)||{};return `<div class="list-item">${evidThumb(e)}<div class="grow"><b>${money(e.monto)}</b> ${h(e.tipo)} · ${h(e.metodo||'')} ${e.folio?'· folio '+h(e.folio):''}<div class="muted">${h(c.paciente_nombre||'')} · ${fDT(e.created_at)} · ${h(e.usuario_nombre||'')}</div></div><button class="btn sm verde" onclick="validarPago('${e.id}')">Validar</button></div>`}).join('')}</div>`;
+    if(pv.length&&can.validar())html+=`<div class="card"><h3>Pagos por validar (Contabilidad)</h3>${pv.map(e=>{const c=S.cx.find(x=>x.id===e.cirugia_id)||{};return `<div class="list-item">${evidThumb(e)}<div class="grow"><b>${money(e.monto)}</b> ${h(e.tipo)} · ${h(e.metodo||'')} ${e.folio?'· folio '+h(e.folio):''} ${lectPill(e.lectura)}<div class="muted">${h(c.paciente_nombre||'')} · ${fDT(e.created_at)} · ${h(e.usuario_nombre||'')}</div></div><button class="btn sm verde" onclick="validarPago('${e.id}')">Validar</button></div>`}).join('')}</div>`;
     html+=`<div class="kpis"><div class="kpi"><b style="color:var(--rojo)">${am.filter(a=>a.nivel==='critico').length}</b><span>Nivel crítico</span></div><div class="kpi"><b style="color:var(--amar)">${am.filter(a=>a.nivel==='minimo').length}</b><span>En mínimo</span></div><div class="kpi"><b style="color:var(--morado)">${am.filter(a=>a.nivel==='agotarse').length}</b><span>Por agotarse (${cfg('dias_proyeccion',14)} días)</span></div><div class="kpi"><b>${tq.length}</b><span>Tanques a revisar</span></div></div>`;
     if(crit.length)html+=`<div class="card" style="border-color:var(--rojo)"><h3>🔴 Material crítico</h3><div class="muted">Sin este material no se puede operar.</div>${tabla(crit)}</div>`;
     if(nocrit.length)html+=`<div class="card"><h3>Material no crítico</h3>${tabla(nocrit)}</div>`;
@@ -3148,7 +3240,7 @@ function vConfig(out){
   out(`<h2>Configuración</h2><div class="tabs cfgtabs">${CFG_SEC.map(([k,t])=>`<button class="${sec===k?'on':''}" onclick="S.sub.cfg='${k}';render()">${t}</button>`).join('')}</div>`);
   if(sec==='general')out(`<div class="card"><h3>Clínica</h3><div class="grid2">
     ${fI('tels_programar','Teléfonos para programar (principal | WhatsApp)','(459) 100 0431|(459) 134 5529')}${fI('tel_clinica','Teléfono en mensajes','(459) 100 0431')}
-    ${fI('whatsapp_clinica','WhatsApp de la clínica (10 dígitos)','4591345529','','inputmode="tel"')}${fS('qr_destino','El QR de la cotización lleva a','whatsapp',[['whatsapp','WhatsApp de la clínica'],['cotizacion','Página de la cotización']])}${fS('tema','Tema de colores por omisión','grafito',TEMAS)}
+    ${fI('whatsapp_clinica','WhatsApp de la clínica (10 dígitos)','4591345529','','inputmode="tel"')}${fS('qr_destino','El QR de la cotización lleva a','whatsapp',[['whatsapp','WhatsApp de la clínica'],['cotizacion','Página de la cotización']])}${fS('tema','Tema de colores por omisión','claro',TEMAS)}
     ${S.sedes.map(s=>`<div style="grid-column:1/-1"><label>Dirección impresa · ${h(s.nombre)}</label><input data-k="dir_${h(s.nombre)}" value="${h(cfg('dir_'+s.nombre,s.nombre.startsWith('Mor')?'Hospital Victoria, Consultorio 1206, Piso 12, Av. Acueducto 2800, Morelia, Mich.':'Av. Luis Donaldo Colosio 151, Col. La Purísima, Tacámbaro, Mich.'))}"></div>`).join('')}</div>${btnG}</div>
     <div class="card"><h3>Logo de la clínica</h3>${logoTag()}<input type="file" accept="image/png,image/*" id="cLogo" style="margin-top:8px"><div class="acts"><button class="btn sec" onclick="subirLogo()">Subir logo</button></div></div>
     <div class="card"><h3>Usuarios y accesos</h3><div class="muted">Módulos y permisos por persona.</div><div class="acts" style="justify-content:flex-start"><button class="btn sec" onclick="S.sub.mas='usuarios';render()">Ir a Usuarios</button></div></div>`);
@@ -3217,7 +3309,7 @@ async function cargarBitacora(){const r=await q(sb.from('qx_log').select('*').or
 
 /* ---------- arranque ---------- */
 (function boot(){
-  let tries=0;const wait=()=>{if(window.supabase){sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);const seg=new URLSearchParams(location.search).get('seg');if(seg)return paginaPaciente(seg);const cotT=new URLSearchParams(location.search).get('cot');if(cotT)return paginaCotPublica(cotT);const indT=new URLSearchParams(location.search).get('ind');if(indT)return paginaIndic(indT);const u=safeLS('qx_user');if(u){try{S.user=JSON.parse(u);iniciar()}catch(e){pantallaLogin()}}else pantallaLogin()}else if(tries++<50)setTimeout(wait,100);else document.getElementById('app').innerHTML='<div class="empty">No se pudo cargar la librería de Supabase. Revisa la conexión a internet.</div>'};wait();
+  let tries=0;const wait=()=>{if(window.supabase){sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);const seg=new URLSearchParams(location.search).get('seg');if(seg)return paginaPaciente(seg);const cotT=new URLSearchParams(location.search).get('cot');if(cotT)return paginaCotPublica(cotT);aplicarTema();const indT=new URLSearchParams(location.search).get('ind');if(indT)return paginaIndic(indT);const u=safeLS('qx_user');if(u){try{S.user=JSON.parse(u);iniciar()}catch(e){pantallaLogin()}}else pantallaLogin()}else if(tries++<50)setTimeout(wait,100);else document.getElementById('app').innerHTML='<div class="empty">No se pudo cargar la librería de Supabase. Revisa la conexión a internet.</div>'};wait();
 })();
 </script>
 </body>
