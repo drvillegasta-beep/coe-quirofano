@@ -304,6 +304,24 @@ i.dot.hi{background:var(--pr)}i.dot.lo{background:var(--linea2)}
 .lect-c{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center}.chipb{border:1px solid var(--linea2);background:var(--card);color:var(--ink);border-radius:14px;padding:3px 10px;font-size:12px;cursor:pointer}
 .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--linea2);border-top-color:var(--pr);border-radius:50%;animation:gira .8s linear infinite;vertical-align:-2px;margin-right:4px}@keyframes gira{to{transform:rotate(360deg)}}
 .cuadre{margin-top:10px;border:1px solid var(--linea);border-radius:12px;overflow:hidden}.cuadre:empty{display:none}.cq{display:flex;justify-content:space-between;padding:6px 12px;font-size:14px;border-bottom:1px solid var(--linea)}.cq:last-child{border-bottom:0}.cq span{color:var(--gris)}.cq b{font-family:var(--mo);font-weight:500}.cq.tot{background:var(--card2)}.cq.ok b{color:var(--pr)}.cq.bad{background:var(--pr2)}.cq.bad b{color:var(--ink)}
+.tcount{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;font-size:12px;font-weight:700;margin-left:4px;line-height:18px}.tcount.crit{background:var(--rojo);color:#fff}.tcount.warn{background:var(--amar);color:#fff}
+nav .badge.kb{background:var(--rojo)!important;color:#fff!important;border:0}
+.asts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0 0 12px}
+.ast{text-align:left;border-radius:14px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:1px;border:1px solid var(--linea);background:var(--card);color:var(--ink)}
+.ast b{font-family:var(--mo);font-size:28px;font-weight:500;line-height:1.1}.ast span{font-weight:600;font-size:13px}.ast small{font-size:11px;color:var(--gris)}
+.ast.crit{background:var(--rojo);border-color:var(--rojo);color:#fff}.ast.crit small{color:rgba(255,255,255,.85)}
+.ast.warn{background:var(--amar2);border-color:var(--amar);color:var(--ink)}.ast.warn b{color:var(--amar)}
+.ast.cero{opacity:.55}.ast.cero b{color:var(--gris)}
+.asec{margin-bottom:14px}.asec-h{display:flex;align-items:baseline;gap:8px;padding:8px 12px;border-radius:12px 12px 0 0;background:var(--card3);border:1px solid var(--linea);border-bottom:0}.asec-h b{font-size:15px}.asec-h span{font-family:var(--mo);font-weight:600}.asec-h small{color:var(--gris);margin-left:auto}
+.asec-h.crit{background:var(--rojo);color:#fff;border-color:var(--rojo)}.asec-h.crit small{color:rgba(255,255,255,.85)}.asec-h.warn{background:var(--amar2);border-color:var(--amar)}
+.arow{background:var(--card);border:1px solid var(--linea);border-top:0;padding:10px 12px}.asec .arow:last-child{border-radius:0 0 12px 12px}
+.arow.crit{box-shadow:inset 4px 0 0 var(--rojo)}.arow.warn{box-shadow:inset 4px 0 0 var(--amar)}
+.arow-m{display:flex;gap:10px;align-items:flex-start}.arow-m .grow{flex:1;min-width:0}.amore{width:100%;border:1px solid var(--linea);border-top:0;background:var(--card2);color:var(--ink);padding:9px;border-radius:0 0 12px 12px;cursor:pointer;font-weight:600}.arow-m input[type=checkbox]{width:20px;height:20px;min-height:0;flex:0 0 auto;margin-top:2px}
+.anum{text-align:right;flex:0 0 auto}.anum b{display:block;font-family:var(--mo);font-size:20px}.anum span{font-size:11px;color:var(--gris)}
+.afect{margin-top:4px;font-size:12px;color:var(--rojo);font-weight:600}.afect a{cursor:pointer;text-decoration:underline}
+.ebar{position:relative;height:8px;border-radius:4px;background:var(--card3);margin-top:8px;overflow:visible}.ebar i{display:block;height:100%;border-radius:4px}.ebar em{position:absolute;top:-3px;width:2px;height:14px;background:var(--ink);opacity:.5}
+tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4px 0 0 var(--rojo)}tr.r-warn td:first-child{box-shadow:inset 4px 0 0 var(--amar)}
+.apopbox{border-top:5px solid var(--rojo)}.apop-h{display:flex;gap:12px;align-items:center;margin-bottom:8px}.apop-h>span{font-size:28px;color:var(--rojo)}.apop{margin:0;padding-left:20px;line-height:1.6}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -316,7 +334,7 @@ i.dot.hi{background:var(--pr)}i.dot.lo{background:var(--linea2)}
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.1';
+const VERSION='3.2';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -434,8 +452,9 @@ function pedidoAbierto(mid){return S.pedidos.find(p=>!['recibido','cancelado','r
 function semaforo(m){
   const st=stockMat(m.id,ubicIdsSede()),dem=demandaMat(m.id,num(cfg('dias_proyeccion',14)));
   let nivel='ok';
-  if(st<=num(m.stock_critico))nivel='critico';
-  else if(st<=num(m.stock_minimo))nivel='minimo';
+  const mn=num(m.stock_minimo);
+  if(mn>0&&st<=num(m.stock_critico))nivel='critico';
+  else if(mn>0&&st<=mn)nivel='minimo';
   else if(st-dem<=num(m.stock_minimo))nivel='agotarse';
   return {st,dem,nivel,proy:st-dem}
 }
@@ -634,7 +653,7 @@ async function iniciar(){
     window.addEventListener('online',()=>{$('#online')?.classList.remove('off');scheduleReload()});
     window.addEventListener('offline',()=>$('#online')?.classList.add('off'));
   }
-  render();
+  render();setTimeout(alertaDelDia,700);
 }
 
 /* ---------- estructura ---------- */
@@ -647,13 +666,13 @@ function render(){
   if(!tabsRol.some(t=>t[0]===S.tab))S.tab=tabsRol[0][0];
   $('#app').innerHTML=`<header>${logoTag()}<div class="tit">COE Quirófano<small><span id="online"></span> ${h(S.user.nombre)} · ${h(ROLES[S.user.rol]||S.user.rol)}</small></div><div class="sp"></div><select id="sedeSel">${sedesOpt}</select></header>
   <main id="main"></main>
-  <nav>${tabsRol.map(([k,i,t])=>`${k==='inventario'?'<i class="navsep"></i>':''}<button data-t="${k}" class="${S.tab===k?'on':''}"><b>${ico(k)}</b>${t}${k==='alertas'?'<span class="badge hidden" id="bdg"></span>':k==='carro'?'<span class="badge hidden" id="bdgC"></span>':k==='mensajes'?'<span class="badge hidden" id="bdgM"></span>':''}</button>`).join('')}</nav>`;
+  <nav>${tabsRol.map(([k,i,t])=>`${k==='inventario'?'<i class="navsep"></i>':''}<button data-t="${k}" class="${S.tab===k?'on':''}"><b>${ico(k)}</b>${t}${k==='alertas'?'<span class="badge hidden" id="bdg"></span>':k==='carro'?'<span class="badge hidden" id="bdgC"></span>':k==='inventario'?'<span class="badge kb hidden" id="bdgI"></span>':k==='mensajes'?'<span class="badge hidden" id="bdgM"></span>':''}</button>`).join('')}</nav>`;
   $('#sedeSel').onchange=e=>{S.sede=e.target.value;safeLS('qx_sede',S.sede);render()};
   document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;render();window.scrollTo(0,0)});
   try{({inicio:vInicio,agenda:vAgenda,cotizar:vCotizar,campana:vCampana,inventario:vInventario,carro:vCarro,lio:vLIO,mensajes:vMensajes,alertas:vAlertas,tanques:vTanques,mas:vMas})[S.tab]()}catch(e){console.error(e);$('#main').innerHTML=`<div class="card"><b>Error al mostrar esta sección</b><div class="muted">${h(e.message)}</div></div>`}
   renderBadge();
 }
-function renderBadge(){const bc=$('#bdgC');if(bc){const n=carroResumen().alerta;bc.textContent=n>99?'99+':n;bc.classList.toggle('hidden',!n)}const b=$('#bdg');if(!b)return;const n=totalAlertas();b.textContent=n;b.classList.toggle('hidden',!n);const bm=$('#bdgM');if(bm){const a=alarmasPend().length,d=msjPorEnviar().length;bm.textContent=a?'!'+a:d;bm.classList.toggle('hidden',!(a+d));bm.style.background=a?'var(--rojo)':'var(--amar)'}}
+function renderBadge(){const bi=$('#bdgI');if(bi){const A=invAlertas();bi.textContent=A.urg>99?'99+':A.urg;bi.classList.toggle('hidden',!A.urg)}const bc=$('#bdgC');if(bc){const n=carroResumen().alerta;bc.textContent=n>99?'99+':n;bc.classList.toggle('hidden',!n)}const b=$('#bdg');if(!b)return;const n=totalAlertas();b.textContent=n;b.classList.toggle('hidden',!n);const bm=$('#bdgM');if(bm){const a=alarmasPend().length,d=msjPorEnviar().length;bm.textContent=a?'!'+a:d;bm.classList.toggle('hidden',!(a+d));bm.style.background=a?'var(--rojo)':'var(--amar)'}}
 function subtabs(key,items,def){const cur=S.sub[key]||def;return {cur,html:`<div class="tabs">${items.map(([k,t])=>`<button class="${cur===k?'on':''}" onclick="S.sub['${key}']='${k}';render()">${t}</button>`).join('')}</div>`}}
 
 /* ============================================================
@@ -925,6 +944,8 @@ async function escalarFin(items,tipo,titulo,prioridad){
   try{await sb.from('fin_tareas').insert({clave:'QX-'+tipo+'-'+Date.now(),titulo:`Quirófano ${sede}: ${titulo}`,descripcion:ins.map(x=>'• '+x.detalle).join('\n')+'\nAviso automático de COE Quirófano.',responsable_rol:'direccion',fecha_limite:hoyISO(),estado:'pendiente',prioridad,categoria:'Quirófano',origen:'quirofano',sede})}catch(e){}
 }
 async function escalarExtra(){
+  {const A=invAlertas(),lim=addDays(hoyISO(),3);const xs=A.sinCx.filter(x=>x.crit&&x.afect.some(c=>c.fecha<=lim)&&!pedidoAbierto(x.m.id));
+   await escalarFin(xs.map(x=>({clave:'DESABASTO-'+x.m.id+'-'+x.afect[0].id,fecha:x.afect[0].fecha,txt:`${x.m.nombre}: existencia ${fmtN(x.st)}; no alcanza para la cirugía del ${fCorta(x.afect[0].fecha)} (${x.afect[0].paciente_nombre}). Sugerido pedir ${fmtN(x.sug)} ${x.m.unidad}.`})),'desabasto','material crítico que no alcanza para cirugías de los próximos 3 días','critico')}
   const hoy=hoyISO(),la=lioAlertas(),lt=l=>`LIO ${l.marca||''} ${l.modelo} ${fmtN(l.dioptria)} D · serie ${l.serie||'—'} · ${l.propiedad}`;
   await escalarFin(la.venc.map(l=>({clave:'LIO-VENC-'+l.id,fecha:l.caducidad,txt:lt(l)+' VENCIÓ el '+fCorta(l.caducidad)})),'lio_vencido','LIO vencidos en stock','critico');
   await escalarFin(la.prox.map(l=>({clave:'LIO-PROX-'+l.id,fecha:l.caducidad,txt:lt(l)+' caduca el '+fCorta(l.caducidad)})),'lio_por_caducar','LIO por caducar (cambio o devolución)','alta');
@@ -1545,9 +1566,11 @@ function imprimirAgenda(){
    INVENTARIO
    ============================================================ */
 function vInventario(){
-  const st=subtabs('inv',[['conteo','Conteos'],['criticos','Críticos'],['exist','Existencias'],['mov','Movimientos'],['cal','Calendario']],'conteo');
-  let html=`<div class="row" style="margin-bottom:10px"><h2 style="flex:3">Inventario de quirófano</h2>${can.pedir()?`<button class="btn sec" style="flex:0 0 auto" onclick="formPedido(alertasMat().filter(a=>critOf(a.m)==='critico'&&!pedidoAbierto(a.m.id)).map(a=>a.m.id))">Solicitar a Finanzas</button>`:''}</div>${st.html}`;
-  if(st.cur==='exist'){
+  const A=invAlertas();
+  const st=subtabs('inv',[['alertas',`⚠ Alertas${A.total?` <span class="tcount ${A.urg?'crit':'warn'}">${A.total}</span>`:''}`],['conteo','Conteos'],['criticos','Críticos'],['exist','Existencias'],['mov','Movimientos'],['cal','Calendario']],A.urg?'alertas':'conteo');
+  let html=`<div class="row" style="margin-bottom:10px"><h2 style="flex:3">Inventario de quirófano</h2>${can.pedir()?`<button class="btn sec" style="flex:0 0 auto" onclick="formPedido(alertasMat().filter(a=>critOf(a.m)==='critico'&&!pedidoAbierto(a.m.id)).map(a=>a.m.id))">Solicitar a Finanzas</button>`:''}</div>${alertStrip(A)}${st.html}`;
+  if(st.cur==='alertas')html+=vInvAlertas(A);
+  else if(st.cur==='exist'){
     const fu=S.sub.invU||'todas',fq=(S.sub.invQ||'').toLowerCase();
     const ubs=ubicSede();
     html+=`<div class="row" style="margin-bottom:10px"><input placeholder="Buscar material" value="${h(S.sub.invQ||'')}" oninput="S.sub.invQ=this.value;clearTimeout(window._iq);window._iq=setTimeout(()=>{render();const i=document.querySelector('#main input');i.focus();i.setSelectionRange(i.value.length,i.value.length)},350)">
@@ -1570,7 +1593,8 @@ function invTablas(mats,uSet,ubs,fu){
   const cats=[...new Set(mats.map(m=>m.categoria||'General'))].sort();
   return cats.map(cat=>`<div class="sec-t">${h(cat)}</div><div class="card" style="padding:4px 10px"><div class="tblwrap"><table><tr><th>Material</th><th>Existencia</th>${fu==='todas'?ubs.map(u=>`<th>${h(u.nombre.replace('Quirófano','Q').replace('Almacén de quirófano','Almacén'))}</th>`).join(''):''}<th>Mín/Crít</th><th>Estado</th><th>Próx. cad.</th></tr>
       ${mats.filter(m=>(m.categoria||'General')===cat).map(m=>{const sm=semaforo(m),stv=stockMat(m.id,uSet);const cad=S.lotes.filter(l=>l.material_id===m.id&&uSet.has(l.ubicacion_id)&&num(l.cantidad)>0&&l.caducidad).sort((a,b)=>a.caducidad<b.caducidad?-1:1)[0];const dc=cad?diasHasta(cad.caducidad):null;
-      return `<tr onclick="verMaterial('${m.id}')" style="cursor:pointer"><td>${h(m.nombre)}<div class="muted">${h(m.codigo||'')} ${h(m.unidad)}</div></td><td><b>${fmtN(stv)}</b></td>${fu==='todas'?ubs.map(u=>`<td>${fmtN(stockUbic(m.id,u.id))}</td>`).join(''):''}<td class="muted">${fmtN(m.stock_minimo)} / ${fmtN(m.stock_critico)}</td><td>${estPill({m,st:stv,nivel:sm.nivel})}</td><td>${cad?`<span class="pill ${dc<0?'k-crit':dc<=60?'k-warn':''}">${fCorta(cad.caducidad)}</span>`:'—'}</td></tr>`}).join('')}</table></div></div>`).join('')
+      const rc=stv<=0&&num(m.stock_minimo)>0||(dc!=null&&dc<0)?'r-crit':sm.nivel!=='ok'||(dc!=null&&dc<=30)?'r-warn':'';
+      return `<tr class="${rc}" onclick="verMaterial('${m.id}')" style="cursor:pointer"><td>${h(m.nombre)}<div class="muted">${h(m.codigo||'')} ${h(m.unidad)}</div></td><td><b>${fmtN(stv)}</b></td>${fu==='todas'?ubs.map(u=>`<td>${fmtN(stockUbic(m.id,u.id))}</td>`).join(''):''}<td class="muted">${fmtN(m.stock_minimo)} / ${fmtN(m.stock_critico)}</td><td>${estPill({m,st:stv,nivel:sm.nivel})}</td><td>${cad?`<span class="pill ${dc<0?'k-crit':dc<=60?'k-warn':''}">${fCorta(cad.caducidad)}</span>`:'—'}</td></tr>`}).join('')}</table></div></div>`).join('')
 }
 function exportExist(){const ubs=ubicSede();csv([['Material','Código','Categoría','Unidad','Criticidad','Total',...ubs.map(u=>u.nombre),'Mínimo','Nivel crítico','Estado'],...matsQX().map(m=>{const s=semaforo(m);return [m.nombre,m.codigo,m.categoria,m.unidad,CRIT[critOf(m)][0],stockMat(m.id,ubicIdsSede()),...ubs.map(u=>stockUbic(m.id,u.id)),m.stock_minimo,m.stock_critico,NIV[s.nivel][1]]})],'existencias_quirofano_'+hoyISO()+'.csv')}
 async function cargarMovs(mid){
@@ -2322,6 +2346,78 @@ async function confirmarLectura(l,monto){
   return {...l,coincide:false,monto_leido:l.montos[0],motivo:mot,texto:undefined};
 }
 const lectPill=l=>!l?'':l.coincide?'<span class="pill p-verde" title="Monto verificado contra el comprobante">✓ monto verificado</span>':l.sin_lectura?'<span class="pill p-amar">sin verificar</span>':`<span class="pill p-rojo" title="${h(l.motivo||'')}">⚠ comprobante dice ${l.monto_leido?money(l.monto_leido):'—'}</span>`;
+
+/* ============================================================
+   ALERTAS DE INVENTARIO (desabasto y caducidad)
+   ============================================================ */
+function invAlertas(){
+  const hoy=hoyISO(),qxU=new Set(ubicSede().map(u=>u.id)),sedeU=ubicIdsSede();
+  const prox=S.cx.filter(c=>sedeU.has(c.sala_id)&&c.estado!=='cancelada'&&!c.consumo_cerrado&&c.fecha>=hoy&&c.fecha<=addDays(hoy,14)).sort((a,b)=>(a.fecha+a.hora)<(b.fecha+b.hora)?-1:1);
+  const ms=matsQX().map(m=>{const s=semaforo(m),d14=demandaMat(m.id,14),min=num(m.stock_minimo);
+    // cirugías que se quedarían sin material (consumo acumulado en orden de fecha)
+    let resto=s.st;const afect=[];
+    for(const c of prox){const it=S.cxItems.find(i=>i.cirugia_id===c.id&&i.material_id===m.id&&i.cantidad_usada==null);if(!it)continue;resto-=num(it.cantidad_plan);if(resto<0)afect.push(c)}
+    const cob=d14>0?Math.floor(s.st/(d14/14)):null;
+    const sug=Math.max(0,Math.ceil((num(m.stock_maximo)||min*2)+d14-s.st));
+    return {m,...s,min,d14,afect,cob,sug,agot:s.st<=0&&min>0,crit:critOf(m)==='critico'}});
+  const ord=(a,b)=>(b.crit-a.crit)||(b.afect.length-a.afect.length)||(a.st-a.min)-(b.st-b.min);
+  const agot=ms.filter(x=>x.agot).sort(ord);
+  const sinCx=ms.filter(x=>!x.agot&&x.afect.length).sort(ord);
+  const bajo=ms.filter(x=>!x.agot&&!x.afect.length&&x.nivel!=='ok').sort(ord);
+  const lotes=S.lotes.filter(l=>qxU.has(l.ubicacion_id)&&num(l.cantidad)>0&&l.caducidad).map(l=>({l,m:matById(l.material_id),d:diasHasta(l.caducidad)})).filter(x=>x.m&&!esCarro(x.m)).sort((a,b)=>a.d-b.d);
+  const venc=lotes.filter(x=>x.d<0),cad30=lotes.filter(x=>x.d>=0&&x.d<=30),cad90=lotes.filter(x=>x.d>30&&x.d<=90);
+  const urg=agot.filter(x=>x.crit).length+sinCx.length+venc.length;
+  return {ms,agot,sinCx,bajo,venc,cad30,cad90,urg,total:agot.length+sinCx.length+bajo.length+venc.length+cad30.length}
+}
+function alertStrip(A){
+  const c=(k,cls,n,t,s)=>`<button class="ast ${n?cls:'cero'}" onclick="S.sub.inv='alertas';S.sub.invA='${k}';render();setTimeout(()=>document.getElementById('ia_${k}')?.scrollIntoView({behavior:'smooth',block:'start'}),50)"><b>${n}</b><span>${t}</span><small>${s}</small></button>`;
+  return `<div class="asts">
+   ${c('agot','crit',A.agot.length,'Agotados',A.agot.filter(x=>x.crit).length+' críticos')}
+   ${c('cx','crit',A.sinCx.length,'Faltarán para cirugías','en los próximos 14 días')}
+   ${c('bajo','warn',A.bajo.length,'Bajo mínimo','pedir pronto')}
+   ${c('venc','crit',A.venc.length,'Lotes vencidos','retirar hoy')}
+   ${c('cad','warn',A.cad30.length,'Caducan en 30 días','usar primero')}
+  </div>`;
+}
+function barraExist(x){const mx=Math.max(x.min*1.5,x.st,1),p=Math.min(100,x.st/mx*100),pm=Math.min(100,x.min/mx*100);
+  return `<div class="ebar"><i class="${x.agot?'sb-crit':x.nivel!=='ok'||x.afect.length?'sb-warn':'sb-ok'}" style="width:${Math.max(p,x.st>0?3:0)}%"></i><em style="left:${pm}%" title="Mínimo ${fmtN(x.min)}"></em></div>`}
+function vInvAlertas(A){
+  const sel=can.pedir();
+  const fila=(x,k)=>`<div class="arow ${k}"><div class="arow-m">${sel&&!pedidoAbierto(x.m.id)?`<input type="checkbox" class="selA" value="${x.m.id}" checked>`:''}
+    <div class="grow" onclick="verMaterial('${x.m.id}')" style="cursor:pointer"><b>${h(x.m.nombre)}</b> ${critPill(x.m)}<div class="muted">${h(x.m.gaveta||x.m.categoria||'')} · ${h(x.m.unidad)}${x.cob!=null?` · alcanza para <b>${x.cob} días</b> de cirugías`:''}</div>
+    ${x.afect.length?`<div class="afect">Sin material para: ${x.afect.slice(0,4).map(c=>`<a onclick="event.stopPropagation();verCirugia('${c.id}')">${fCorta(c.fecha)} ${hhmm(c.hora)} ${h(c.paciente_nombre.split(' ')[0])}</a>`).join(' · ')}${x.afect.length>4?' y '+(x.afect.length-4)+' más':''}</div>`:''}</div>
+    <div class="anum"><b class="${x.agot?'t-r':'t-a'}">${fmtN(x.st)}</b><span>de ${fmtN(x.min)} mín.</span></div></div>
+    ${barraExist(x)}${pedidoAbierto(x.m.id)?`<div class="muted" style="margin-top:4px">Pedido ${h(pedidoAbierto(x.m.id).folio)} · ${h(pedidoAbierto(x.m.id).estado||'')}</div>`:x.sug?`<div class="muted" style="margin-top:4px">Sugerido pedir: <b>${fmtN(x.sug)} ${h(x.m.unidad)}</b></div>`:''}</div>`;
+  const lote=(x,k)=>`<div class="arow ${k}"><div class="arow-m"><div class="grow" onclick="verMaterial('${x.m.id}')" style="cursor:pointer"><b>${h(x.m.nombre)}</b> ${critPill(x.m)}<div class="muted">Lote ${h(x.l.lote||'—')} · ${fmtN(x.l.cantidad)} ${h(x.m.unidad)} · ${h(ubicById(x.l.ubicacion_id)?.nombre||'')}</div></div>
+    <div class="anum"><b class="${x.d<0?'t-r':'t-a'}">${x.d<0?'Vencido':x.d===0?'Hoy':x.d+' días'}</b><span>${fCorta(x.l.caducidad)}</span></div>${x.d<0&&can.inventario()?`<button class="btn sm rojo" onclick="formMerma()">Retirar</button>`:''}</div></div>`;
+  const sec=(id,t,sub,arr,fn,k)=>{if(!arr.length)return '';const all=S.sub['iaM_'+id],ver=all?arr:arr.slice(0,8);
+    return `<div class="asec" id="ia_${id}"><div class="asec-h ${k}"><b>${t}</b><span>${arr.length}</span><small>${sub}</small></div>${ver.map(x=>fn(x,k)).join('')}${arr.length>8?`<button class="amore" onclick="S.sub['iaM_${id}']=${all?0:1};render()">${all?'Ver menos':'Ver los '+(arr.length-8)+' restantes'}</button>`:''}</div>`};
+  if(!A.total)return `<div class="card empty" style="padding:30px">✓ Sin alertas de inventario. Todo el material está sobre su mínimo y vigente.</div>`;
+  return `${sel&&(A.agot.length+A.sinCx.length+A.bajo.length)?`<div class="row" style="margin:0 0 10px"><div class="muted" style="flex:3">Marca lo que quieres pedir; ya vienen marcados los que no tienen pedido en curso.</div><button class="btn" style="flex:0 0 auto" onclick="formPedido([...document.querySelectorAll('.selA:checked')].map(x=>x.value))">Solicitar marcados a Finanzas</button></div>`:''}
+   ${sec('agot','Agotados','sin existencia',A.agot,fila,'crit')}
+   ${sec('cx','Faltarán para cirugías programadas','la existencia no alcanza para la agenda',A.sinCx,fila,'crit')}
+   ${sec('bajo','Bajo mínimo','todavía hay, pero hay que pedir',A.bajo,fila,'warn')}
+   ${sec('venc','Lotes vencidos','retirar y registrar merma',A.venc,lote,'crit')}
+   ${sec('cad','Caducan en 30 días','usar primero estos lotes',A.cad30,lote,'warn')}
+   ${sec('cad90','Caducan en 31 a 90 días','planear su uso',A.cad90,lote,'')}`;
+}
+/* ventana de alertas al iniciar el día */
+function alertaDelDia(){
+  if(!modsOf(S.user).includes('inventario')||!can.inventario())return;
+  const k='qx_alerta_dia_'+S.user.id;if(safeLS(k)===hoyISO())return;
+  const A=invAlertas(),R=carroUb()?carroResumen():null,la=lioAlertas();
+  const items=[...A.sinCx.slice(0,5).map(x=>`<li><b>${h(x.m.nombre)}</b> no alcanza para ${x.afect.length} cirugía(s); la primera es el ${fCorta(x.afect[0].fecha)}</li>`),
+    ...A.agot.filter(x=>x.crit).slice(0,5).map(x=>`<li><b>${h(x.m.nombre)}</b> está agotado (crítico)</li>`),
+    A.venc.length?`<li><b>${A.venc.length} lote(s) vencidos</b> en quirófano: retirarlos hoy</li>`:'',
+    A.cad30.length?`<li>${A.cad30.length} lote(s) caducan en 30 días: usarlos primero</li>`:'',
+    R&&R.venc.length?`<li>Carro rojo: <b>${R.venc.length} medicamentos vencidos</b></li>`:'',
+    R&&R.falt.length?`<li>Carro rojo: ${R.falt.length} faltantes</li>`:'',
+    la.venc.length+la.prox.length?`<li>Stock LIO: ${la.venc.length} vencidos y ${la.prox.length} por caducar</li>`:''].filter(Boolean);
+  safeLS(k,hoyISO());
+  if(!items.length)return;
+  const m=modal(`<div class="apop-h"><span>⚠</span><div><h3 style="margin:0">Alertas de inventario de hoy</h3><div class="muted">${fFecha(hoyISO())}</div></div></div><ul class="apop">${items.join('')}</ul>
+   <div class="acts"><button class="btn sec" onclick="this.closest('.modal').remove()">Más tarde</button>${R&&(R.venc.length||R.falt.length)?`<button class="btn sec" onclick="this.closest('.modal').remove();S.tab='carro';render()">Carro rojo</button>`:''}<button class="btn" onclick="this.closest('.modal').remove();S.tab='inventario';S.sub.inv='alertas';render()">Ver alertas</button></div>`,'sm apopbox');
+}
 
 /* ============================================================
    LIO
