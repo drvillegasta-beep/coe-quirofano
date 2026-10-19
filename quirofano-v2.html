@@ -238,6 +238,7 @@ input.inl{width:72px;display:inline-block;padding:3px 6px;min-height:0;margin:0 
 .vit td,.vit th{height:18px;text-align:center;font-size:10px;padding:1px}.vit td:first-child{text-align:left;white-space:nowrap}
 .pq-big{font-size:15px}.pq-big ul{line-height:1.6}
 nav .badge{background:var(--card3)!important;color:var(--ink);border:1px solid var(--linea)}
+.cprow{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--linea)}.cprow:last-child{border-bottom:0}.cpbtn{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex:0 0 auto;max-width:46%}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -284,7 +285,7 @@ function csv(rows,name){const s=rows.map(r=>r.map(c=>'"'+String(c??'').replace(/
 const S={user:null,sede:null,tab:'inicio',calMes:hoyISO().slice(0,7),escal:[],sub:{},fecha:hoyISO(),
   sedes:[],ubic:[],esp:[],mat:[],lotes:[],lios:[],paq:[],paqItems:[],cx:[],cxItems:[],tanques:[],lect:[],conteos:[],evid:[],msj:[],precios:[],cots:[],config:{},prov:[],pedidos:[],usuarios:[],carroRev:[]};
 const ROLES={director:'Dirección General',direccion:'Dirección',enfermeria:'Enfermería quirófano',contabilidad:'Contabilidad / Administración',consultorio:'Consultorio (asistentes y médicos)'};
-const MODULOS=[['inicio','Inicio (tablero)'],['agenda','Agenda quirúrgica'],['cotizar','Cotizar'],['inventario','Inventario de quirófano'],['carro','Carro rojo'],['lio','Stock de LIO'],['alertas','Alertas y pedidos'],['tanques','Tanques'],['mas','Reportes, catálogo y paquetes']];
+const MODULOS=[['inicio','Inicio (tablero)'],['agenda','Agenda quirúrgica'],['cotizar','Cotizar'],['campana','Campaña (cuando hay una activa)'],['inventario','Inventario de quirófano'],['carro','Carro rojo'],['lio','Stock de LIO'],['alertas','Alertas y pedidos'],['tanques','Tanques'],['mas','Reportes, catálogo y paquetes']];
 const PERMISOS=[['cotizar','Elaborar cotizaciones'],['programar','Programar cirugías y capturar pagos'],['validar','Validar pagos (Contabilidad)'],['inventario','Entradas, salidas y conteos'],['aprobar','Aprobar conteos y autorizar excepciones'],['descuento','Autorizar descuentos mayores al máximo'],['precios','Precios y vigencias'],['catalogo','Catálogo de materiales y paquetes'],['pedir','Pedidos a COE Finanzas'],['usuarios','Usuarios y accesos'],['config','Configuración']];
 const TODOS_MOD=MODULOS.map(x=>x[0]);
 const ROL_DEF={
@@ -292,7 +293,7 @@ const ROL_DEF={
   direccion:{m:TODOS_MOD,p:['cotizar','programar','inventario','aprobar','descuento','precios','catalogo','pedir']},
   enfermeria:{m:TODOS_MOD,p:['cotizar','programar','inventario','pedir']},
   contabilidad:{m:TODOS_MOD.filter(k=>k!=='carro'),p:['validar','pedir']},
-  consultorio:{m:['agenda','cotizar','mas'],p:['cotizar']}};
+  consultorio:{m:['agenda','cotizar','campana','mas'],p:['cotizar']}};
 const modsOf=u=>Array.isArray(u?.modulos)&&u.modulos.length?u.modulos:(ROL_DEF[u?.rol]||{m:[]}).m;
 const permsOf=u=>u?.rol==='director'?PERMISOS.map(x=>x[0]):Array.isArray(u?.permisos)?u.permisos:(ROL_DEF[u?.rol]||{p:[]}).p;
 const tiene=k=>permsOf(S.user).includes(k);
@@ -342,6 +343,8 @@ async function loadAll(){
   S.lect=tids.length?await q(sb.from('qx_lecturas_tanque').select('*').in('tanque_id',tids).order('created_at',{ascending:false}).limit(400)):[];
   S.escal=await sb.from('qx_escalamientos').select('*').order('created_at',{ascending:false}).limit(200).then(r=>r.data||[]);
   S.precios=await sb.from('qx_precios').select('*').order('orden').then(r=>r.data||[]);
+  S.camps=await sb.from('qx_campanas').select('*').order('created_at',{ascending:false}).then(r=>r.data||[]);
+  S.campPac=S.camps.some(c=>c.activa)?await sb.from('qx_campana_pacientes').select('*').in('campana_id',S.camps.map(c=>c.id)).order('created_at').then(r=>r.data||[]):[];
   S.carroRev=await sb.from('qx_carro_revisiones').select('*').order('created_at',{ascending:false}).limit(60).then(r=>r.data||[]);
   try{await syncMensajes();await cargarMensajes()}catch(e){console.error('mensajes',e)}
   S.pedidos=await sb.from('fin_pedidos').select('id,folio,area,sede,descripcion,partidas,urgente,estado,solicitado_at,autorizado_at,enviado_at,recibido_at,notas,created_at').eq('area','Quirófano').order('created_at',{ascending:false}).limit(80).then(r=>r.data||[]);
@@ -557,7 +560,7 @@ async function iniciar(){
   if(!modsOf(S.user).includes(S.tab))S.tab=modsOf(S.user).includes('cotizar')&&!modsOf(S.user).includes('inicio')?'cotizar':(modsOf(S.user)[0]||'mas');
   if(!rtChan){
     rtChan=sb.channel('qx-rt');
-    ['qx_cirugias','qx_cirugia_items','qx_cirugia_evidencias','qx_mensajes','qx_lotes','qx_lio_unidades','qx_lecturas_tanque','qx_conteos','qx_materiales','qx_paquetes','qx_carro_revisiones'].forEach(t=>rtChan.on('postgres_changes',{event:'*',schema:'public',table:t},scheduleReload));
+    ['qx_cirugias','qx_cirugia_items','qx_cirugia_evidencias','qx_mensajes','qx_lotes','qx_lio_unidades','qx_lecturas_tanque','qx_conteos','qx_materiales','qx_paquetes','qx_carro_revisiones','qx_campanas','qx_campana_pacientes'].forEach(t=>rtChan.on('postgres_changes',{event:'*',schema:'public',table:t},scheduleReload));
     rtChan.subscribe(st=>{const o=$('#online');if(o)o.classList.toggle('off',st!=='SUBSCRIBED')});
     setInterval(scheduleReload,90e3);
     window.addEventListener('online',()=>{$('#online')?.classList.remove('off');scheduleReload()});
@@ -567,18 +570,18 @@ async function iniciar(){
 }
 
 /* ---------- estructura ---------- */
-const TABS=[['inicio','','Inicio'],['agenda','📅','Agenda'],['cotizar','🧾','Cotizar'],['inventario','📦','Inventario'],['carro','','Carro rojo'],['lio','👁','Stock LIO'],['tanques','🫧','Tanques'],['alertas','⚠️','Alertas'],['mas','☰','Más']];
+const TABS=[['inicio','','Inicio'],['agenda','📅','Agenda'],['cotizar','🧾','Cotizar'],['campana','','Campaña'],['inventario','📦','Inventario'],['carro','','Carro rojo'],['lio','👁','Stock LIO'],['tanques','🫧','Tanques'],['alertas','⚠️','Alertas'],['mas','☰','Más']];
 function render(){
   if(!S.user)return pantallaLogin();
   const sedesOpt=S.sedes.filter(s=>s.activa).map(s=>`<option value="${s.id}" ${s.id===S.sede?'selected':''}>${h(s.nombre)}</option>`).join('');
-  const mm=modsOf(S.user);const tabsRol=TABS.filter(t=>mm.includes(t[0])||t[0]==='mas');
+  const mm=modsOf(S.user);const tabsRol=TABS.filter(t=>(mm.includes(t[0])||t[0]==='mas')&&(t[0]!=='campana'||campActiva()));
   if(!tabsRol.some(t=>t[0]===S.tab))S.tab=tabsRol[0][0];
   $('#app').innerHTML=`<header>${logoTag()}<div class="tit">COE Quirófano<small><span id="online"></span> ${h(S.user.nombre)} · ${h(ROLES[S.user.rol]||S.user.rol)}</small></div><div class="sp"></div><select id="sedeSel">${sedesOpt}</select></header>
   <main id="main"></main>
   <nav>${tabsRol.map(([k,i,t])=>`${k==='inventario'?'<i class="navsep"></i>':''}<button data-t="${k}" class="${S.tab===k?'on':''}"><b>${ico(k)}</b>${t}${k==='alertas'?'<span class="badge hidden" id="bdg"></span>':k==='carro'?'<span class="badge hidden" id="bdgC"></span>':k==='mensajes'?'<span class="badge hidden" id="bdgM"></span>':''}</button>`).join('')}</nav>`;
   $('#sedeSel').onchange=e=>{S.sede=e.target.value;safeLS('qx_sede',S.sede);render()};
   document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;render();window.scrollTo(0,0)});
-  try{({inicio:vInicio,agenda:vAgenda,cotizar:vCotizar,inventario:vInventario,carro:vCarro,lio:vLIO,mensajes:vMensajes,alertas:vAlertas,tanques:vTanques,mas:vMas})[S.tab]()}catch(e){console.error(e);$('#main').innerHTML=`<div class="card"><b>Error al mostrar esta sección</b><div class="muted">${h(e.message)}</div></div>`}
+  try{({inicio:vInicio,agenda:vAgenda,cotizar:vCotizar,campana:vCampana,inventario:vInventario,carro:vCarro,lio:vLIO,mensajes:vMensajes,alertas:vAlertas,tanques:vTanques,mas:vMas})[S.tab]()}catch(e){console.error(e);$('#main').innerHTML=`<div class="card"><b>Error al mostrar esta sección</b><div class="muted">${h(e.message)}</div></div>`}
   renderBadge();
 }
 function renderBadge(){const bc=$('#bdgC');if(bc){const n=carroResumen().alerta;bc.textContent=n>99?'99+':n;bc.classList.toggle('hidden',!n)}const b=$('#bdg');if(!b)return;const n=totalAlertas();b.textContent=n;b.classList.toggle('hidden',!n);const bm=$('#bdgM');if(bm){const a=alarmasPend().length,d=msjPorEnviar().length;bm.textContent=a?'!'+a:d;bm.classList.toggle('hidden',!(a+d));bm.style.background=a?'var(--rojo)':'var(--amar)'}}
@@ -639,6 +642,7 @@ const ICON={
  mensajes:'<path d="M4 5h16v11H9l-5 4z"/>',
  alertas:'<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/>',
  tanques:'<rect x="8" y="6" width="8" height="15" rx="4"/><path d="M10 3h4v3h-4z"/>',
+ campana:'<path d="M4 10v4h3l6 4V6L7 10H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>',
  carro:'<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M12 7.5v6M9 10.5h6"/><circle cx="7.5" cy="20" r="1.5"/><circle cx="16.5" cy="20" r="1.5"/>',
  mas:'<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>'
 };
@@ -1900,6 +1904,129 @@ async function imprimirPapeleria(c,d,ks){
 }
 
 /* ============================================================
+   CAMPAÑAS QUIRÚRGICAS
+   ============================================================ */
+const campActiva=()=>(S.camps||[]).find(c=>c.activa&&(!c.sede_id||c.sede_id===S.sede));
+const diasCamp=c=>(c?.dias||[]).slice().sort((a,b)=>a.fecha<b.fecha?-1:1);
+function pagoCamp(p){const cs=p.comprobantes||[],pag=cs.reduce((a,x)=>a+num(x.monto),0),tot=num(p.monto_total);
+  const liq=cs.some(x=>x.tipo==='liquidacion')||(tot>0&&pag>=tot-0.5);
+  return {pag,tot,saldo:Math.max(0,tot-pag),liq,est:liq?'Liquidado':pag>0?'Anticipo':'Sin pago',cls:liq?'p-verde':pag>0?'p-amar':''}}
+const lioCamp=p=>[p.lio_tipo,p.lio_poder?fmtN(num(p.lio_poder))+' D':''].filter(Boolean).join(' ');
+function vCampana(){
+  const c=campActiva();
+  if(!c){$('#main').innerHTML=`<div class="card empty">No hay campaña activa.${can.config()?' Actívala en Más → Campañas.':''}</div>`;return}
+  const ps=(S.campPac||[]).filter(p=>p.campana_id===c.id),dias=diasCamp(c),qq=(S.sub.cpQ||'').toLowerCase();
+  const pp=ps.map(p=>({p,...pagoCamp(p)}));
+  const lios=ps.filter(p=>p.lio_poder!=null&&p.lio_poder!=='');
+  let html=`<div class="row" style="margin-bottom:6px;align-items:center"><h2 style="flex:3;margin:0">${h(c.nombre)}</h2>${can.config()?`<button class="btn sec" style="flex:0 0 auto" onclick="formCampana('${c.id}')">Días y cupos</button>`:''}</div>
+  <div class="muted" style="margin-bottom:12px">${dias.length?dias.map(d=>fCorta(d.fecha)).join(' · '):'Sin días quirúrgicos definidos'}${c.notas?' · '+h(c.notas):''}</div>
+  <div class="tiles">
+   <div class="tile" style="cursor:default"><span class="tl">Pacientes</span><b>${new Set(ps.map(p=>p.cotizacion_id||p.paciente_nombre)).size}</b><small>${ps.length} ojos</small></div>
+   <div class="tile" style="cursor:default"><span class="tl">Liquidados</span><b>${pp.filter(x=>x.liq).length}</b><small>de ${ps.length} ojos</small></div>
+   <div class="tile" style="cursor:default"><span class="tl">Con anticipo</span><b>${pp.filter(x=>!x.liq&&x.pag>0).length}</b><small>${pp.filter(x=>!x.pag).length} sin pago</small></div>
+   <div class="tile" style="cursor:default"><span class="tl">Lentes</span><b>${lios.length}</b><small>${[...new Set(lios.map(p=>num(p.lio_poder)))].length} poderes distintos</small></div>
+  </div>
+  <div class="row" style="margin-bottom:10px"><input placeholder="Buscar paciente" value="${h(S.sub.cpQ||'')}" onchange="S.sub.cpQ=this.value;render()"><button class="btn sec" style="flex:0 0 auto" onclick="exportCampana()">Exportar</button><button class="btn sec" style="flex:0 0 auto" onclick="imprimirLiosCamp()">Pedido de lentes</button></div>`;
+  const grupos=[...dias.map(d=>({k:d.fecha,t:fFecha(d.fecha),cupo:num(d.cupo)})),{k:'',t:'Sin día asignado',cupo:0}];
+  html+=grupos.map(g=>{const l=pp.filter(x=>(x.p.dia||'')===g.k&&(!qq||(x.p.paciente_nombre||'').toLowerCase().includes(qq)));if(!l.length&&g.k==='')return '';
+    return `<div class="card"><div class="ph3"><h3>${h(g.t)}</h3><span class="muted">${l.length}${g.cupo?' / '+g.cupo+' cupo':''} ojos · ${l.filter(x=>x.liq).length} liquidados</span></div>
+    ${l.map(({p,est,cls,pag,saldo,tot})=>`<div class="cprow"><div class="grow"><b>${h(p.paciente_nombre)}</b> <span class="pill p-azul">${h(p.ojo||'')}</span> <span class="pill ${cls}">${est}${!['Liquidado'].includes(est)&&tot?' · saldo '+money(saldo):''}</span>
+      <div class="muted">${h(p.procedimiento||'')}${lioCamp(p)?' · LIO <b style="color:var(--ink)">'+h(lioCamp(p))+'</b>':''}${p.telefono?' · '+h(fmtTel(p.telefono)):''}</div>
+      ${(p.comprobantes||[]).length?`<div class="row" style="gap:6px;margin-top:4px;flex-wrap:wrap">${p.comprobantes.map(x=>`<a href="${h(x.url)}" target="_blank" class="pill">${x.tipo==='liquidacion'?'Liquidación':'Anticipo'} ${money(x.monto)}</a>`).join('')}</div>`:''}
+      ${p.notas?`<div class="muted" style="margin-top:2px">📝 ${h(p.notas)}</div>`:''}</div>
+      <div class="cpbtn">${p.telefono?`<a class="btn sm sec" target="_blank" href="https://wa.me/${waNum(p.telefono)}?text=${encodeURIComponent('Hola '+p.paciente_nombre+', le escribimos del Centro Ocular Especializado sobre su cirugía de la '+c.nombre+(p.dia?' programada el '+fFecha(p.dia):'')+'.')}">WhatsApp</a>`:''}
+      ${can.programar()||can.cotizar()?`<button class="btn sm" onclick="pagoCampana('${p.id}')">Pago</button><button class="btn sm sec" onclick="editCampPac('${p.id}')">Editar</button>`:''}</div></div>`).join('')||'<div class="muted">Sin pacientes</div>'}</div>`}).join('');
+  // frecuencia de poderes
+  const tipos=[...new Set(lios.map(p=>p.lio_tipo||'LIO'))].sort();
+  html+=`<div class="card"><h3>Lentes requeridos · ${lios.length} en total</h3>${tipos.map(t=>{const lt=lios.filter(p=>(p.lio_tipo||'LIO')===t);const pod=[...new Set(lt.map(p=>num(p.lio_poder)))].sort((a,b)=>a-b);
+    return `<div class="sec-t">${h(t)} · ${lt.length}</div><div class="tblwrap"><table><tr><th>Poder</th><th>Total</th>${dias.map(d=>`<th>${fCorta(d.fecha)}</th>`).join('')}<th>Sin día</th></tr>
+    ${pod.sort((a,b)=>lt.filter(p=>num(p.lio_poder)===b).length-lt.filter(p=>num(p.lio_poder)===a).length||a-b).map(d=>{const n=lt.filter(p=>num(p.lio_poder)===d);return `<tr><td><b>${fmtN(d)} D</b></td><td><b>${n.length}</b></td>${dias.map(x=>`<td>${n.filter(p=>p.dia===x.fecha).length||''}</td>`).join('')}<td>${n.filter(p=>!p.dia).length||''}</td></tr>`}).join('')}</table></div>`}).join('')||'<div class="muted">Aún no hay poderes capturados.</div>'}
+  ${ps.length-lios.length?`<div class="muted" style="margin-top:6px">${ps.length-lios.length} ojo(s) sin poder de lente capturado.</div>`:''}</div>`;
+  $('#main').innerHTML=html;
+}
+function costoOjoCot(c,i,o){const it=c.items[i],k=calcItem(it),n=(it.ojos||[]).length||1;
+  const descF=num(c.descuento)?(1-num(c.descuento)/Math.max(1,(c.items||[]).reduce((a,x)=>a+calcItem(x).descontable,0))):1;
+  return Math.round(((k.base/n)+num(it.lio?.[o]?.precio))*descF)}
+function enviarCampana(cid){
+  const camp=campActiva(),c=(S.cots||[]).find(x=>x.id===cid);if(!camp||!c)return;
+  const ya=(S.campPac||[]).filter(p=>p.cotizacion_id===cid);
+  const ops=[];(c.items||[]).forEach((it,i)=>{if(it.categoria!=='cirugia')return;(it.ojos.length?(it.ojo_inicio?[it.ojo_inicio,...it.ojos.filter(o=>o!==it.ojo_inicio)]:it.ojos):['N/A']).forEach(o=>ops.push([i,o]))});
+  const dias=diasCamp(camp),usado=f=>(S.campPac||[]).filter(p=>p.campana_id===camp.id&&p.dia===f).length;
+  const m=modal(`${mhead('Enviar a '+h(camp.nombre))}<div class="muted">${h(c.paciente_nombre)} · ${h(c.folio)}</div>
+  ${ops.map(([i,o],k)=>{const dup=ya.some(p=>p.item===i&&p.ojo===o);return `<label class="chk"><input type="checkbox" class="cpO" value="${k}" ${dup?'disabled':'checked'}>${h(c.items[i].nombre)} · <b>${o}</b>${c.items[i].lio?.[o]?.poder?' · LIO '+h(c.items[i].lio[o].poder)+' D':''}${dup?' <span class="muted">(ya está)</span>':''}</label>`}).join('')||'<div class="muted">Esta cotización no tiene cirugía.</div>'}
+  <label>Día quirúrgico</label><select id="cpD"><option value="">Asignar después</option>${dias.map(d=>`<option value="${d.fecha}">${fFecha(d.fecha)} · ${usado(d.fecha)}${num(d.cupo)?'/'+d.cupo:''}</option>`).join('')}</select>
+  <label>Nota</label><input id="cpN"><div class="acts"><button class="btn" id="ok">Enviar con PIN</button></div>`,'sm');
+  m.querySelector('#ok').onclick=async()=>{const sel=[...m.querySelectorAll('.cpO:checked')].map(x=>ops[x.value]);if(!sel.length)return toast('Elige al menos un ojo',true);
+    const dia=m.querySelector('#cpD').value||null,d=dias.find(x=>x.fecha===dia);if(d&&num(d.cupo)&&usado(dia)+sel.length>num(d.cupo)&&!await confirmar('Ese día ya llenó su cupo. ¿Agregar de todos modos?'))return;
+    if(!await pedirPIN('Enviar a campaña'))return;
+    const rows=sel.map(([i,o])=>{const it=c.items[i],l=it.lio?.[o];return {campana_id:camp.id,cotizacion_id:c.id,item:i,paciente_nombre:c.paciente_nombre,telefono:c.telefono1||null,expediente:c.expediente||null,ojo:o,procedimiento:it.nombre,lio_tipo:l?normTipo(l.nombre)||String(l.nombre).replace(/^LIO /i,''):null,lio_poder:l&&l.poder!==''&&l.poder!=null?num(String(l.poder).replace(/[^\d.\-]/g,'')):null,monto_total:costoOjoCot(c,i,o),dia,notas:m.querySelector('#cpN').value||null,comprobantes:[],creado_por:S.user.nombre}});
+    try{await q(sb.from('qx_campana_pacientes').insert(rows),'Enviar a campaña');await logA('campana_alta','qx_cotizaciones',c.id,{campana:camp.nombre,ojos:rows.length});
+      m.remove();toast('Enviado a '+camp.nombre);await loadAll();document.querySelectorAll('.modal').forEach(x=>x.remove());render()}catch(e){}};
+}
+function pagoCampana(id){
+  const p=S.campPac.find(x=>x.id===id),f=pagoCamp(p);
+  const m=modal(`${mhead('Pago · '+h(p.paciente_nombre)+' '+h(p.ojo||''))}<div class="muted">Total ${money(f.tot)} · pagado ${money(f.pag)} · saldo <b>${money(f.saldo)}</b></div>
+  <div class="grid2"><div><label>Tipo</label><select id="cgT"><option value="anticipo">Anticipo</option><option value="liquidacion" ${f.pag?'selected':''}>Liquidación</option></select></div><div><label>Monto</label><input id="cgM" type="number" inputmode="decimal" value="${f.pag?f.saldo:''}"></div>
+  <div><label>Método</label><select id="cgMe">${['Efectivo','Tarjeta','Transferencia','Depósito'].map(o=>`<option>${o}</option>`).join('')}</select></div><div><label>Folio / referencia</label><input id="cgF"></div></div>
+  <label>Comprobante (obligatorio)</label><input type="file" id="cgA" accept="image/*,application/pdf" capture="environment">
+  <div class="acts"><button class="btn" id="ok">Guardar con PIN</button></div>`,'sm');
+  m.querySelector('#ok').onclick=async()=>{const t=m.querySelector('#cgT').value,mo=num(m.querySelector('#cgM').value),file=m.querySelector('#cgA').files[0];
+    if(mo<=0)return toast('Captura el monto',true);if(!file)return toast('El comprobante es obligatorio',true);
+    if(t==='liquidacion'&&f.tot&&f.pag+mo<f.tot-0.5&&!await confirmar(`Quedan ${money(f.tot-f.pag-mo)} pendientes. ¿Registrarlo como liquidación de todos modos?`))return;
+    if(!await pedirPIN('Pago de campaña '+money(mo)))return;m.querySelector('#ok').disabled=true;
+    try{const url=await subirArchivo(file,'campana');const cs=[...(p.comprobantes||[]),{tipo:t,monto:mo,metodo:m.querySelector('#cgMe').value,folio:m.querySelector('#cgF').value||null,url,por:S.user.nombre,at:new Date().toISOString()}];
+      await q(sb.from('qx_campana_pacientes').update({comprobantes:cs,updated_at:new Date().toISOString()}).eq('id',id));await logA('campana_pago','qx_campana_pacientes',id,{tipo:t,monto:mo});m.remove();toast('Pago registrado');await loadAll();render()}catch(e){m.querySelector('#ok').disabled=false}};
+}
+function editCampPac(id){
+  const p=S.campPac.find(x=>x.id===id),camp=(S.camps||[]).find(c=>c.id===p.campana_id),dias=diasCamp(camp);
+  const m=modal(`${mhead(h(p.paciente_nombre))}<div class="grid2"><div><label>Ojo</label><select id="epO">${['OD','OI','AO','N/A'].map(o=>`<option ${o===p.ojo?'selected':''}>${o}</option>`).join('')}</select></div>
+  <div><label>Día quirúrgico</label><select id="epD"><option value="">Sin asignar</option>${dias.map(d=>`<option value="${d.fecha}" ${d.fecha===p.dia?'selected':''}>${fFecha(d.fecha)}</option>`).join('')}</select></div>
+  <div><label>Tipo de lente</label><input id="epT" value="${h(p.lio_tipo||'')}" list="dlLT"><datalist id="dlLT">${['Monofocal','Tórico','Multifocal','EDOF'].map(x=>`<option value="${x}">`).join('')}</datalist></div><div><label>Poder (D)</label><input id="epP" inputmode="decimal" value="${p.lio_poder??''}"></div>
+  <div><label>Teléfono</label><input id="epTel" inputmode="tel" value="${h(p.telefono||'')}"></div></div><label>Nota</label><textarea id="epN">${h(p.notas||'')}</textarea>
+  <div class="acts"><button class="btn rojo" id="del">Quitar de la campaña</button><button class="btn" id="ok">Guardar</button></div>`,'sm');
+  const g=s=>m.querySelector(s).value.trim();
+  m.querySelector('#ok').onclick=async()=>{await q(sb.from('qx_campana_pacientes').update({ojo:g('#epO'),dia:g('#epD')||null,lio_tipo:g('#epT')||null,lio_poder:g('#epP')===''?null:num(g('#epP')),telefono:g('#epTel')||null,notas:g('#epN')||null,updated_at:new Date().toISOString()}).eq('id',id));await logA('campana_editar','qx_campana_pacientes',id);m.remove();await loadAll();render()};
+  m.querySelector('#del').onclick=async()=>{if((p.comprobantes||[]).length)return toast('Tiene pagos registrados: no se puede quitar',true);if(!await confirmar('¿Quitar a '+h(p.paciente_nombre)+' de la campaña?'))return;if(!await pedirPIN('Quitar de campaña'))return;await q(sb.from('qx_campana_pacientes').delete().eq('id',id));await logA('campana_baja','qx_campana_pacientes',id,{paciente:p.paciente_nombre});m.remove();await loadAll();render()};
+}
+function vCampanas(out){
+  out(`<div class="row" style="margin-bottom:10px"><h2 style="flex:3">Campañas</h2><button class="btn" style="flex:0 0 auto" onclick="formCampana()">＋ Campaña</button></div>
+  <div class="muted" style="margin-bottom:10px">Con una campaña activa aparece la pestaña Campaña y el botón "Enviar a campaña" en las cotizaciones. Al desactivarla, ambos desaparecen.</div>
+  ${(S.camps||[]).map(c=>`<div class="card"><div class="row" style="align-items:center"><div style="flex:3"><b>${h(c.nombre)}</b> ${c.activa?'<span class="pill p-verde">activa</span>':'<span class="pill">inactiva</span>'}<div class="muted">${diasCamp(c).map(d=>fCorta(d.fecha)+(num(d.cupo)?' ('+d.cupo+')':'')).join(' · ')||'Sin días'} · ${(S.campPac||[]).filter(p=>p.campana_id===c.id).length} ojos</div></div><button class="btn sm sec" style="flex:0 0 auto" onclick="formCampana('${c.id}')">Editar</button><button class="btn sm ${c.activa?'sec':''}" style="flex:0 0 auto" onclick="toggleCampana('${c.id}')">${c.activa?'Desactivar':'Activar'}</button></div></div>`).join('')||'<div class="card empty">Sin campañas</div>'}`);
+}
+async function toggleCampana(id){const c=S.camps.find(x=>x.id===id);if(!await pedirPIN((c.activa?'Desactivar ':'Activar ')+c.nombre))return;
+  if(!c.activa)for(const o of S.camps.filter(x=>x.activa&&x.id!==id&&(x.sede_id||null)===(c.sede_id||null)))await q(sb.from('qx_campanas').update({activa:false}).eq('id',o.id));
+  await q(sb.from('qx_campanas').update({activa:!c.activa}).eq('id',id));await logA(c.activa?'campana_desactivar':'campana_activar','qx_campanas',id);await loadAll();render()}
+function formCampana(id){
+  const c=id?JSON.parse(JSON.stringify(S.camps.find(x=>x.id===id))):{nombre:'',activa:true,dias:[],notas:'',sede_id:S.sede};
+  const m=modal('<div id="fcp"></div>','sm');
+  const draw=()=>{m.querySelector('#fcp').innerHTML=`${mhead(id?'Editar campaña':'Nueva campaña')}<label>Nombre</label><input id="fcN" value="${h(c.nombre)}" placeholder="Campaña de catarata 2026">
+   <label>Nota (aparece en la pestaña)</label><input id="fcO" value="${h(c.notas||'')}">
+   <div class="sec-t">Días quirúrgicos</div>${diasCamp(c).map(d=>`<div class="row" style="align-items:center;margin-bottom:6px"><input type="date" value="${d.fecha}" data-f="${d.fecha}" class="fcF"><input type="number" min="0" placeholder="Cupo" value="${d.cupo||''}" data-c="${d.fecha}" class="fcC" style="flex:0 0 90px"><button class="btn sec sm" style="flex:0 0 auto" data-x="${d.fecha}">✕</button></div>`).join('')||'<div class="muted">Agrega los días de cirugía</div>'}
+   <div class="row" style="margin-top:6px"><input type="date" id="fcNd"><input type="number" id="fcNc" placeholder="Cupo" style="flex:0 0 90px"><button class="btn sec" style="flex:0 0 auto" id="fcAdd">Agregar día</button></div>
+   <div class="sw"><input type="checkbox" id="fcA" ${c.activa?'checked':''}><label for="fcA" style="margin:0;text-transform:none;font-size:15px;color:var(--ink)">Activa</label></div>
+   <div class="acts"><button class="btn" id="ok">Guardar con PIN</button></div>`;
+   const keep=()=>{c.nombre=m.querySelector('#fcN').value;c.notas=m.querySelector('#fcO').value;c.activa=m.querySelector('#fcA').checked;
+     m.querySelectorAll('.fcF').forEach(i=>{const d=c.dias.find(x=>x.fecha===i.dataset.f);if(d&&i.value)d.fecha=i.value});m.querySelectorAll('.fcC').forEach(i=>{const d=c.dias.find(x=>x.fecha===i.dataset.c||x.fecha===i.closest('.row').querySelector('.fcF').value);if(d)d.cupo=num(i.value)||null})};
+   m.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{keep();c.dias=c.dias.filter(d=>d.fecha!==b.dataset.x);draw()});
+   m.querySelector('#fcAdd').onclick=()=>{keep();const f=m.querySelector('#fcNd').value;if(!f||c.dias.some(d=>d.fecha===f))return;c.dias.push({fecha:f,cupo:num(m.querySelector('#fcNc').value)||null});draw()};
+   m.querySelector('#ok').onclick=async()=>{keep();if(!c.nombre.trim())return toast('Nombre de la campaña',true);if(!await pedirPIN('Guardar campaña'))return;
+     const viejos=id?(S.camps.find(x=>x.id===id).dias||[]).map(d=>d.fecha):[];const quitados=viejos.filter(f=>!c.dias.some(d=>d.fecha===f));
+     const row={nombre:c.nombre.trim(),notas:c.notas||null,dias:diasCamp(c),activa:c.activa,sede_id:c.sede_id||S.sede,updated_at:new Date().toISOString()};
+     if(row.activa)for(const o of (S.camps||[]).filter(x=>x.activa&&x.id!==id&&(x.sede_id||null)===(row.sede_id||null)))await q(sb.from('qx_campanas').update({activa:false}).eq('id',o.id));
+     let cid=id;if(id)await q(sb.from('qx_campanas').update(row).eq('id',id));else cid=(await q(sb.from('qx_campanas').insert(row).select()))[0].id;
+     for(const f of quitados)await sb.from('qx_campana_pacientes').update({dia:null}).eq('campana_id',cid).eq('dia',f);
+     await logA('campana_guardar','qx_campanas',cid,{nombre:row.nombre});m.remove();await loadAll();render()}};
+  draw();
+}
+function exportCampana(){const c=campActiva();csv([['Día','Paciente','Teléfono','Ojo','Procedimiento','Tipo LIO','Poder','Total','Pagado','Estado','Nota'],...(S.campPac||[]).filter(p=>p.campana_id===c.id).map(p=>{const f=pagoCamp(p);return [p.dia||'',p.paciente_nombre,p.telefono,p.ojo,p.procedimiento,p.lio_tipo,p.lio_poder,f.tot,f.pag,f.est,p.notas]})],'campana_'+hoyISO()+'.csv')}
+function imprimirLiosCamp(){
+  const c=campActiva(),dias=diasCamp(c),l=(S.campPac||[]).filter(p=>p.campana_id===c.id&&p.lio_poder!=null&&p.lio_poder!=='');
+  const tipos=[...new Set(l.map(p=>p.lio_tipo||'LIO'))].sort();
+  printWin(`${printHead('Lentes requeridos · '+h(c.nombre))}<div style="margin:6px 0">Total: <b>${l.length} lentes</b></div>${tipos.map(t=>{const lt=l.filter(p=>(p.lio_tipo||'LIO')===t),pod=[...new Set(lt.map(p=>num(p.lio_poder)))].sort((a,b)=>a-b);
+   return `<h4>${h(t)} · ${lt.length}</h4><table><tr><th>Poder</th><th>Total</th>${dias.map(d=>`<th>${fCorta(d.fecha)}</th>`).join('')}<th>Sin día</th></tr>${pod.map(d=>{const n=lt.filter(p=>num(p.lio_poder)===d);return `<tr><td>${fmtN(d)} D</td><td><b>${n.length}</b></td>${dias.map(x=>`<td>${n.filter(p=>p.dia===x.fecha).length||''}</td>`).join('')}<td>${n.filter(p=>!p.dia).length||''}</td></tr>`}).join('')}</table>`}).join('')}`);
+}
+
+/* ============================================================
    LIO
    ============================================================ */
 function vLIO(){
@@ -2537,7 +2664,8 @@ async function hojaCot(c){
   </div>`;
   const extra=`<a class="btn sec" target="_blank" href="https://wa.me/${waNum(c.telefono1)}?text=${encodeURIComponent('Hola '+c.paciente_nombre+', le compartimos su cotización '+c.folio+' del Centro Ocular Especializado, vigente hasta el '+fFecha(c.vigencia_hasta)+'. Puede consultarla aquí: '+linkCot(c))}">Enviar por WhatsApp</a>
    ${est==='vigente'&&(c.items||[]).some(i=>i.categoria==='cirugia')&&can.programar()?`<button class="btn sec" onclick="programarDesdeCot('${c.id}')">Programar cirugía</button>`:''}
-   ${est==='vencida'?`<button class="btn sec" onclick="renovarCot('${c.id}')">Renovar con precios actuales</button>`:''}`;
+   ${est==='vencida'?`<button class="btn sec" onclick="renovarCot('${c.id}')">Renovar con precios actuales</button>`:''}
+    ${campActiva()&&est!=='vencida'&&(c.items||[]).some(i=>i.categoria==='cirugia')&&(can.cotizar()||can.programar())?`<button class="btn" onclick="enviarCampana('${c.id}')">Enviar a campaña</button>`:''}`;
   printWin(inner,extra);
 }
 async function cargarCotLista(){
@@ -2678,7 +2806,7 @@ async function paginaCotPublica(tok){
 function vMas(){
   let items=[['reporte','Reporte semanal'],['paquetes','Paquetes quirúrgicos'],['catalogo','Catálogo de materiales']];
   if(can.precios())items.splice(1,0,['precios','Precios y vigencias']);
-  if(can.config())items.push(['indic','Indicaciones al paciente']);
+  if(can.config())items.push(['indic','Indicaciones al paciente'],['campanas','Campañas']);
   if(can.usuarios())items.push(['usuarios','Usuarios']);
   if(can.config())items.push(['config','Configuración']);
   items.push(['bitacora','Bitácora']);items.push(['cuenta','Mi cuenta']);
@@ -2687,7 +2815,7 @@ function vMas(){
   if(!items.some(i=>i[0]===S.sub.mas))S.sub.mas=items[0][0];
   const st=subtabs('mas',items,items[0][0]);
   let html=st.html;
-  ({indic:vIndic,precios:vPrecios,reporte:vReporte,paquetes:vPaquetes,catalogo:vCatalogo,usuarios:vUsuarios,config:vConfig,bitacora:vBitacora,cuenta:vCuenta})[st.cur](x=>html+=x);
+  ({campanas:vCampanas,indic:vIndic,precios:vPrecios,reporte:vReporte,paquetes:vPaquetes,catalogo:vCatalogo,usuarios:vUsuarios,config:vConfig,bitacora:vBitacora,cuenta:vCuenta})[st.cur](x=>html+=x);
   $('#main').innerHTML=html;
   if(st.cur==='bitacora')cargarBitacora();
 }
