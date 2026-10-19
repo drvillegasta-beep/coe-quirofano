@@ -335,7 +335,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.4';
+const VERSION='3.5';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -594,13 +594,15 @@ function pedirTexto(tit,lab,def){return new Promise(res=>{const m=modal(`${mhead
 function pantallaLogin(msg){
   $('#app').innerHTML=`<div class="login"><div class="card">${logoTag()}<h2 style="text-align:center;margin-bottom:2px">COE Quirófano</h2><div class="muted" style="text-align:center">Centro Ocular Especializado</div>
   <label>Usuario</label><select id="lu"><option value="">Cargando usuarios…</option></select>
-  <label>Contraseña</label><input id="lp" type="password" autocomplete="current-password">
+  <label>Contraseña</label><div style="position:relative"><input id="lp" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" style="padding-right:44px"><button type="button" id="lojo" aria-label="Mostrar contraseña" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;font-size:18px;cursor:pointer;color:var(--gris)">👁</button></div>
   <div id="lerr" class="muted" style="color:var(--rojo);margin-top:8px">${h(msg||'')}</div>
   <button class="btn" style="width:100%;margin-top:14px" id="lb">Entrar</button></div><div class="muted" style="text-align:center">v${VERSION}</div></div>`;
   sb.from('qx_usuarios').select('usuario,nombre').eq('activo',true).order('nombre').then(r=>{const el=$('#lu');if(!el)return;
     if(r.error){el.outerHTML='<input id="lu" autocapitalize="none" autocomplete="username" placeholder="usuario">';$('#lerr').textContent='No se pudo cargar la lista de usuarios: '+r.error.message;return}
     const ult=safeLS('qx_ultimo')||'';el.innerHTML='<option value="">Elige tu nombre…</option>'+(r.data||[]).map(x=>`<option value="${h(x.usuario)}" ${x.usuario===ult?'selected':''}>${h(x.nombre)}</option>`).join('');
-    if(ult&&el.value===ult)$('#lp').focus()});
+    if(ult&&el.value===ult)$('#lp').focus();
+    el.onchange=()=>{$('#lp').value='';$('#lerr').textContent='';$('#lp').focus()}});
+  $('#lojo').onclick=()=>{const i=$('#lp');i.type=i.type==='password'?'text':'password'};
   const go=async()=>{
     const u=$('#lu').value.trim().toLowerCase(),p=$('#lp').value;if(!u){$('#lerr').textContent='Elige tu usuario';return}if(!p)return;
     $('#lb').disabled=true;
@@ -612,7 +614,7 @@ function pantallaLogin(msg){
       if(usr.password_hash!==await passHash(u,p)){
         const n=(usr.intentos_fallidos||0)+1;
         await sb.from('qx_usuarios').update({intentos_fallidos:n,bloqueado_hasta:n>=5?new Date(Date.now()+15*60e3).toISOString():null}).eq('id',usr.id);
-        $('#lerr').textContent='Contraseña incorrecta'+(n>=5?' — usuario bloqueado 15 minutos':'');$('#lb').disabled=false;return}
+        $('#lerr').textContent=n>=5?'Contraseña incorrecta. Usuario bloqueado 15 minutos; el Director puede desbloquearlo en Más → Usuarios.':`Contraseña incorrecta. Le quedan ${5-n} intento${5-n===1?'':'s'}. Revise mayúsculas y el guion.`;$('#lb').disabled=false;return}
       await sb.from('qx_usuarios').update({intentos_fallidos:0,bloqueado_hasta:null}).eq('id',usr.id);
       S.user={id:usr.id,nombre:usr.nombre,usuario:usr.usuario,rol:usr.rol,modulos:usr.modulos||null,permisos:usr.permisos||null};safeLS('qx_user',JSON.stringify(S.user));safeLS('qx_ultimo',u);safeLS('qx_login_at',new Date().toISOString());
       if(usr.debe_cambiar)return cambiarCredenciales(true);
@@ -3316,8 +3318,9 @@ function importarMat(){
 }
 function vUsuarios(out){
   out(`<div class="row" style="margin-bottom:10px"><h2 style="flex:3">Usuarios</h2><button class="btn" style="flex:0 0 auto" onclick="formUsuario()">＋ Usuario</button></div><div id="usrs" class="card"><div class="muted">Cargando…</div></div>`);
-  setTimeout(async()=>{S.usuarios=await q(sb.from('qx_usuarios').select('id,nombre,usuario,rol,activo,debe_cambiar,bloqueado_hasta,modulos,permisos').order('nombre'));const el=$('#usrs');if(el)el.innerHTML=S.usuarios.map(u=>`<div class="list-item" onclick="formUsuario('${u.id}')" style="cursor:pointer;${u.activo?'':'opacity:.5'}"><div class="grow"><b>${h(u.nombre)}</b><div class="muted">${h(u.usuario)} · ${h(ROLES[u.rol])} · ${modsOf(u).length} módulos</div></div>${u.modulos||u.permisos?'<span class="pill p-azul">accesos a la medida</span>':''}${u.debe_cambiar?'<span class="pill p-amar">contraseña temporal</span>':''}${u.activo?'':'<span class="pill">inactivo</span>'}</div>`).join('')},0);
+  setTimeout(async()=>{S.usuarios=await q(sb.from('qx_usuarios').select('id,nombre,usuario,rol,activo,debe_cambiar,bloqueado_hasta,modulos,permisos').order('nombre'));const el=$('#usrs');if(el)el.innerHTML=S.usuarios.map(u=>`<div class="list-item" onclick="formUsuario('${u.id}')" style="cursor:pointer;${u.activo?'':'opacity:.5'}"><div class="grow"><b>${h(u.nombre)}</b><div class="muted">${h(u.usuario)} · ${h(ROLES[u.rol])} · ${modsOf(u).length} módulos</div></div>${u.modulos||u.permisos?'<span class="pill p-azul">accesos a la medida</span>':''}${u.debe_cambiar?'<span class="pill p-amar">contraseña temporal</span>':''}${u.activo?'':'<span class="pill">inactivo</span>'}${u.bloqueado_hasta&&new Date(u.bloqueado_hasta)>new Date()?`<button class="btn sm" onclick="event.stopPropagation();desbloquearU('${u.id}')">Desbloquear</button>`:''}</div>`).join('')},0);
 }
+async function desbloquearU(id){await q(sb.from('qx_usuarios').update({intentos_fallidos:0,bloqueado_hasta:null}).eq('id',id),'Desbloquear');toast('Usuario desbloqueado');render()}
 function formUsuario(id){
   const u=id?S.usuarios.find(x=>x.id===id):{nombre:'',usuario:'',rol:'enfermeria',activo:true};
   const m=modal(`${mhead(id?'Editar usuario':'Nuevo usuario')}<label>Nombre completo</label><input id="uN" value="${h(u.nombre)}"><label>Usuario</label><input id="uU" value="${h(u.usuario)}" ${id?'disabled':''} autocapitalize="none">
