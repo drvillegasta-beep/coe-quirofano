@@ -1117,3 +1117,4 @@ do $$ declare t text; begin
     begin execute format('alter publication supabase_realtime add table %I', t); exception when others then null; end;
   end loop;
 end $$;
+-- v3.6 · Importación del historial de cotizaciones (COE Cirugías) a qx_cotizaciones: aplicada como migración qx_importar_cotizaciones_anteriores (idempotente por origen,origen_id)
