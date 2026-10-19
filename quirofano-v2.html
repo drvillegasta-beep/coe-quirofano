@@ -322,6 +322,7 @@ nav .badge.kb{background:var(--rojo)!important;color:#fff!important;border:0}
 .ebar{position:relative;height:8px;border-radius:4px;background:var(--card3);margin-top:8px;overflow:visible}.ebar i{display:block;height:100%;border-radius:4px}.ebar em{position:absolute;top:-3px;width:2px;height:14px;background:var(--ink);opacity:.5}
 tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4px 0 0 var(--rojo)}tr.r-warn td:first-child{box-shadow:inset 4px 0 0 var(--amar)}
 .apopbox{border-top:5px solid var(--rojo)}.apop-h{display:flex;gap:12px;align-items:center;margin-bottom:8px}.apop-h>span{font-size:28px;color:var(--rojo)}.apop{margin:0;padding-left:20px;line-height:1.6}
+.sugp{border:1px solid var(--linea);border-radius:12px;margin-top:4px;overflow:hidden;background:var(--card)}.sugp button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--linea);background:none;padding:8px 12px;color:var(--ink);cursor:pointer}.sugp button:last-child{border-bottom:0}.sugp button:hover{background:var(--pr2)}.sugp span{display:block;font-size:12px;color:var(--gris)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -334,7 +335,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.2';
+const VERSION='3.3';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -948,15 +949,15 @@ async function escalarExtra(){
    await escalarFin(xs.map(x=>({clave:'DESABASTO-'+x.m.id+'-'+x.afect[0].id,fecha:x.afect[0].fecha,txt:`${x.m.nombre}: existencia ${fmtN(x.st)}; no alcanza para la cirugía del ${fCorta(x.afect[0].fecha)} (${x.afect[0].paciente_nombre}). Sugerido pedir ${fmtN(x.sug)} ${x.m.unidad}.`})),'desabasto','material crítico que no alcanza para cirugías de los próximos 3 días','critico')}
   const hoy=hoyISO(),la=lioAlertas(),lt=l=>`LIO ${l.marca||''} ${l.modelo} ${fmtN(l.dioptria)} D · serie ${l.serie||'—'} · ${l.propiedad}`;
   await escalarFin(la.venc.map(l=>({clave:'LIO-VENC-'+l.id,fecha:l.caducidad,txt:lt(l)+' VENCIÓ el '+fCorta(l.caducidad)})),'lio_vencido','LIO vencidos en stock','critico');
-  await escalarFin(la.prox.map(l=>({clave:'LIO-PROX-'+l.id,fecha:l.caducidad,txt:lt(l)+' caduca el '+fCorta(l.caducidad)})),'lio_por_caducar','LIO por caducar (cambio o devolución)','alta');
+  await escalarFin(la.prox.map(l=>({clave:'LIO-PROX-'+l.id,fecha:l.caducidad,txt:lt(l)+' caduca el '+fCorta(l.caducidad)})),'lio_por_caducar','LIO por caducar (cambio o devolución)','moderado');
   if(carroUb()){const R=carroResumen();
     if(R.revVencida){const lim=R.ultRev?addDays(_dia(R.ultRev.created_at),num(cfg('carro_rev_dias',7))):hoy;
       await escalarFin([{clave:'CARRO-REV-'+S.sede+'-'+lim,fecha:lim,txt:'Revisión del carro rojo vencida desde el '+fCorta(lim)}],'carro_revision','revisión del carro rojo no realizada','critico')}
     await escalarFin(R.venc.flatMap(x=>x.venc.map(l=>({clave:'CARRO-VENC-'+l.id,fecha:l.caducidad,txt:`${x.m.nombre} · lote ${l.lote||'—'} venció el ${fCorta(l.caducidad)}`}))),'carro_vencido','medicamentos vencidos en el carro rojo','critico');
-    await escalarFin(R.camb.flatMap(x=>x.camb.map(l=>({clave:'CARRO-PROX-'+l.id,fecha:l.caducidad,txt:`${x.m.nombre} · lote ${l.lote||'—'} caduca el ${fCorta(l.caducidad)}`}))),'carro_por_vencer','medicamentos del carro rojo por vencer','alta');
+    await escalarFin(R.camb.flatMap(x=>x.camb.map(l=>({clave:'CARRO-PROX-'+l.id,fecha:l.caducidad,txt:`${x.m.nombre} · lote ${l.lote||'—'} caduca el ${fCorta(l.caducidad)}`}))),'carro_por_vencer','medicamentos del carro rojo por vencer','moderado');
   }
   const rc=S.conteos.filter(c=>c.estado==='reconteo'&&c.enviado_at&&Date.now()-new Date(c.enviado_at)>864e5);
-  await escalarFin(rc.map(c=>({clave:'RECONTEO-'+c.id,fecha:_dia(c.enviado_at),txt:`Segundo conteo pendiente desde ${fDT(c.enviado_at)} (${ubicById(c.ubicacion_id)?.nombre||''})`})),'reconteo','segundo conteo de inventario sin hacer','alta');
+  await escalarFin(rc.map(c=>({clave:'RECONTEO-'+c.id,fecha:_dia(c.enviado_at),txt:`Segundo conteo pendiente desde ${fDT(c.enviado_at)} (${ubicById(c.ubicacion_id)?.nombre||''})`})),'reconteo','segundo conteo de inventario sin hacer','moderado');
 }
 function vCalInv(){
   const hoy=hoyISO(),prog=programaInv(addDays(hoy,-30),addDays(hoy,45)).map(estadoInv),cads=cadItems();let html='';
@@ -2869,7 +2870,7 @@ function vCotizar(){
   $('#main').innerHTML=st.html+`<div class="cotgrid">
   <div>
    <div class="card"><h3>Paciente</h3>
-    <div class="grid2"><div style="grid-column:1/-1"><label for="qN">Nombre completo</label><input id="qN" value="${h(Q.paciente_nombre)}" oninput="Q.paciente_nombre=this.value"></div>
+    <div class="grid2"><div style="grid-column:1/-1"><label for="qN">Nombre completo</label><input id="qN" value="${h(Q.paciente_nombre)}" autocomplete="off" oninput="Q.paciente_nombre=this.value;sugPac(this.value)" placeholder="Escribe para buscar pacientes anteriores"><div id="qSug"></div></div>
     <div><label for="qT1">Teléfono</label><input id="qT1" inputmode="tel" value="${h(Q.telefono1)}" placeholder="10 dígitos" oninput="Q.telefono1=this.value"></div>
     <div><label for="qT2">Tel. familiar</label><input id="qT2" inputmode="tel" value="${h(Q.telefono2)}" placeholder="10 dígitos" oninput="Q.telefono2=this.value"></div>
     <div><label for="qE">Expediente</label><input id="qE" value="${h(Q.expediente)}" oninput="Q.expediente=this.value"></div>
@@ -2997,6 +2998,17 @@ async function autorizarDesc(){
     Q.autorizado={id:uid,nombre:u.nombre,at:new Date().toISOString(),monto:r.descuento};m.remove();drawQRes();
   };
 }
+/* ----- directorio de pacientes (incluye los del sistema anterior) ----- */
+async function cargarPacs(){if(!S.pacs)S.pacs=await sb.from('qx_pacientes').select('id,nombre,expediente,telefono1,telefono2,ultima_cotizacion,origen').order('nombre').limit(10000).then(r=>r.data||[]);return S.pacs}
+let _sugT=null;
+function sugPac(t){clearTimeout(_sugT);_sugT=setTimeout(async()=>{const el=$('#qSug');if(!el)return;const w=normTxt(t).trim().split(/\s+/).filter(Boolean);if(!w.length||normTxt(t).trim().length<3){el.innerHTML='';return}
+  const ps=(await cargarPacs()).filter(p=>{const n=normTxt(p.nombre+' '+(p.telefono1||'')+' '+(p.expediente||''));return w.every(x=>n.includes(x))}).slice(0,6);
+  el.innerHTML=ps.length?`<div class="sugp">${ps.map(p=>`<button type="button" data-p="${p.id}"><b>${h(p.nombre)}</b><span>${p.telefono1?fmtTel(p.telefono1):'sin teléfono'}${p.expediente?' · Exp. '+h(p.expediente):''}${p.ultima_cotizacion?' · última cotización '+fCorta(p.ultima_cotizacion):''}</span></button>`).join('')}</div>`:'';
+  el.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const p=S.pacs.find(x=>x.id===b.dataset.p);Object.assign(Q,{paciente_nombre:p.nombre,telefono1:p.telefono1||'',telefono2:p.telefono2||'',expediente:p.expediente||''});vCotizar()})},200)}
+async function registrarPaciente(row,c){try{const ps=await cargarPacs(),n=normTxt(row.paciente_nombre);
+  const e=ps.find(p=>normTxt(p.nombre)===n&&(p.telefono1||'')===(row.telefono1||''));
+  if(e){await sb.from('qx_pacientes').update({ultima_cotizacion:new Date().toISOString(),expediente:e.expediente||row.expediente,telefono2:e.telefono2||row.telefono2,updated_at:new Date().toISOString()}).eq('id',e.id);e.ultima_cotizacion=new Date().toISOString();return}
+  const r=await sb.from('qx_pacientes').insert({nombre:row.paciente_nombre,expediente:row.expediente,telefono1:row.telefono1,telefono2:row.telefono2,sede_id:S.sede,origen:'qx',origen_id:c.id,ultima_cotizacion:new Date().toISOString()}).select();if(r.data)ps.push(r.data[0])}catch(e){}}
 async function guardarCot(){
   const r=calcCot(Q),t1=String(Q.telefono1).replace(/\D/g,''),t2=String(Q.telefono2).replace(/\D/g,'');
   if(!Q.paciente_nombre.trim())return toast('Falta el nombre del paciente',true);
@@ -3015,7 +3027,7 @@ async function guardarCot(){
     vigencia_hasta:Q.vigencia||r.vigencia,estado:'vigente',notas:Q.notas||null,elaboro:S.user.nombre,elaboro_id:S.user.id};
   try{const c=(await q(sb.from('qx_cotizaciones').insert(row).select(),'Guardar cotización'))[0];
     await logA('cotizacion','qx_cotizaciones',c.id,{total:r.total,descuento:r.descuento,autorizo:row.descuento_autorizado_por});
-    Q=nuevaQ();toast('Cotización '+c.folio+' guardada');hojaCot(c);
+    registrarPaciente(row,c);Q=nuevaQ();toast('Cotización '+c.folio+' guardada');hojaCot(c);
   }catch(e){}
 }
 
