@@ -240,6 +240,24 @@ input.inl{width:72px;display:inline-block;padding:3px 6px;min-height:0;margin:0 
 nav .badge{background:var(--card3)!important;color:var(--ink);border:1px solid var(--linea)}
 .cprow{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--linea)}.cprow:last-child{border-bottom:0}.cpbtn{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex:0 0 auto;max-width:46%}
 .cfgtabs{flex-wrap:wrap}
+
+.s-ok{background:#3FB950}.s-warn{background:#E3B341}.s-ser{background:#DB8B3A}.s-crit{background:#F85149}.s-neu{background:#6E7681}.s-pr{background:var(--pr)}
+.kps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:10px 0 12px}
+.kp{position:relative;text-align:left;background:linear-gradient(160deg,var(--card2),var(--card) 70%);border:1px solid var(--linea);border-radius:16px;padding:14px 16px;cursor:pointer;color:var(--ink);display:flex;flex-direction:column;gap:2px}
+.kp .kl{font-size:13px;color:var(--gris);padding-right:64px}.kp b{font-family:var(--mo);font-weight:500;font-size:34px;line-height:1.1}.kp small{color:var(--gris);font-size:12px}
+.kp em{position:absolute;top:12px;right:12px;font-style:normal;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;color:var(--rojo);background:var(--rojo2)}.kp em.a{color:var(--amar);background:var(--amar2)}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px;margin-bottom:12px;align-items:start}.dgrid>.card{margin:0}
+.sbar,.meter{margin:10px 0 14px}.sbar-h{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}.sbar-h b{font-family:var(--mo);font-weight:500}
+.sbar-t{display:flex;gap:2px;height:12px;border-radius:6px;overflow:hidden}.sbar-t i{display:block;min-width:4px}
+.sbar-l{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:12px;color:var(--gris)}.sbar-l span{display:flex;align-items:center;gap:5px}.sbar-l i{width:9px;height:9px;border-radius:3px;display:inline-block}.sbar-l b{color:var(--ink);font-weight:600}
+.cch{display:flex;gap:4px;align-items:flex-end;height:170px;padding-top:6px}.cc{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;cursor:pointer;min-width:0}
+.ccv{font-size:11px;color:var(--ink);height:16px}.ccb,.ccb2{flex:1;width:100%;max-width:30px;display:flex;flex-direction:column-reverse;gap:2px}.ccb i{display:block;border-radius:3px 3px 0 0;width:100%}.ccb i+i{border-radius:0}
+.ccb2{flex-direction:row;align-items:flex-end;max-width:34px}.ccb2 i{flex:1;border-radius:4px 4px 0 0}
+.ccl{font-size:10px;color:var(--gris);text-align:center;line-height:1.2;margin-top:4px}.ccl span{color:var(--ink);font-size:12px}.cc.hoy .ccl span{color:var(--pr);font-weight:700}.cc:hover .ccb i{filter:brightness(1.15)}
+i.dot{flex:0 0 10px;height:10px;border-radius:50%;margin-top:6px;align-self:flex-start}
+.ecx{border:1px solid var(--linea);border-radius:14px;padding:10px 12px;margin:8px 0;cursor:pointer;background:var(--card2)}.ecx.ok{border-color:rgba(63,185,80,.5)}.ecx.done{opacity:.6}
+.ecx-h{display:flex;gap:10px;align-items:center}.ecx-h .grow{flex:1;min-width:0}.ecx .hr{font-family:var(--mo);font-size:18px}.ecx .ojo{font-size:22px;font-weight:700;color:var(--ink);flex:0 0 auto}.ecx-l{font-size:13px;margin-top:4px;color:var(--gris)}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}.chip{font-size:11px;padding:2px 7px;border-radius:12px;border:1px solid var(--linea)}.chip.ok{color:var(--verde);border-color:rgba(63,185,80,.35)}.chip.no{color:var(--amar);border-color:rgba(227,179,65,.5);background:var(--amar2)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -344,6 +362,7 @@ async function loadAll(){
   S.lect=tids.length?await q(sb.from('qx_lecturas_tanque').select('*').in('tanque_id',tids).order('created_at',{ascending:false}).limit(400)):[];
   S.escal=await sb.from('qx_escalamientos').select('*').order('created_at',{ascending:false}).limit(200).then(r=>r.data||[]);
   S.precios=await sb.from('qx_precios').select('*').order('orden').then(r=>r.data||[]);
+  S.cotsDash=(tiene('aprobar')||S.user?.rol==='director')?await sb.from('qx_cotizaciones').select('id,folio,paciente_nombre,telefono1,created_at,total,estado,vigencia_hasta,cirugia_ids,items,sede_id').gte('created_at',addDays(hoyISO(),-75)+'T00:00:00').order('created_at',{ascending:false}).limit(600).then(r=>r.data||[]):[];
   S.camps=await sb.from('qx_campanas').select('*').order('created_at',{ascending:false}).then(r=>r.data||[]);
   S.campPac=S.camps.some(c=>c.activa)?await sb.from('qx_campana_pacientes').select('*').in('campana_id',S.camps.map(c=>c.id)).order('created_at').then(r=>r.data||[]):[];
   S.carroRev=await sb.from('qx_carro_revisiones').select('*').order('created_at',{ascending:false}).limit(60).then(r=>r.data||[]);
@@ -655,7 +674,146 @@ function cadItems(){
   S.lios.filter(l=>sedeU.has(l.ubicacion_id)&&['disponible','reservado'].includes(l.estado)&&l.caducidad).forEach(l=>out.push({fecha:l.caducidad,tipo:'lio',txt:`LIO ${l.modelo} ${fmtN(l.dioptria)} D`,det:`Serie ${l.serie||'—'} · ${l.propiedad}${l.estado==='reservado'?' · reservado: '+(l.paciente_nombre||''):''}`,crit:'critico',id:l.id}));
   return out.sort((a,b)=>a.fecha<b.fecha?-1:1)
 }
+/* ============================================================
+   TABLEROS: Dirección y Enfermería
+   ============================================================ */
+const RD_CORTO={cotizacion:'Cotización',anticipo:'Anticipo',liquidado:'Liquidada',validado:'Pagos validados',consentimiento:'Consentimiento',valoracion:'Valoración',indicaciones:'Indicaciones',confirmacion:'Confirmación',biometria:'Biometría',lio_asignado:'LIO asignado',lio_coincide:'Poder = indicado',lio_verificado:'LIO verificado',lio_respaldo:'LIO respaldo',material:'Material'};
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+const moneyK=n=>{n=num(n);return n>=1e6?'$'+(n/1e6).toFixed(1)+' M':n>=1e4?'$'+Math.round(n/1e3)+' mil':money(n).replace('.00','')};
 function vInicio(){
+  const dir=tiene('aprobar')||S.user.rol==='director',enf=modsOf(S.user).includes('inventario')&&can.inventario();
+  if(!dir&&!enf)return vInicioSimple();
+  const vista=dir&&enf?(S.sub.dash||'dir'):dir?'dir':'enf';
+  const hoy=hoyISO(),hora=new Date().getHours(),saludo=hora<12?'Buenos días':hora<19?'Buenas tardes':'Buenas noches';
+  let html=`<div class="hello" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap"><div style="flex:1"><div class="muted">${fFecha(hoy)} · ${h(sedeById(S.sede)?.nombre||'')}</div><h2 style="margin:2px 0 0">${saludo}, ${h((S.user.nombre||'').split(' ').slice(0,2).join(' '))}</h2></div>
+  ${dir&&enf?`<div class="seg" style="flex:0 0 auto;margin:0">${[['dir','Dirección'],['enf','Enfermería']].map(([k,t])=>`<button class="${vista===k?'on':''}" onclick="S.sub.dash='${k}';render()">${t}</button>`).join('')}</div>`:''}</div>`;
+  html+=vista==='dir'?dashDir():dashEnf();
+  $('#main').innerHTML=html;
+}
+/* ----- piezas visuales ----- */
+const kp=(lab,big,sub,go,st)=>`<button class="kp ${st||''}" ${go?`onclick="${go}"`:'style="cursor:default"'}><span class="kl">${lab}</span><b>${big}</b>${sub?`<small>${sub}</small>`:''}${st==='t-rojo'?'<em>Atender</em>':st==='t-amar'?'<em class="a">Revisar</em>':''}</button>`;
+function sbar(lab,segs,go){const tot=segs.reduce((a,s)=>a+s.n,0);
+  return `<div class="sbar" ${go?`onclick="${go}" style="cursor:pointer"`:''}><div class="sbar-h"><span>${lab}</span><b>${tot}</b></div><div class="sbar-t">${tot?segs.filter(s=>s.n).map(s=>`<i class="${s.c}" style="flex:${s.n}" title="${h(s.t)}: ${s.n}"></i>`).join(''):'<i style="flex:1;background:var(--card3)"></i>'}</div>
+  <div class="sbar-l">${segs.map(s=>`<span><i class="${s.c}"></i>${h(s.t)} <b>${s.n}</b></span>`).join('')}</div></div>`}
+function meter(lab,v,max,sub,cls){const p=max?Math.min(100,Math.round(v/max*100)):0;return `<div class="meter"><div class="sbar-h"><span>${lab}</span><b>${p}%</b></div><div class="sbar-t"><i class="${cls||'s-ok'}" style="flex:${p}"></i><i style="flex:${100-p};background:var(--card3)"></i></div>${sub?`<div class="sbar-l"><span>${sub}</span></div>`:''}</div>`}
+function colChart(cols,leg){const mx=Math.max(1,...cols.map(c=>c.segs.reduce((a,s)=>a+s.n,0)));
+  return `<div class="cch">${cols.map(c=>{const t=c.segs.reduce((a,s)=>a+s.n,0);return `<div class="cc ${c.hoy?'hoy':''}" title="${h(c.tip)}" ${c.go?`onclick="${c.go}"`:''}><div class="ccv">${t||''}</div><div class="ccb">${c.segs.filter(s=>s.n).map(s=>`<i class="${s.c}" style="height:${s.n/mx*100}%"></i>`).join('')}</div><div class="ccl">${c.l1}<br><span>${c.l2}</span></div></div>`}).join('')}</div>${leg?`<div class="sbar-l" style="margin-top:6px">${leg.map(([c,t])=>`<span><i class="${c}"></i>${t}</span>`).join('')}</div>`:''}`}
+function saludInv(){
+  const ms=matsQX().map(m=>({m,...semaforo(m)}));
+  const seg=arr=>[{t:'Suficiente',n:arr.filter(x=>x.nivel==='ok').length,c:'s-ok'},{t:'Bajo mínimo',n:arr.filter(x=>x.nivel!=='ok'&&!(x.st<=0&&num(x.m.stock_minimo)>0)).length,c:'s-warn'},{t:'Agotado',n:arr.filter(x=>x.st<=0&&num(x.m.stock_minimo)>0).length,c:'s-crit'}];
+  const R=carroUb()?carroResumen():null,la=lioAlertas(),sedeU=ubicIdsSede();
+  const lact=S.lios.filter(l=>sedeU.has(l.ubicacion_id)&&['disponible','reservado'].includes(l.estado));
+  let s=sbar('Material crítico',seg(ms.filter(x=>critOf(x.m)==='critico')),"S.tab='inventario';S.sub.inv='criticos';render()")+sbar('Material no crítico',seg(ms.filter(x=>critOf(x.m)!=='critico')),"S.tab='inventario';S.sub.inv='exist';render()");
+  if(R)s+=sbar('Carro rojo',[{t:'Completo y vigente',n:R.e.filter(x=>x.nivel==='ok'&&!x.venc.length&&!x.camb.length).length,c:'s-ok'},{t:'Por vencer',n:R.e.filter(x=>x.nivel==='ok'&&!x.venc.length&&x.camb.length).length,c:'s-warn'},{t:'Falta',n:R.e.filter(x=>x.nivel!=='ok'&&!x.venc.length).length,c:'s-ser'},{t:'Vencido',n:R.e.filter(x=>x.venc.length).length,c:'s-crit'}],"S.tab='carro';render()");
+  s+=sbar('Stock de LIO',[{t:'Vigente',n:lact.length-la.prox.length-la.venc.length,c:'s-ok'},{t:'Por caducar',n:la.prox.length,c:'s-warn'},{t:'Vencido',n:la.venc.length,c:'s-crit'}],"S.tab='lio';render()");
+  return s;
+}
+function cumplInv(){const hoy=hoyISO(),ev=programaInv(addDays(hoy,-30),addDays(hoy,-1)).map(estadoInv),ok=ev.filter(e=>e.st==='realizado').length;
+  const cs=S.conteos.filter(c=>c.precision!=null&&c.created_at>=addDays(hoy,-60));const pr=cs.length?Math.round(cs.reduce((a,c)=>a+num(c.precision),0)/cs.length):null;
+  return {ev:ev.length,ok,pr}}
+/* ----- Dirección ----- */
+function dashDir(){
+  const hoy=hoyISO(),sedeU=ubicIdsSede(),f14=addDays(hoy,13);
+  const cxs=S.cx.filter(c=>sedeU.has(c.sala_id)&&c.estado!=='cancelada'&&!c.consumo_cerrado&&c.fecha>=hoy&&c.fecha<=f14).map(c=>({c,rd:readiness(c)}));
+  const hoyN=cxs.filter(x=>x.c.fecha===hoy),tot=cxs.reduce((a,x)=>a+x.rd.f.total,0),cob=cxs.reduce((a,x)=>a+Math.min(x.rd.f.pag,x.rd.f.total),0),saldo=tot-cob;
+  const pv=S.evid.filter(e=>['anticipo','abono','liquidacion','reembolso'].includes(e.tipo)&&!e.validado_at);
+  const cots=(S.cotsDash||[]).filter(c=>(!c.sede_id||c.sede_id===S.sede)&&(c.items||[]).some(i=>i.categoria==='cirugia'));
+  const c30=cots.filter(c=>c.created_at>=addDays(hoy,-30)),prog30=c30.filter(c=>c.estado==='programada'||(c.cirugia_ids||[]).length);
+  const op=cots.filter(c=>c.estado==='vigente'&&!(c.cirugia_ids||[]).length&&c.vigencia_hasta>=hoy).sort((a,b)=>num(b.total)-num(a.total));
+  const venc=cots.filter(c=>c.estado==='vigente'&&!(c.cirugia_ids||[]).length&&c.vigencia_hasta<hoy&&c.vigencia_hasta>=addDays(hoy,-30));
+  const ci=cumplInv(),R=carroUb()?carroResumen():null;
+  const urg=[];
+  cxs.filter(x=>x.c.fecha<=addDays(hoy,2)&&!x.rd.listo).forEach(x=>urg.push({t:`${x.c.fecha===hoy?'Hoy':fCorta(x.c.fecha)} ${hhmm(x.c.hora)} · ${x.c.paciente_nombre}`,d:'Falta: '+x.rd.pend.map(p=>RD_CORTO[p.k]||p.t).join(', '),go:`verCirugia('${x.c.id}')`,r:x.c.fecha<=addDays(hoy,1)}));
+  const perd=programaInv(addDays(hoy,-30),addDays(hoy,-1)).map(estadoInv).filter(e=>e.st==='no_realizado');
+  if(perd.length)urg.push({t:`${perd.length} conteo(s) de inventario no realizados`,d:'Escalados a COE Finanzas',go:"S.tab='inventario';S.sub.inv='conteo';render()",r:true});
+  if(R&&(R.selloRoto||R.venc.length))urg.push({t:'Carro rojo',d:(R.selloRoto?'abierto sin sello nuevo · ':'')+R.venc.length+' medicamentos vencidos',go:"S.tab='carro';render()",r:true});
+  if(pv.length)urg.push({t:`${pv.length} pago(s) sin validar`,d:'Contabilidad debe confirmar los comprobantes',go:"S.tab='alertas';S.sub.al='alertas';render()",r:false});
+  // agenda 14 días
+  const cols=Array.from({length:14},(_,i)=>{const f=addDays(hoy,i),l=cxs.filter(x=>x.c.fecha===f),d=new Date(f+'T12:00:00');
+    return {l1:['D','L','M','M','J','V','S'][d.getDay()],l2:d.getDate(),hoy:i===0,tip:`${fFecha(f)}: ${l.length} cirugías, ${l.filter(x=>x.rd.listo).length} listas`,go:`S.tab='agenda';S.sub.agenda='dia';S.fecha='${f}';render()`,
+      segs:[{n:l.filter(x=>x.rd.listo).length,c:'s-ok'},{n:l.filter(x=>!x.rd.listo&&x.rd.f.liq).length,c:'s-warn'},{n:l.filter(x=>!x.rd.f.liq).length,c:'s-ser'}]}});
+  // cotizado vs programado por semana (8 semanas)
+  const lunes=d=>addDays(d,-((new Date(d+'T12:00:00').getDay()+6)%7));
+  const sem=Array.from({length:8},(_,i)=>addDays(lunes(hoy),-7*(7-i)));
+  const wk=sem.map(s=>{const l=cots.filter(c=>_dia(c.created_at)>=s&&_dia(c.created_at)<addDays(s,7));return {s,n:l.length,p:l.filter(c=>c.estado==='programada'||(c.cirugia_ids||[]).length).length}});
+  const mxW=Math.max(1,...wk.map(w=>w.n));
+  let html=`<div class="kps">
+   ${kp('Cirugías próximas 14 días',cxs.length,`${hoyN.length} hoy · ${cxs.filter(x=>x.rd.listo).length} listas`,"S.tab='agenda';S.sub.agenda='semana';render()")}
+   ${kp('Por cobrar en esas cirugías',moneyK(saldo),`cobrado ${moneyK(cob)} de ${moneyK(tot)}`,"S.tab='agenda';S.sub.agenda='semana';render()",saldo>0&&cxs.some(x=>!x.rd.f.liq&&x.c.fecha<=addDays(hoy,2))?'t-amar':'')}
+   ${kp('Conversión 30 días',pct(prog30.length,c30.length)+'%',`${prog30.length} de ${c30.length} cotizaciones de cirugía programadas`,"S.tab='cotizar';S.sub.cot='lista';render()")}
+   ${kp('Inventarios a tiempo · 30 días',ci.ev?pct(ci.ok,ci.ev)+'%':'—',`${ci.ok} de ${ci.ev} conteos${ci.pr!=null?' · precisión '+ci.pr+'%':''}`,"S.tab='inventario';S.sub.inv='conteo';render()",ci.ev&&ci.ok<ci.ev?'t-rojo':'')}
+  </div>
+  <div class="dgrid">
+   <div class="card"><div class="ph3"><h3>Requiere su atención</h3><span class="cnt">${urg.length}</span></div>${urg.map(u=>`<div class="list-item" style="cursor:pointer" onclick="${u.go}"><i class="dot ${u.r?'s-crit':'s-warn'}"></i><div class="grow"><b>${h(u.t)}</b><div class="muted">${h(u.d)}</div></div><span class="muted">›</span></div>`).join('')||'<div class="muted">Todo en orden.</div>'}</div>
+   <div class="card"><h3>Agenda de los próximos 14 días</h3>${colChart(cols,[['s-ok','Lista para operar'],['s-warn','Liquidada, con pendientes'],['s-ser','Sin liquidar']])}</div>
+  </div>
+  <div class="dgrid">
+   <div class="card"><h3>Cotizado vs programado · 8 semanas</h3><div class="cch">${wk.map((w,i)=>`<div class="cc ${i===7?'hoy':''}" title="Semana del ${fCorta(w.s)}: ${w.n} cotizadas, ${w.p} programadas"><div class="ccv">${w.n||''}</div><div class="ccb2"><i class="s-neu" style="height:${w.n/mxW*100}%"></i><i class="s-pr" style="height:${w.p/mxW*100}%"></i></div><div class="ccl">${fCorta(w.s).replace(/ \d+$/,'')}</div></div>`).join('')}</div>
+    <div class="sbar-l" style="margin-top:6px"><span><i class="s-neu"></i>Cotizadas</span><span><i class="s-pr"></i>Programadas</span></div></div>
+   <div class="card"><div class="ph3"><h3>Oportunidades: cotizadas sin programar</h3><span class="cnt">${op.length}</span></div><div class="muted" style="margin-bottom:4px">Vigentes ${moneyK(op.reduce((a,c)=>a+num(c.total),0))} · vencidas en 30 días: ${venc.length}</div>
+    ${op.slice(0,6).map(c=>`<div class="list-item"><div class="grow"><b>${h(c.paciente_nombre)}</b><div class="muted">${(c.items||[]).filter(i=>i.categoria==='cirugia').map(i=>h(i.nombre)).join(', ')} · vence ${fCorta(c.vigencia_hasta)}</div></div><b style="flex:0 0 auto">${moneyK(c.total)}</b>${c.telefono1?`<a class="btn sm sec" target="_blank" href="https://wa.me/${waNum(c.telefono1)}?text=${encodeURIComponent('Hola '+c.paciente_nombre+', le escribimos del Centro Ocular Especializado para ayudarle a programar su cirugía (cotización '+c.folio+').')}">WhatsApp</a>`:''}</div>`).join('')||'<div class="muted">Sin oportunidades abiertas.</div>'}</div>
+  </div>
+  <div class="dgrid">
+   <div class="card"><h3>Salud del inventario</h3>${saludInv()}${meter('Conteos realizados a tiempo (30 días)',ci.ok,ci.ev,`${ci.ok} de ${ci.ev}${ci.pr!=null?' · precisión del primer conteo '+ci.pr+'%':''}`,ci.ok<ci.ev?'s-warn':'s-ok')}</div>
+   <div class="card"><h3>Dinero de cirugías próximas</h3>${sbar('Cirugías próximas 14 días',[{t:'Liquidadas',n:cxs.filter(x=>x.rd.f.liq).length,c:'s-ok'},{t:'Con anticipo',n:cxs.filter(x=>!x.rd.f.liq&&x.rd.f.pag>0).length,c:'s-warn'},{t:'Sin pago',n:cxs.filter(x=>!x.rd.f.pag&&!x.rd.f.liq).length,c:'s-ser'}])}
+    ${cxs.filter(x=>!x.rd.f.liq).sort((a,b)=>a.c.fecha<b.c.fecha?-1:1).slice(0,6).map(x=>`<div class="list-item" style="cursor:pointer" onclick="verCirugia('${x.c.id}')"><div class="grow"><b>${h(x.c.paciente_nombre)}</b><div class="muted">${fCorta(x.c.fecha)} · ${h(x.rd.f.est)}</div></div><b>${moneyK(x.rd.f.saldo)}</b></div>`).join('')||'<div class="muted">Todas liquidadas.</div>'}
+    ${pv.length?`<div class="muted" style="margin-top:6px">${pv.length} comprobante(s) por validar por Contabilidad.</div>`:''}</div>
+  </div>`;
+  const cp=campActiva();
+  if(cp&&modsOf(S.user).includes('campana')){const ps=(S.campPac||[]).filter(p=>p.campana_id===cp.id),cupo=diasCamp(cp).reduce((a,d)=>a+num(d.cupo),0),pg=ps.map(pagoCamp),st=lioCampStock(ps,cp),li=ps.filter(p=>p.lio_poder!=null&&p.lio_poder!=='');
+    html+=`<div class="card" style="cursor:pointer" onclick="S.tab='campana';render()"><h3>${h(cp.nombre)}</h3><div class="dgrid" style="margin:0">${meter('Ojos inscritos vs cupo',ps.length,cupo||ps.length,`${ps.length} de ${cupo||'—'} lugares`)}
+     ${sbar('Pagos',[{t:'Liquidados',n:pg.filter(x=>x.liq).length,c:'s-ok'},{t:'Con anticipo',n:pg.filter(x=>!x.liq&&x.pag>0).length,c:'s-warn'},{t:'Sin pago',n:pg.filter(x=>!x.pag).length,c:'s-ser'}])}
+     ${sbar('Lentes',[{t:'En stock',n:li.filter(p=>st[p.id]).length,c:'s-ok'},{t:'Por pedir',n:li.filter(p=>!st[p.id]).length,c:'s-warn'}])}</div></div>`}
+  return html;
+}
+/* ----- Enfermería ----- */
+function dashEnf(){
+  const hoy=hoyISO(),man=addDays(hoy,1),sedeU=ubicIdsSede();
+  const cx=f=>S.cx.filter(c=>sedeU.has(c.sala_id)&&c.estado!=='cancelada'&&c.fecha===f).sort((a,b)=>a.hora<b.hora?-1:1);
+  const ch=cx(hoy),cm=cx(man);
+  const prog=programaInv(hoy,hoy).map(estadoInv)[0],recont=S.conteos.filter(c=>c.estado==='reconteo');
+  const R=carroUb()?carroResumen():null;
+  const tq=S.tanques.filter(t=>t.activo&&t.sede_id===S.sede),tqSin=tq.filter(t=>{const l=lecturaUlt(t.id);return !l||_dia(l.created_at)!==hoy});
+  const qxU=new Set(ubicSede().map(u=>u.id));
+  const vencL=S.lotes.filter(l=>qxU.has(l.ubicacion_id)&&num(l.cantidad)>0&&l.caducidad&&diasHasta(l.caducidad)<0);
+  const cad7=cadItems().filter(c=>c.fecha>=hoy&&_dd(c.fecha,hoy)<=7);
+  // material necesario próximos 3 días
+  const prox=S.cx.filter(c=>sedeU.has(c.sala_id)&&c.estado!=='cancelada'&&!c.consumo_cerrado&&c.fecha>=hoy&&c.fecha<=addDays(hoy,2));
+  const nec={};S.cxItems.filter(i=>prox.some(c=>c.id===i.cirugia_id)&&i.cantidad_usada==null).forEach(i=>nec[i.material_id]=(nec[i.material_id]||0)+num(i.cantidad_plan));
+  const falt=Object.entries(nec).map(([mid,n])=>({m:matById(mid),n,st:stockMat(mid,ubicIdsSede())})).filter(x=>x.m&&x.st<x.n).sort((a,b)=>(critOf(a.m)==='critico'?0:1)-(critOf(b.m)==='critico'?0:1));
+  const tareas=[];
+  if(prog&&prog.st!=='realizado')tareas.push({t:INV_TIPOS[prog.tipo]+' (hoy, sin prórroga)',d:`${prog.hechas} de ${prog.total} ubicaciones`,go:"S.tab='inventario';S.sub.inv='conteo';render()",r:true});
+  recont.forEach(c=>tareas.push({t:'Segundo conteo pendiente',d:ubicById(c.ubicacion_id)?.nombre||'',go:`reconteo('${c.id}')`,r:false}));
+  if(R&&R.selloRoto)tareas.push({t:'Reponer y sellar carro rojo',d:'Se usó el '+fDT(R.ult.created_at),go:"formCarroRevision('reposicion')",r:true});
+  else if(R&&R.revVencida)tareas.push({t:'Revisión del carro rojo',d:R.ultRev?'última hace '+R.dRev+' días':'sin revisiones',go:"formCarroRevision('rapida')",r:false});
+  if(tqSin.length)tareas.push({t:'Foto de manómetros',d:tqSin.map(t=>t.nombre).join(', ')+' sin lectura hoy',go:"S.tab='tanques';render()",r:false});
+  if(vencL.length)tareas.push({t:'Retirar material caducado',d:vencL.length+' lote(s) vencidos en quirófano',go:'formMerma()',r:true});
+  if(R&&R.venc.length)tareas.push({t:'Retirar vencidos del carro rojo',d:R.venc.length+' medicamentos',go:"S.tab='carro';render()",r:true});
+  if(falt.length)tareas.push({t:'Pedir material para cirugías próximas',d:falt.length+' materiales no alcanzan',go:`formPedido(${JSON.stringify(falt.map(x=>x.m.id)).replace(/"/g,"'")})`,r:falt.some(x=>critOf(x.m)==='critico')});
+  const listas=ch.filter(c=>c.consumo_cerrado||readiness(c).listo).length;
+  const cxCardE=c=>{const rd=readiness(c),lio=c.lio_unidad_id?S.lios.find(l=>l.id===c.lio_unidad_id):null;
+    return `<div class="ecx ${c.consumo_cerrado?'done':rd.listo?'ok':''}" onclick="verCirugia('${c.id}')"><div class="ecx-h"><b class="hr">${hhmm(c.hora)}</b><div class="grow"><b>${h(c.paciente_nombre)}</b><div class="muted">${h(c.procedimiento||'')} · ${h(ubicById(c.sala_id)?.nombre||'')} · ${h(c.anestesia||'')}</div></div><span class="ojo">${h(c.ojo||'')}</span></div>
+    ${c.lio_requerido?`<div class="ecx-l">LIO ${h(lioTxt(c.lio_requerido))} · ${lio?`${h(lio.modelo)} serie ${h(lio.serie||'—')}`:'<b class="t-r">sin asignar</b>'}${c.lio_verificado_por?' · ✓ verificado':''}</div>`:''}
+    ${c.consumo_cerrado?'<div class="chips"><span class="chip ok">✓ Realizada</span></div>':`<div class="chips"><span class="chip ok">✓ ${rd.it.length-rd.pend.length} de ${rd.it.length} listos</span>${rd.pend.map(x=>`<span class="chip no">✗ ${RD_CORTO[x.k]||x.t}</span>`).join('')}</div>`}</div>`};
+  let html=`<div class="kps">
+   ${kp('Cirugías hoy',ch.length,ch.length?`${listas} listas · ${ch.length-listas} con pendientes`:'Sin cirugías',"S.tab='agenda';S.sub.agenda='dia';S.fecha=hoyISO();render()",ch.length&&listas<ch.length?'t-rojo':'')}
+   ${kp('Conteo de hoy',prog?(prog.st==='realizado'?'✓':prog.hechas+'/'+prog.total):'—',prog?INV_TIPOS[prog.tipo]:'No toca conteo hoy',"S.tab='inventario';S.sub.inv='conteo';render()",prog&&prog.st!=='realizado'?'t-amar':'')}
+   ${kp('Material que no alcanza',falt.length,'para cirugías de los próximos 3 días',"S.tab='inventario';S.sub.inv='criticos';render()",falt.some(x=>critOf(x.m)==='critico')?'t-rojo':falt.length?'t-amar':'')}
+   ${kp('Caducan en 7 días',cad7.length,`${vencL.length} ya vencidos en quirófano`,"S.tab='inventario';S.sub.inv='cal';render()",vencL.length?'t-rojo':cad7.length?'t-amar':'')}
+  </div>
+  <div class="dgrid">
+   <div class="card"><div class="ph3"><h3>Hoy en quirófano</h3><span class="cnt">${ch.length}</span></div>${ch.map(cxCardE).join('')||'<div class="muted">Sin cirugías hoy.</div>'}</div>
+   <div class="card"><div class="ph3"><h3>Pendientes de hoy</h3><span class="cnt">${tareas.length}</span></div>${tareas.map(t=>`<div class="list-item" style="cursor:pointer" onclick="${t.go}"><i class="dot ${t.r?'s-crit':'s-warn'}"></i><div class="grow"><b>${h(t.t)}</b><div class="muted">${h(t.d)}</div></div><span class="muted">›</span></div>`).join('')||'<div class="muted">Sin pendientes. ✓</div>'}
+    ${falt.length?`<div class="sec-t">No alcanza para los próximos 3 días</div><table><tr><th>Material</th><th>Necesario</th><th>Existencia</th></tr>${falt.map(x=>`<tr onclick="verMaterial('${x.m.id}')" style="cursor:pointer"><td>${h(x.m.nombre)} ${critPill(x.m)}</td><td>${fmtN(x.n)}</td><td><b class="${x.st<=0?'t-r':'t-a'}">${fmtN(x.st)}</b></td></tr>`).join('')}</table>`:''}</div>
+  </div>
+  <div class="dgrid">
+   <div class="card"><div class="ph3"><h3>Mañana · ${fCorta(man)}</h3><span class="cnt">${cm.length}</span></div>${cm.map(cxCardE).join('')||'<div class="muted">Sin cirugías mañana.</div>'}</div>
+   <div class="card"><h3>Salud del inventario</h3>${saludInv()}</div>
+  </div>`;
+  return html;
+}
+
+function vInicioSimple(){
   const hoy=hoyISO(),sedeU=ubicIdsSede(),mm=modsOf(S.user);
   const cxs=S.cx.filter(c=>sedeU.has(c.sala_id)&&c.estado!=='cancelada'&&!c.consumo_cerrado);
   const cxHoy=S.cx.filter(c=>sedeU.has(c.sala_id)&&c.estado!=='cancelada'&&c.fecha===hoy).sort((a,b)=>a.hora<b.hora?-1:1);
