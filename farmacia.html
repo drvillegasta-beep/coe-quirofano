@@ -499,6 +499,8 @@ body.locked .shell{visibility:hidden}
 .day.few em{color:var(--warn)}.day.full{opacity:.45}.day.full em{color:var(--muted)}
 .day[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft)}
 .citaok{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--ok-soft);color:var(--ok);font-weight:600}
+.strip2{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.almcal{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.almcal>div{flex:1;min-width:220px}
 body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 </style>
 
@@ -604,7 +606,7 @@ const stock=p=>p.lotes.filter(vig).reduce((a,l)=>a+l.q,0);
 const sinLote=p=>p.lotes.filter(l=>!l.cad).reduce((a,l)=>a+l.q,0);
 const firstLot=p=>p.lotes.filter(l=>l.cad&&days(l.cad)>=0&&l.q>0).sort((a,b)=>a.cad.localeCompare(b.cad))[0];
 const lotSort=(a,b)=>(a.cad||'9999').localeCompare(b.cad||'9999');
-PROD.forEach(p=>{p.cap=1});
+PROD.forEach(p=>{p.cap=1;p.alm=[];p.minA=0});
 function stockState(p){if(p.srv) return ['mute','Servicio'];if(!p.cap)return['mute','Sin capturar'];const s=stock(p);if(s===0)return['dead','Agotado'];if(s<=p.cri)return['crit','Crítico'];if(s<=p.min)return['warn','Mínimo'];return['ok','Suficiente']}
 function cadState(d){if(!d)return['info','Sin lote ni caducidad'];const n=days(d);if(n<0)return['dead','Vencido'];if(n<=30)return['crit',n+' días'];if(n<=90)return['warn',n+' días'];if(n<=180)return['info',n+' días'];return['ok','Vigente']}
 const chip=([k,t])=>`<span class="chip c-${k}">${esc(t)}</span>`;
@@ -648,20 +650,21 @@ function alerts(){
  const o={dead:0,crit:1,warn:2,info:3};return a.sort((x,y)=>o[x.k]-o[y.k]);
 }
 
-const ACC_TABS=[['dash','Panel'],['inv','Inventario'],['conteo','Conteo del lunes'],['alert','Alertas'],['ped','Pedidos a Finanzas'],['rx','Receta']];
-const ACC_ACT=[['resumen','Ver barra de resumen superior'],['costos','Ver costos y valor del inventario'],['entrada','Registrar entradas e importar eOptics'],['pedir','Generar pedidos a Finanzas'],['autorizar','Autorizar y avanzar pedidos'],['ajuste','Autorizar ajustes de conteo y bajas por caducidad'],['recetar','Emitir y modificar recetas'],['surtir','Surtir recetas en mostrador']];
+const ACC_TABS=[['dash','Panel'],['inv','Inventario'],['conteo','Conteo del lunes'],['alert','Alertas'],['ped','Pedidos a Finanzas'],['alm','Almacén (Finanzas)'],['rx','Receta']];
+const ACC_ACT=[['almacen','Manejar el almacén: entradas, inventario semanal, envíos a farmacia y pedidos al proveedor'],['resumen','Ver barra de resumen superior'],['costos','Ver costos y valor del inventario'],['entrada','Registrar entradas e importar eOptics'],['pedir','Generar pedidos a Finanzas'],['autorizar','Autorizar y avanzar pedidos'],['ajuste','Autorizar ajustes de conteo y bajas por caducidad'],['recetar','Emitir y modificar recetas'],['surtir','Surtir recetas en mostrador']];
 const PERFILES={dir:'Director General',dra:'Dirección',mos:'Mostrador de Farmacia',fin:'Finanzas · Contadora',med:'Médico'};
-let PERMS={dir:{resumen:1,dash:1,inv:1,conteo:1,alert:1,ped:1,rx:1,costos:1,entrada:1,pedir:1,autorizar:1,ajuste:1,recetar:1,surtir:1},
+let PERMS={dir:{alm:1,almacen:1,resumen:1,dash:1,inv:1,conteo:1,alert:1,ped:1,rx:1,costos:1,entrada:1,pedir:1,autorizar:1,ajuste:1,recetar:1,surtir:1},
  dra:{resumen:1,dash:1,inv:1,alert:1,ped:1,rx:1,costos:1,pedir:1,autorizar:1,recetar:1},
  mos:{resumen:1,dash:1,inv:1,conteo:1,alert:1,ped:1,rx:1,costos:1,entrada:1,pedir:1,surtir:1},
  fin:{resumen:1,dash:1,inv:1,ped:1,costos:1,autorizar:1},
  med:{dash:1,inv:1,rx:1,recetar:1}};
+PERMS.fin.alm=1;PERMS.fin.almacen=1;
 let USERS=[{n:'Dr. José Antonio Villegas Ávila',u:'jvillegas',p:'dir',a:1},{n:'Dra. Mónica A. Rivera Bustos',u:'mrivera',p:'dra',a:1},{n:'Mostrador Farmacia (turno matutino)',u:'farmacia1',p:'mos',a:1},{n:'Mostrador Farmacia (turno vespertino)',u:'farmacia2',p:'mos',a:1},{n:'Contadora',u:'contabilidad',p:'fin',a:1},{n:'Médico general',u:'medico1',p:'med',a:1}];
 let viewAs=null;const PERM_DIRTY=new Set();
 const eff=()=>viewAs||role;
 const can=k=>!!PERMS[eff()][k];
 const tabsFor=()=>{const t=ACC_TABS.map(x=>x[0]).filter(can);if(eff()==='dir')t.push('acc');return t.length?t:['dash']};
-const TABN={dash:'Panel',inv:'Inventario',conteo:'Conteo del lunes',alert:'Alertas',ped:'Pedidos a Finanzas',rx:'Receta',acc:'Accesos'};
+const TABN={dash:'Panel',inv:'Inventario',conteo:'Conteo del lunes',alert:'Alertas',ped:'Pedidos a Finanzas',alm:'Almacén',rx:'Receta',acc:'Accesos'};
 let role='dir',tab='dash';
 
 function renderStrip(){
@@ -690,6 +693,7 @@ const TABIC={dash:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14"
  alert:'<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
  ped:'<path d="M3 5h11v11H3z"/><path d="M14 9h4l3 3v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
  rx:'<path d="M6 3h9l4 4v14H6z"/><path d="M9 10h3a2 2 0 0 1 0 4H9v-4zm0 4v3m3-3l3 3"/>',
+ alm:'<path d="M3 21V9l9-5 9 5v12"/><path d="M7 21v-8h10v8"/><path d="M7 17h10"/>',
  acc:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>'};
 function renderTabs(){$('#pgTitle').textContent=TABN[tab];$('#tabs').innerHTML=tabsFor().map(t=>`<button role="tab" aria-selected="${t===tab}" data-t="${t}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TABIC[t]}</svg><span>${TABN[t]}</span></button>`).join('');$('#tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>go(b.dataset.t))}
 function go(t){tab=t;renderTabs();render();window.scrollTo({top:0});if(t==='rx')loadBusy()}
@@ -725,9 +729,14 @@ function alertRow(a){
   ${ATENDIDAS.has(a.id)?'<span class="chip c-ok">Atendida</span>':`<button class="btn sm" data-ok="${esc(a.id)}">Marcar atendida</button>`}</div></div>`;
 }
 function alertActs(a){const b=[];
- if(a.grp==='stock'&&a.p&&can('pedir'))b.push(`<button class="btn sm pri" data-ped="${a.p.id}">Solicitar a Finanzas</button>`);
- if(a.cad&&a.k==='dead'&&can('ajuste'))b.push(`<button class="btn sm" data-baja="${a.p.id}|${esc(a.lote)}">Dar de baja</button>`);
- if(a.sinl&&can('entrada'))b.push(`<button class="btn sm pri" data-ent="${a.p.id}|1">Asignar lote</button>`);
+ if(a.grp==='stock'&&a.p&&can('pedir')&&stockA(a.p))b.push(`<button class="btn sm pri" data-palm="${a.p.id}">Pedir al almacén (${stockA(a.p)})</button>`);
+ if(a.grp==='stock'&&a.p&&can('pedir'))b.push(`<button class="btn sm ${stockA(a.p)?'':'pri'}" data-ped="${a.p.id}">Solicitar a Finanzas</button>`);
+ if(a.sol&&can('almacen'))b.push(stockA(a.p)?`<button class="btn sm pri" data-tras="${a.p.id}|${Math.min(a.sol.cantidad-a.sol.surtido,stockA(a.p))}|${a.sol.id}">Enviar a farmacia</button>`:`<button class="btn sm pri" data-palp="${a.p.id}|${a.sol.cantidad-a.sol.surtido}">Pedir al proveedor</button>`,`<button class="btn sm" data-rech="${a.sol.id}">Rechazar</button>`);
+ if(a.grp==='almst'&&a.p&&can('almacen'))b.push(`<button class="btn sm pri" data-palp="${a.p.id}">Pedir al proveedor</button>`);
+ if(a.ainv&&can('almacen'))b.push(`<button class="btn sm pri" data-ainv="1">Hacer inventario</button>`);
+ if(a.cad&&a.k==='dead'&&can('ajuste'))b.push(`<button class="btn sm" data-baja="${a.p.id}|${esc(a.lote)}${a.alm?'|alm':''}">Dar de baja</button>`);
+ if(a.sinl&&!a.alm&&can('entrada'))b.push(`<button class="btn sm pri" data-ent="${a.p.id}|1">Asignar lote</button>`);
+ if(a.sinl&&a.alm&&can('almacen'))b.push(`<button class="btn sm pri" data-enta="${a.p.id}|1">Asignar lote</button>`);
  if(a.conteo&&can('ajuste'))b.push(`<button class="btn sm pri" data-autc="1">Revisar y autorizar</button>`);
  if(a.imp&&can('entrada'))b.push(`<button class="btn sm pri" data-imp="1">Importar eOptics</button>`);
  if(a.cls&&can('entrada'))b.push(`<button class="btn sm" data-goinv="sc">Clasificar</button>`);
@@ -735,7 +744,7 @@ function alertActs(a){const b=[];
 function pedRow(p){
  return `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b class="mono">${p.id}</b><span>${p.prio==='Urgente'?'<span class="chip c-crit">Urgente</span>':''} <span class="mono">${p.monto?money(p.monto):'costo por definir'}</span></span></div>
   <div>${esc(p.items)}</div>${p.nota?`<div class="note">Nota: ${esc(p.nota)}</div>`:''}<div class="note">${fmtD(p.fecha)} · ${esc(p.por)}${p.firma?' · firmado con PIN':''} · ${p.monto>3000?'Autoriza Director':'Autoriza Director o Dra. Rivera'}</div>
-  <div class="steps">${PSTEPS.map((s,i)=>`<span class="${i<=p.est?'on':''}">${s}</span>`).join('')}</div>
+  ${p.origen==='almacen'?'<div>'+chip(['info','Pedido del almacén'])+'</div>':''}<div class="steps">${PSTEPS.map((s,i)=>`<span class="${i<=p.est?'on':''}">${s}</span>`).join('')}</div>
   ${can('autorizar')&&p.est<3?`<button class="btn sm" style="margin-top:6px" data-adv="${p.id}">Avanzar a “${PSTEPS[p.est+1]}”</button>`:''}</div>`;
 }
 
@@ -761,7 +770,7 @@ function vInv(){
   ${canE?`<button class="btn" id="scanBtn" title="Con el lector: escanee el código y se abre la entrada de ese producto">Escanear</button><button class="btn pri" data-ent="0">+ Entrada</button>`:'<span class="note">Solo lectura para este usuario.</span>'}
  </div>
  <div class="panel tbl"><table class="invt"><thead><tr><th>Clave</th><th>Descripción (eOptics)</th><th>Grupo</th><th class="num">Exist.</th><th>Estado</th><th>Lote / caducidad</th>${!can('costos')?'':'<th class="num">Costo</th><th class="num">Venta</th>'}</tr></thead><tbody>
- ${rows.map(p=>{const ls=[...p.lotes].sort(lotSort);return `<tr><td class="mono" style="font-size:12px">${esc(p.cl)}${canEd?`<div class="racts">${canE&&!p.srv?`<button class="btn sm" data-ent="${p.id}">+ Entrada</button>`:''}<button class="btn sm" data-edit="${p.id}">Editar</button></div>`:''}</td><td class="desc"><b>${esc(p.d)}</b>${p.pa&&p.pa!=='—'?`<div class="note">${esc(p.pa)}</div>`:''}</td><td>${p.g==='sc'?chip(['info','Sin clasificar']):esc(GRUPOS[p.g])}</td><td class="num"><b>${p.srv?'—':p.cap?stock(p):'—'}</b>${p.srv||!p.cap?'':`<div class="mm">mín ${p.min}<br>crít ${p.cri}</div>`}</td><td>${chip(stockState(p))}${p.ejp&&!p.srv?'<div style="margin-top:3px">'+chip(['info','Por definir'])+'</div>':''}</td>
+ ${rows.map(p=>{const ls=[...p.lotes].sort(lotSort);return `<tr><td class="mono" style="font-size:12px">${esc(p.cl)}${canEd?`<div class="racts">${canE&&!p.srv?`<button class="btn sm" data-ent="${p.id}">+ Entrada</button>`:''}<button class="btn sm" data-edit="${p.id}">Editar</button></div>`:''}</td><td class="desc"><b>${esc(p.d)}</b>${p.pa&&p.pa!=='—'?`<div class="note">${esc(p.pa)}</div>`:''}</td><td>${p.g==='sc'?chip(['info','Sin clasificar']):esc(GRUPOS[p.g])}</td><td class="num"><b>${p.srv?'—':p.cap?stock(p):'—'}</b>${p.srv||!p.cap?'':`<div class="mm">mín ${p.min}<br>crít ${p.cri}</div>`}${stockA(p)?`<div class="mm" style="color:var(--accent)">almacén ${stockA(p)}</div>`:''}</td><td>${chip(stockState(p))}${p.ejp&&!p.srv?'<div style="margin-top:3px">'+chip(['info','Por definir'])+'</div>':''}</td>
   <td>${p.srv?'—':ls.map(l=>`<div class="lotl"><span class="mono" style="font-size:12px">${esc(l.l)}</span> · ${l.q} · ${chip(cadState(l.cad))}${!l.cad&&canE?` <button class="lnk sm" data-ent="${p.id}|1">asignar</button>`:''}${l.cad&&days(l.cad)<0&&canA?` <button class="lnk sm" data-baja="${p.id}|${esc(l.l)}">dar de baja</button>`:''}</div>`).join('')||'<span class="note">—</span>'}</td>${!can('costos')?'':`<td class="num">${p.srv?'—':p.c?money(p.c):'<span class="note">—</span>'}</td><td class="num">${p.v?money(p.v):'<span class="note">—</span>'}</td>`}</tr>`}).join('')||'<tr><td colspan="9" class="note">Sin productos con ese filtro.</td></tr>'}
  </tbody></table></div><p class="note">Cada reporte de eOptics que importe descuenta las salidas del lote que caduca primero. Las piezas que llegan sin lote quedan como «Sin lote ni caducidad» hasta que se les asigna. Un lote vencido no cuenta como existencia.</p>`;
 }
@@ -1061,13 +1070,13 @@ function vAcc(){
 }
 function toast(t){document.querySelectorAll('.toastx').forEach(x=>x.remove());const d=document.createElement('div');d.className='toastx';d.textContent=t;d.style.cssText='position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;z-index:50;max-width:90vw;font-size:14px';document.body.appendChild(d);setTimeout(()=>d.remove(),3000)}
 async function addPedido(p,qty,prio){const items=(p?p.nm:($('#pNew')?.value||'Medicamento'))+' × '+qty,monto0=p?p.c*qty:qty*300,por0=ME?ME.nombre:PERFILES[eff()];if(sb){const d=await db(sb.from('far_pedidos').insert({producto_id:p?p.id:null,items,monto:monto0,prioridad:prio,solicitante:por0}).select().single(),'Pedido');if(!d)return;await logDb('pedido_creado',{folio:d.folio,items});await reload();toast(`Pedido ${d.folio} enviado a Finanzas.`);return}const n='PF-00'+(42+PEDIDOS.length-3);const monto=p?p.c*qty:qty*300;PEDIDOS.unshift({id:n,items:(p?p.nm:($('#pNew')?.value||'Medicamento'))+' × '+qty,monto,prio,est:0,por:{dir:'Director',dra:'Dra. Rivera',mos:'Mostrador',med:'Médico'}[eff()]||'Mostrador',fecha:ISO(TODAY)});toast(`Pedido ${n} enviado a Finanzas. Se avisó al mostrador y a Finanzas.`)}
-function render(){if(!tabsFor().includes(tab))tab=tabsFor()[0];$('#pgTitle').textContent=TABN[tab];$('#main').innerHTML=(viewAs?`<div class="asbar"><span>Vista previa: así le aparece la app a <b>${PERFILES[viewAs]}</b>. Puede navegar sus pestañas.</span><button class="btn sm" id="asBack">Volver a mi vista de Director</button></div>`:'')+{dash:vDash,inv:vInv,conteo:vConteo,alert:vAlert,ped:vPed,rx:vRx,acc:vAcc}[tab]();renderStrip();bind();fitPaper()}
+function render(){if(!tabsFor().includes(tab))tab=tabsFor()[0];$('#pgTitle').textContent=TABN[tab];$('#main').innerHTML=(viewAs?`<div class="asbar"><span>Vista previa: así le aparece la app a <b>${PERFILES[viewAs]}</b>. Puede navegar sus pestañas.</span><button class="btn sm" id="asBack">Volver a mi vista de Director</button></div>`:'')+{dash:vDash,inv:vInv,conteo:vConteo,alert:vAlert,ped:vPed,alm:vAlm,rx:vRx,acc:vAcc}[tab]();renderStrip();bind();fitPaper()}
 function fitPaper(){const w=document.querySelector('.paperwrap'),p=w&&w.querySelector('.paper');if(!p)return;p.style.zoom='';const z=Math.min(1,(w.clientWidth-28)/816);p.style.zoom=z<1?z.toFixed(3):''}
 window.addEventListener('resize',fitPaper);
 function bind(){
  const M=$('#main');
  M.querySelectorAll('[data-ok]').forEach(b=>b.onclick=async()=>{ATENDIDAS.add(b.dataset.ok);render();if(sb)await db(sb.from('far_alertas_atendidas').upsert({alerta_id:b.dataset.ok,atendida_por:ME?ME.nombre:PERFILES[eff()]}),'Alerta')});
- bindActs(M);
+ bindActs(M);bindAlm(M);
  const sc=$('#scanBtn');if(sc)sc.onclick=()=>{const q=$('#invQ');q.value='';invQ='';q.focus();toast('Escanee el código de barras del producto.')};
  M.querySelectorAll('[data-adv]').forEach(b=>b.onclick=async()=>{const p=PEDIDOS.find(x=>x.id===b.dataset.adv);p.est++;if(sb){await db(sb.from('far_pedidos').update({estado:p.est,updated_at:new Date().toISOString()}).eq('id',p.dbid),'Pedido');await logDb('pedido_estado',{folio:p.id,estado:PSTEPS[p.est]})}toast(p.est===3?`${p.id} recibido. Registre la entrada con lote y caducidad en Inventario.`:`${p.id}: ${PSTEPS[p.est]}.`);render();if(p.est===3&&can('entrada')){const d=(p.det||[]).find(x=>x.producto_id);if(d)entradaDlg(d.producto_id,{qty:d.cantidad,doc:p.id})}});
  M.querySelectorAll('[data-demo]').forEach(b=>b.onclick=()=>toast('En la app final: '+b.dataset.demo));
@@ -1154,7 +1163,13 @@ function bindActs(R){
  R.querySelectorAll('[data-ped],[data-pedp]').forEach(b=>b.onclick=()=>{const p=PROD.find(x=>x.id==(b.dataset.ped||b.dataset.pedp));MODAL=null;closePop();render();reqDlg([sug(p)])});
  R.querySelectorAll('[data-req]').forEach(b=>b.onclick=()=>{closePop();reqDlg([])});
  R.querySelectorAll('[data-ent]').forEach(b=>b.onclick=()=>{closePop();const[id,sl]=b.dataset.ent.split('|');entradaDlg(+id||null,{sinl:sl==='1'})});
- R.querySelectorAll('[data-baja]').forEach(b=>b.onclick=()=>{closePop();const v=b.dataset.baja,i=v.indexOf('|');bajaDlg(+v.slice(0,i),v.slice(i+1))});
+ R.querySelectorAll('[data-baja]').forEach(b=>b.onclick=()=>{closePop();const v=b.dataset.baja.split('|');bajaDlg(+v[0],v[1],v[2])});
+ R.querySelectorAll('[data-enta]').forEach(b=>b.onclick=()=>{closePop();const[id,sl]=b.dataset.enta.split('|');entradaDlg(+id||null,{alm:1,sinl:sl==='1'})});
+ R.querySelectorAll('[data-tras]').forEach(b=>b.onclick=()=>{closePop();const[id,q,so]=b.dataset.tras.split('|');trasDlg(+id,+q,+so||null)});
+ R.querySelectorAll('[data-palm]').forEach(b=>b.onclick=()=>{closePop();const p=PROD.find(x=>x.id==b.dataset.palm);almReqDlg([{pid:p.id,cant:Math.min(stockA(p),Math.max((p.min||1)*2-stock(p),1))}])});
+ R.querySelectorAll('[data-palp]').forEach(b=>b.onclick=()=>{closePop();const[id,c]=b.dataset.palp.split('|');const p=PROD.find(x=>x.id==id);reqDlg(p?[{pid:p.id,nombre:p.nm,cant:+c||Math.max((p.minA||1)*2-stockA(p),1)}]:[],true)});
+ R.querySelectorAll('[data-rech]').forEach(b=>b.onclick=async()=>{if(!needLive())return;try{await rpc('far_cerrar_solicitud',{p_token:ME.token,p_id:+b.dataset.rech,p_estado:'rechazada'});toast('Pedido de farmacia rechazado.');await reload()}catch(e){toast(e.message)}});
+ R.querySelectorAll('[data-ainv]').forEach(b=>b.onclick=()=>{closePop();ALMC=true;go('alm')});
  R.querySelectorAll('[data-autc]').forEach(b=>b.onclick=()=>{closePop();autcDlg()});
  R.querySelectorAll('[data-imp]').forEach(b=>b.onclick=()=>{closePop();importDlg()});
  R.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editDlg(+b.dataset.edit));
@@ -1164,23 +1179,23 @@ function bindActs(R){
 
 /* ---------- Solicitud a Finanzas con PIN ---------- */
 let REQ=null;
-function reqDlg(items){
- if(!can('pedir')){toast('Su perfil no envía solicitudes a Finanzas.');return}
- REQ={items:items.length?items.map(i=>({...i})):[{pid:null,nombre:'',cant:1}],prio:items.some(i=>{const p=PROD.find(x=>x.id===i.pid);return p&&p.cap&&stock(p)===0})?'Urgente':'Normal',nota:''};
- dlg('Solicitud a Finanzas','<form id="rqF" autocomplete="off"><div id="rqBox"></div></form>',true);renderReq();
+function reqDlg(items,alm){
+ if(!can(alm?'almacen':'pedir')){toast('Su perfil no envía solicitudes a Finanzas.');return}
+ REQ={alm:!!alm,items:items.length?items.map(i=>({...i})):[{pid:null,nombre:'',cant:1}],prio:items.some(i=>{const p=PROD.find(x=>x.id===i.pid);return p&&p.cap&&stock(p)===0})?'Urgente':'Normal',nota:''};
+ dlg(alm?'Pedido al proveedor · almacén':'Solicitud a Finanzas','<form id="rqF" autocomplete="off"><div id="rqBox"></div></form>',true);renderReq();
 }
 function renderReq(){const B=$('#rqBox');if(!B||!REQ)return;
- const low=PROD.filter(p=>!p.srv&&p.cap&&['dead','crit','warn'].includes(stockState(p)[0])&&!REQ.items.some(i=>i.pid===p.id));
+ const low=PROD.filter(p=>!p.srv&&(REQ.alm?(p.minA>0&&stockA(p)<=p.minA):(p.cap&&['dead','crit','warn'].includes(stockState(p)[0])))&&!REQ.items.some(i=>i.pid===p.id));
  let tot=0,sinc=0;REQ.items.filter(i=>i.pid||(i.nombre||'').trim()).forEach(i=>{const p=PROD.find(x=>x.id===i.pid);if(p&&p.c)tot+=p.c*(+i.cant||0);else sinc++});
- B.innerHTML=`<p class="note" style="margin-top:0">Elija del catálogo o escriba un medicamento que no tenemos. Finanzas recibe el aviso al momento.</p>
+ B.innerHTML=`<p class="note" style="margin-top:0">${REQ.alm?'Pedido de Finanzas al proveedor para surtir el almacén.':'Elija del catálogo o escriba un medicamento que no tenemos. Finanzas recibe el aviso al momento.'}${!REQ.alm&&REQ.items.some(i=>{const p=PROD.find(x=>x.id===i.pid);return p&&stockA(p)})?' <b>Ojo:</b> algún producto ya está en el almacén; puede pedirlo al almacén en lugar de comprarlo.':''}</p>
  ${REQ.items.map((i,k)=>{const p=PROD.find(x=>x.id===i.pid);return `<div class="rq-row"><div>${i.pid===0||(!i.pid&&i.nombre)?`<input type="text" data-rqn="${k}" value="${esc(i.nombre)}" placeholder="Nombre, presentación y concentración">`:`<select data-rqp="${k}"><option value="">Elegir producto…</option>${prodOpts(i.pid)}<option value="0">Otro (no está en catálogo)…</option></select>`}</div>
   <input type="number" min="1" data-rqc="${k}" value="${esc(i.cant)}" aria-label="Cantidad"><button type="button" class="icon-btn" data-rqx="${k}" aria-label="Quitar">✕</button>
-  ${p?`<small>Existencia ${p.cap?stock(p):'sin capturar'} · mínimo ${p.min}${p.c?` · costo ${money(p.c)} c/u`:''}</small>`:''}</div>`}).join('')}
+  ${p?`<small>${REQ.alm?`Almacén ${stockA(p)} (mín ${p.minA||0}) · farmacia ${p.cap?stock(p):'—'}`:`Existencia ${p.cap?stock(p):'sin capturar'} · mínimo ${p.min}${stockA(p)?` · almacén ${stockA(p)}`:''}`}${p.c?` · costo ${money(p.c)} c/u`:''}</small>`:''}</div>`}).join('')}
  <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" id="rqAdd">+ Agregar renglón</button>${low.length?`<button type="button" class="btn sm" id="rqLow">+ Agregar lo que está bajo (${low.length})</button>`:''}</div>
  <div class="rq-tot"><span>Total estimado</span><span class="mono">${money(tot)}${sinc?` <small class="note">+ ${sinc} sin costo</small>`:''}</span></div>
  <div class="fgrid"><label>Prioridad<select id="rqPr"><option ${REQ.prio==='Normal'?'selected':''}>Normal</option><option ${REQ.prio==='Urgente'?'selected':''}>Urgente</option></select></label>
- <label>Nota para Finanzas (opcional)<input type="text" id="rqNo" value="${esc(REQ.nota)}" placeholder="Proveedor, paciente que espera…"></label></div>
- ${pinHtml('Su PIN para confirmar','Firmar y enviar a Finanzas')}`;
+ <label>${REQ.alm?'Nota (proveedor, forma de pago…)':'Nota para Finanzas (opcional)'}<input type="text" id="rqNo" value="${esc(REQ.nota)}" placeholder="Proveedor, paciente que espera…"></label></div>
+ ${pinHtml('Su PIN para confirmar',REQ.alm?'Firmar y registrar pedido':'Firmar y enviar a Finanzas')}`;
  B.querySelectorAll('[data-rqp]').forEach(s=>s.onchange=()=>{const k=+s.dataset.rqp;if(s.value==='0'){REQ.items[k]={pid:0,nombre:'',cant:REQ.items[k].cant}}else{const p=PROD.find(x=>x.id===+s.value);REQ.items[k]={pid:p?p.id:null,nombre:p?p.nm:'',cant:p&&REQ.items[k].cant<=1?Math.max((p.min||1)*2-stock(p),1):REQ.items[k].cant}}renderReq();const n=B.querySelector(`[data-rqn="${k}"]`);if(n)n.focus()});
  B.querySelectorAll('[data-rqn]').forEach(s=>s.oninput=()=>{REQ.items[+s.dataset.rqn].nombre=s.value});
  B.querySelectorAll('[data-rqc]').forEach(s=>s.oninput=()=>{REQ.items[+s.dataset.rqc].cant=Math.max(1,parseInt(s.value)||1)});
@@ -1196,18 +1211,18 @@ function renderReq(){const B=$('#rqBox');if(!B||!REQ)return;
   const pin=$('#dPin').value.trim();if(!/^\d{4,6}$/.test(pin)){dErr('Escriba su PIN (4 a 6 números).');$('#dPin').focus();return}
   if(!needLive()||!needPin())return;
   const det=it.map(i=>{const p=PROD.find(x=>x.id===i.pid);return {producto_id:p?p.id:null,clave:p?p.cl:null,nombre:p?p.nm:i.nombre.trim(),cantidad:+i.cant,costo:p?p.c:0}});
-  await busy($('#dGo'),async()=>{try{const r=await rpc('far_crear_pedido',{p_token:ME.token,p_pin:pin,p_detalle:det,p_prioridad:REQ.prio,p_nota:REQ.nota||null});closeDlg();REQ=null;toast(`Solicitud ${r.folio} enviada a Finanzas.`);await reload();if(tab!=='ped'&&tabsFor().includes('ped'))go('ped')}catch(er){dErr(er.message);if(/PIN/.test(er.message)){$('#dPin').value='';$('#dPin').focus()}}})};
+  await busy($('#dGo'),async()=>{try{const r=await rpc(REQ.alm?'far_crear_pedido_alm':'far_crear_pedido',{p_token:ME.token,p_pin:pin,p_detalle:det,p_prioridad:REQ.prio,p_nota:REQ.nota||null});const wasA=REQ&&REQ.alm;closeDlg();REQ=null;toast(`${wasA?'Pedido':'Solicitud'} ${r.folio} ${wasA?'registrado':'enviada a Finanzas'}.`);await reload();if(!wasA&&tab!=='ped'&&tabsFor().includes('ped'))go('ped')}catch(er){dErr(er.message);if(/PIN/.test(er.message)){$('#dPin').value='';$('#dPin').focus()}}})};
 }
 
 /* ---------- Entrada de mercancía / asignar lote ---------- */
-function entradaDlg(pid,o){o=o||{};if(!can('entrada')){toast('Su perfil no registra entradas.');return}
+function entradaDlg(pid,o){o=o||{};const A=!!o.alm,SL=p=>A?sinLoteA(p):sinLote(p),LT=p=>A?(p.alm||[]):p.lotes;if(!can(A?'almacen':'entrada')){toast('Su perfil no registra entradas.');return}
  const E={pid:pid||null,sinl:!!o.sinl,qty:o.qty||'',lote:'',cad:'',costo:'',doc:o.doc||''};
- const p0=PROD.find(x=>x.id===E.pid);if(p0){if(E.sinl&&!sinLote(p0))E.sinl=false;if(E.sinl&&!E.qty)E.qty=sinLote(p0);E.costo=p0.c||''}
- dlg(E.sinl?'Asignar lote y caducidad':'Entrada de mercancía','<form id="enF" autocomplete="off"><div id="enBox"></div></form>');
- const paint=()=>{const p=PROD.find(x=>x.id===E.pid),sl=p?sinLote(p):0;
+ const p0=PROD.find(x=>x.id===E.pid);if(p0){if(E.sinl&&!SL(p0))E.sinl=false;if(E.sinl&&!E.qty)E.qty=SL(p0);E.costo=p0.c||''}
+ dlg((A?'Almacén · ':'')+(E.sinl?'Asignar lote y caducidad':'Entrada de mercancía'),'<form id="enF" autocomplete="off"><div id="enBox"></div></form>');
+ const paint=()=>{const p=PROD.find(x=>x.id===E.pid),sl=p?SL(p):0;
   $('#enBox').innerHTML=`<div class="fgrid">
   <label class="full">Producto<select id="enP" required><option value="">Elegir producto…</option>${prodOpts(E.pid)}</select></label>
-  ${p?`<p class="note full" style="margin:0">Existencia ${p.cap?stock(p):'sin capturar'}${p.lotes.length?' · lotes: '+[...p.lotes].sort(lotSort).map(l=>esc(l.l)+' ('+l.q+')').join(', '):''}</p>`:''}
+  ${p?`<p class="note full" style="margin:0">${A?'En almacén '+stockA(p)+' · en farmacia '+(p.cap?stock(p):'—'):'Existencia '+(p.cap?stock(p):'sin capturar')}${LT(p).length?' · lotes: '+[...LT(p)].sort(lotSort).map(l=>esc(l.l)+' ('+l.q+')').join(', '):''}</p>`:''}
   ${sl?`<label class="full" style="display:flex;gap:8px;align-items:center;font-weight:600;color:var(--ink)"><input type="checkbox" id="enSl" ${E.sinl?'checked':''} style="width:auto"> Son ${sl} pieza${sl>1?'s':''} que ya están en existencia sin lote (solo asignar lote y caducidad)</label>`:''}
   <label>Cantidad (piezas)<input type="number" id="enQ" min="1" required value="${esc(E.qty)}"></label>
   <label>Lote<input type="text" id="enL" required value="${esc(E.lote)}" style="text-transform:uppercase" placeholder="Como viene en la caja"></label>
@@ -1216,13 +1231,13 @@ function entradaDlg(pid,o){o=o||{};if(!can('entrada')){toast('Su perfil no regis
   <label class="full">Factura o documento (opcional)<input type="text" id="enD" value="${esc(E.doc)}" placeholder="Folio de factura o pedido PF-…"></label>`}
   </div><p class="ferr" id="dErr" hidden></p><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap"><button class="btn" type="button" id="enMore">Guardar y otro lote</button><button class="btn pri" type="submit" id="dGo">Guardar</button></div>`;
   const keep=()=>{E.qty=$('#enQ').value;E.lote=$('#enL').value;E.cad=$('#enC').value;if($('#enCo'))E.costo=$('#enCo').value;if($('#enD'))E.doc=$('#enD').value};
-  $('#enP').onchange=e=>{keep();E.pid=+e.target.value||null;const p=PROD.find(x=>x.id===E.pid);E.sinl=!!(p&&sinLote(p)&&!p.lotes.some(l=>l.cad));E.qty=E.sinl?sinLote(p):'';E.costo=p&&p.c||'';paint()};
-  const cb=$('#enSl');if(cb)cb.onchange=()=>{keep();E.sinl=cb.checked;if(E.sinl)E.qty=sinLote(PROD.find(x=>x.id===E.pid));paint()};
+  $('#enP').onchange=e=>{keep();E.pid=+e.target.value||null;const p=PROD.find(x=>x.id===E.pid);E.sinl=!!(p&&SL(p)&&!LT(p).some(l=>l.cad));E.qty=E.sinl?SL(p):'';E.costo=p&&p.c||'';paint()};
+  const cb=$('#enSl');if(cb)cb.onchange=()=>{keep();E.sinl=cb.checked;if(E.sinl)E.qty=SL(PROD.find(x=>x.id===E.pid));paint()};
   const save=async(more,btn)=>{keep();dErr('');if(!E.pid){dErr('Elija el producto.');return}if(!(+E.qty>0)){dErr('Escriba la cantidad.');return}if(!E.lote.trim()){dErr('Escriba el lote.');return}if(!E.cad){dErr('Escriba la caducidad.');return}
    if(days(E.cad)<0&&!confirmPast(E.cad))return;if(!needLive())return;
-   await busy(btn,async()=>{try{await rpc('far_entrada',{p_token:ME.token,p_producto_id:E.pid,p_lote:E.lote,p_caducidad:E.cad,p_cantidad:+E.qty,p_costo:E.sinl||!E.costo?null:+E.costo,p_factura:E.doc||null,p_de_sin_lote:E.sinl});
+   await busy(btn,async()=>{try{await rpc(A?'far_entrada_alm':'far_entrada',{p_token:ME.token,p_producto_id:E.pid,p_lote:E.lote,p_caducidad:E.cad,p_cantidad:+E.qty,p_costo:E.sinl||!E.costo?null:+E.costo,p_factura:E.doc||null,p_de_sin_lote:E.sinl});
     const nm=PROD.find(x=>x.id===E.pid).nm;await reload();toast(`${nm}: ${E.qty} pza lote ${E.lote.toUpperCase()} ${E.sinl?'asignadas':'registradas'}.`);
-    if(more){const p=PROD.find(x=>x.id===E.pid);E.lote='';E.cad='';E.sinl=!!(E.sinl&&p&&sinLote(p));E.qty=E.sinl?sinLote(p):'';paint();$('#enL').focus()}else closeDlg()}catch(er){dErr(er.message)}})};
+    if(more){const p=PROD.find(x=>x.id===E.pid);E.lote='';E.cad='';E.sinl=!!(E.sinl&&p&&SL(p));E.qty=E.sinl?SL(p):'';paint();$('#enL').focus()}else closeDlg()}catch(er){dErr(er.message)}})};
   $('#enMore').onclick=()=>save(true,$('#enMore'));$('#enF').onsubmit=e=>{e.preventDefault();save(false,$('#dGo'))};
  };paint();setTimeout(()=>{const f=E.pid?$('#enL'):$('#enP');f&&f.focus()},60);
 }
@@ -1273,7 +1288,7 @@ function impPreview(rows,fname){
 }
 
 /* ---------- Editar producto ---------- */
-function editDlg(pid){const p=PROD.find(x=>x.id===pid);if(!p)return;if(!(can('entrada')||eff()==='dir')){toast('Solo lectura.');return}
+function editDlg(pid){const p=PROD.find(x=>x.id===pid);if(!p)return;if(!(can('entrada')||can('almacen')||eff()==='dir')){toast('Solo lectura.');return}
  dlg('Editar producto',`<form id="edF" autocomplete="off"><p class="note" style="margin-top:0"><span class="mono">${esc(p.cl)}</span> · ${esc(p.d)}</p><div class="fgrid">
  <label class="full">Nombre corto (receta)<input id="edN" required value="${esc(p.nm)}"></label>
  <label class="full">Principio activo<input id="edPa" value="${esc(p.pa==='—'?'':p.pa)}" placeholder="Ej. moxifloxacino 0.5%"></label>
@@ -1281,25 +1296,26 @@ function editDlg(pid){const p=PROD.find(x=>x.id===pid);if(!p)return;if(!(can('en
  <label>Categoría<select id="edCat">${Object.entries(CAT).map(([k,t])=>`<option value="${k}" ${k===p.cat?'selected':''}>${t}</option>`).join('')}</select></label>
  <label>Mínimo (avisa al llegar aquí)<input type="number" id="edMin" min="0" value="${p.min}"></label>
  <label>Crítico<input type="number" id="edCri" min="0" value="${p.cri}"></label>
+ <label>Mínimo en almacén (Finanzas)<input type="number" id="edMinA" min="0" value="${p.minA||0}"></label><span></span>
  <label>Costo unitario<input type="number" id="edC" min="0" step="0.01" value="${p.c||''}"></label>
  <label>Precio de venta<input type="number" id="edV" min="0" step="0.01" value="${p.v||''}"></label>
  <label class="full" style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="edS" ${p.srv?'checked':''} style="width:auto"> Es un servicio (no lleva existencia)</label>
  </div><p class="ferr" id="dErr" hidden></p><div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn pri" type="submit" id="dGo">Guardar</button></div></form>`);
  $('#edF').onsubmit=async e=>{e.preventDefault();const mi=+$('#edMin').value||0,cr=+$('#edCri').value||0;if(cr>mi){dErr('El crítico no puede ser mayor que el mínimo.');return}if(!needLive())return;
-  const up={nombre:$('#edN').value.trim()||p.nm,principio:$('#edPa').value.trim(),grupo:$('#edG').value,categoria:$('#edCat').value,minimo:mi,critico:cr,costo:+$('#edC').value||0,venta:+$('#edV').value||0,servicio:$('#edS').checked,ejemplo_parametros:false,updated_at:new Date().toISOString()};
+  const up={nombre:$('#edN').value.trim()||p.nm,principio:$('#edPa').value.trim(),grupo:$('#edG').value,categoria:$('#edCat').value,minimo:mi,critico:cr,minimo_alm:+$('#edMinA').value||0,costo:+$('#edC').value||0,venta:+$('#edV').value||0,servicio:$('#edS').checked,ejemplo_parametros:false,updated_at:new Date().toISOString()};
   await busy($('#dGo'),async()=>{const d=await db(sb.from('far_productos').update(up).eq('id',p.id),'Producto');if(d===null)return;logDb('producto_editado',{clave:p.cl,...up});closeDlg();toast(up.nombre+' actualizado.');await reload()})};
 }
 
 /* ---------- Baja de piezas con PIN ---------- */
-function bajaDlg(pid,lote){const p=PROD.find(x=>x.id===pid),l=p&&p.lotes.find(x=>x.l===lote);if(!l){toast('Ese lote ya no tiene piezas.');return}
- dlg('Dar de baja',`<form id="bjF" autocomplete="off"><p style="margin-top:0"><b>${esc(p.nm)}</b> · lote <span class="mono">${esc(l.l)}</span> · ${l.q} pza${l.cad?' · '+chip(cadState(l.cad)):''}</p><div class="fgrid">
+function bajaDlg(pid,lote,ubic){const p=PROD.find(x=>x.id===pid),l=p&&(ubic==='alm'?(p.alm||[]).find(x=>x.k===lote):p.lotes.find(x=>x.l===lote));if(!l){toast('Ese lote ya no tiene piezas.');return}
+ dlg(ubic==='alm'?'Dar de baja · almacén':'Dar de baja',`<form id="bjF" autocomplete="off"><p style="margin-top:0"><b>${esc(p.nm)}</b> · lote <span class="mono">${esc(l.l)}</span> · ${l.q} pza${l.cad?' · '+chip(cadState(l.cad)):''}</p><div class="fgrid">
  <label>Cantidad<input type="number" id="bjQ" min="1" max="${l.q}" value="${l.q}"></label>
  <label>Motivo<select id="bjM"><option>Caducidad</option><option>Daño o rotura</option><option>Muestra / cortesía</option><option>Otro</option></select></label>
  <label class="full">Detalle (opcional)<input id="bjD" placeholder="Ej. retirado del anaquel y destruido"></label></div>
  ${pinHtml('Su PIN','Firmar baja')}</form>`);
  if(l.cad&&days(l.cad)>=0)$('#bjM').value='Daño o rotura';
  $('#bjF').onsubmit=async e=>{e.preventDefault();dErr('');const q=+$('#bjQ').value,pin=$('#dPin').value.trim();if(!(q>0&&q<=l.q)){dErr('Cantidad no válida.');return}if(!/^\d{4,6}$/.test(pin)){dErr('Escriba su PIN.');return}if(!needLive()||!needPin())return;
-  await busy($('#dGo'),async()=>{try{await rpc('far_baja',{p_token:ME.token,p_pin:pin,p_producto_id:p.id,p_lote:l.l,p_cantidad:q,p_motivo:$('#bjM').value+($('#bjD').value.trim()?': '+$('#bjD').value.trim():'')});closeDlg();toast(`Baja registrada: ${p.nm} lote ${l.l} × ${q}.`);await reload()}catch(er){dErr(er.message)}})};
+  await busy($('#dGo'),async()=>{try{await rpc('far_baja',{p_token:ME.token,p_pin:pin,p_producto_id:p.id,p_lote:l.k||l.l,p_cantidad:q,p_motivo:$('#bjM').value+($('#bjD').value.trim()?': '+$('#bjD').value.trim():'')});closeDlg();toast(`Baja registrada: ${p.nm} lote ${l.l} × ${q}.`);await reload()}catch(er){dErr(er.message)}})};
 }
 
 /* ---------- Autorizar discrepancias de conteo ---------- */
@@ -1321,6 +1337,7 @@ function popEvents(){
  if(!ME||DEMO||viewAs||!LOADED)return[];
  const ev=[];
  if(tabsFor().includes('alert'))alerts().filter(a=>a.grp&&a.grp!=='info'&&!ATENDIDAS.has(a.id)).forEach(a=>ev.push(a));
+ if(can('almacen'))alertsAlm().filter(a=>!ATENDIDAS.has(a.id)).forEach(a=>ev.push(a));
  if(can('autorizar'))PEDIDOS.filter(p=>p.est===0&&p.por!==ME.nombre).forEach(p=>ev.push({id:'p'+p.id,k:p.prio==='Urgente'?'crit':'warn',grp:'ped',t:`Solicitud ${p.id} por autorizar${p.prio==='Urgente'?' · URGENTE':''}`,d:`${p.items} · ${p.monto?money(p.monto):'costo por definir'} · ${p.por}${p.nota?' · '+p.nota:''}`}));
  return ev;
 }
@@ -1331,7 +1348,7 @@ function checkPop(force){
  if(!nu.length){if(force)toast('Sin avisos pendientes.');return}
  showPop(nu,all.length);
 }
-const POPG=[['cad','Caducidades','var(--crit)'],['stock','Existencias bajas','var(--warn)'],['disc','Discrepancias','var(--accent)'],['ped','Solicitudes a Finanzas','var(--ok)']];
+const POPG=[['cad','Caducidades','var(--crit)'],['stock','Existencias bajas','var(--warn)'],['disc','Discrepancias','var(--accent)'],['alm','Farmacia pide al almacén','var(--warn)'],['almst','Almacén · existencias e inventario','var(--warn)'],['almcad','Almacén · caducidades','var(--crit)'],['ped','Solicitudes a Finanzas','var(--ok)']];
 function showPop(list,total){
  const n=list.length,lim=24;
  $('#popT').textContent=n===1?'1 aviso importante':`${n} avisos importantes`;
@@ -1340,16 +1357,122 @@ function showPop(list,total){
  $('#popB').innerHTML=POPG.map(([g,t,c])=>{const L=list.filter(e=>e.grp===g);if(!L.length)return '';const S=L.slice(0,Math.max(0,lim-shown));shown+=S.length;
   return `<div class="pop-g"><h4><i style="background:${c}"></i>${t} · ${L.length}</h4>${S.map(e=>g==='ped'?`<div class="alert"><span class="bar" style="background:var(--${e.k})"></span><div><b>${esc(e.t)}</b><p>${esc(e.d)}</p></div><div style="display:flex;gap:6px"><button class="btn sm pri" data-goped="1">Ver y autorizar</button></div></div>`:alertRow(e)).join('')}${L.length>S.length?`<p class="note">y ${L.length-S.length} más en Alertas.</p>`:''}</div>`}).join('');
  const st=list.filter(e=>e.grp==='stock'&&e.p),inv=list.filter(e=>e.grp!=='ped');
- $('#popF').innerHTML=`${st.length&&can('pedir')?`<button class="btn pri" id="popReq">Solicitar a Finanzas lo que falta (${st.length})</button>`:''}<button class="btn" id="popLater">Recordar más tarde</button>${inv.length?'<button class="btn" id="popOk">Enterado · marcar atendidas</button>':''}`;
+ const stA=st.filter(e=>stockA(e.p));
+ $('#popF').innerHTML=`${stA.length&&can('pedir')?`<button class="btn pri" id="popAlm">Pedir al almacén (${stA.length})</button>`:''}${st.length&&can('pedir')?`<button class="btn pri" id="popReq">Solicitar a Finanzas lo que falta (${st.length})</button>`:''}<button class="btn" id="popLater">Recordar más tarde</button>${inv.length?'<button class="btn" id="popOk">Enterado · marcar atendidas</button>':''}`;
  const ids=list.map(e=>e.id),done=()=>{popMark(ids);closePop()};
  $('#popX').onclick=done;$('#popLater').onclick=done;
  const ok=$('#popOk');if(ok)ok.onclick=async()=>{done();inv.forEach(e=>ATENDIDAS.add(e.id));render();if(sb)await db(sb.from('far_alertas_atendidas').upsert(inv.map(e=>({alerta_id:e.id,atendida_por:ME?ME.nombre:''}))),'Alertas')};
+ const pa=$('#popAlm');if(pa)pa.onclick=()=>{done();almReqDlg(stA.map(e=>({pid:e.p.id,cant:Math.min(stockA(e.p),Math.max((e.p.min||1)*2-stock(e.p),1))})))};
  const rq=$('#popReq');if(rq)rq.onclick=()=>{done();reqDlg(st.map(e=>({pid:e.p.id,nombre:e.p.nm,cant:Math.max((e.p.min||1)*2-stock(e.p),1)})))};
  const B=$('#popB');B.querySelectorAll('[data-ok]').forEach(b=>b.onclick=async()=>{ATENDIDAS.add(b.dataset.ok);b.replaceWith(Object.assign(document.createElement('span'),{className:'chip c-ok',textContent:'Atendida'}));if(sb)await db(sb.from('far_alertas_atendidas').upsert({alerta_id:b.dataset.ok,atendida_por:ME?ME.nombre:''}),'Alerta');renderStrip()});
  bindActs(B);B.querySelectorAll('button').forEach(b=>{if(!b.dataset.ok)b.addEventListener('click',()=>popMark(ids))});
  $('#popOvl').hidden=false;
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#popOvl').hidden){$('#popX').click()}});
+
+/* ===== Almacén de Finanzas ===== */
+const DSEM=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'],BYDAY=['SU','MO','TU','WE','TH','FR','SA'];
+let SOLS=[],ALM_DIA=1,LAST_CONTEO_A=null,ALMC=false,almQ='',almF='all',CONTEO_A={},CEDIT_A=new Set(),JUST_A={};
+const stockA=p=>(p.alm||[]).filter(vig).reduce((a,l)=>a+l.q,0);
+const sistemaA=p=>(p.alm||[]).reduce((a,l)=>a+l.q,0);
+const sinLoteA=p=>(p.alm||[]).filter(l=>!l.cad).reduce((a,l)=>a+l.q,0);
+const solsAbiertas=()=>SOLS.filter(s=>s.estado==='pendiente'||s.estado==='parcial');
+function nextAlmDay(){const d=new Date(TODAY);while(d.getDay()!==ALM_DIA||(ISO(d)===ISO(TODAY)&&LAST_CONTEO_A===ISO(TODAY)))d.setDate(d.getDate()+1);return d}
+function alertsAlm(){const a=[];
+ solsAbiertas().forEach(s=>{const p=PROD.find(x=>x.id===s.producto_id);if(!p)return;const f=s.cantidad-s.surtido;
+  a.push({id:`q${s.id}:${s.surtido}`,k:'warn',grp:'alm',t:`Farmacia pide ${p.nm}: ${f} pza`,d:`${s.solicitante||'—'} · ${fmtD(s.created_at.slice(0,10))}${s.nota?' · '+s.nota:''}. En almacén hay ${stockA(p)} vigentes.`,p,sol:s})});
+ PROD.filter(p=>!p.srv&&p.minA>0&&stockA(p)<=p.minA).forEach(p=>{const s=stockA(p);a.push({id:`a${p.id}:${s===0?'0':'b'}:${(p.alm||[]).map(l=>l.id).join('.')}`,k:s===0?'dead':'warn',grp:'almst',t:`Almacén · ${p.nm}: ${s===0?'agotado':s+' pza'}`,d:`Mínimo de almacén ${p.minA}. En farmacia hay ${p.cap?stock(p):'—'}.`,p,alm:1})});
+ PROD.forEach(p=>(p.alm||[]).filter(l=>l.cad).forEach(l=>{const[ck,ct]=cadState(l.cad);if(['dead','crit','warn'].includes(ck))a.push({id:`ac${p.id}:${l.k}:${ck}`,k:ck,grp:'almcad',t:`Almacén · ${p.nm} lote ${l.l}: ${ck==='dead'?'vencido':'caduca en '+ct}`,d:`${l.q} pza · vence ${fmtD(l.cad)}.${ck==='dead'?' Dar de baja con PIN.':' Conviene enviarlo primero a farmacia.'}`,p,cad:1,lote:l.k,alm:1})}));
+ PROD.filter(p=>sinLoteA(p)).forEach(p=>a.push({id:`al${p.id}:${sinLoteA(p)}`,k:'warn',grp:'almcad',t:`Almacén · ${p.nm}: ${sinLoteA(p)} pza sin lote`,d:'Registre lote y caducidad para vigilar el vencimiento.',p,sinl:1,alm:1}));
+ if(TODAY.getDay()===ALM_DIA&&LAST_CONTEO_A!==ISO(TODAY))a.push({id:'ainv'+ISO(TODAY),k:'warn',grp:'almst',t:'Hoy toca el inventario semanal del almacén',d:`Último inventario de almacén: ${LAST_CONTEO_A?fmtD(LAST_CONTEO_A):'ninguno todavía'}.`,p:null,ainv:1});
+ const o={dead:0,crit:1,warn:2,info:3};return a.sort((x,y)=>o[x.k]-o[y.k]);
+}
+function calRemUrl(){const d=nextAlmDay(),f=(x,h,m)=>`${x.getFullYear()}${String(x.getMonth()+1).padStart(2,'0')}${String(x.getDate()).padStart(2,'0')}T${String(h).padStart(2,'0')}${String(m).padStart(2,'0')}00`;
+ const p=new URLSearchParams({action:'TEMPLATE',text:'Inventario semanal · almacén de medicamentos COE',dates:f(d,9,0)+'/'+f(d,9,45),ctz:'America/Mexico_City',recur:'RRULE:FREQ=WEEKLY;BYDAY='+BYDAY[ALM_DIA],details:'Contar el almacén de medicamentos y firmar con PIN en COE Farmacia → Almacén → Inventario semanal.\n'+location.href.split('?')[0]});
+ return 'https://calendar.google.com/calendar/render?'+p.toString()}
+
+function vAlm(){
+ const canA=can('almacen'),PR=PROD.filter(p=>!p.srv);
+ if(ALMC&&canA)return vAlmConteo();
+ const pzs=PR.reduce((t,p)=>t+stockA(p),0),val=PR.reduce((t,p)=>t+stockA(p)*(p.c||0),0),bajo=PR.filter(p=>p.minA>0&&stockA(p)<=p.minA).length;
+ const cad90=PR.reduce((t,p)=>t+(p.alm||[]).filter(l=>l.cad&&days(l.cad)>=0&&days(l.cad)<=90).length,0),ab=solsAbiertas(),al=alertsAlm().filter(a=>!ATENDIDAS.has(a.id)&&!a.sol);
+ let rows=PR.filter(p=>!almQ||(p.cl+p.d+p.nm+p.pa).toLowerCase().includes(almQ.toLowerCase()));
+ if(almF==='con')rows=rows.filter(p=>sistemaA(p)>0);if(almF==='bajo')rows=rows.filter(p=>p.minA>0&&stockA(p)<=p.minA);
+ if(almF==='cad')rows=rows.filter(p=>(p.alm||[]).some(l=>l.cad&&days(l.cad)<=90));if(almF==='sinl')rows=rows.filter(p=>sinLoteA(p));
+ rows.sort((a,b)=>(sistemaA(b)>0)-(sistemaA(a)>0)||a.nm.localeCompare(b.nm));
+ const nd=nextAlmDay(),hoy=ISO(nd)===ISO(TODAY);
+ return `<h2>Almacén de medicamentos · Finanzas</h2>
+ <div class="strip2"><div class="kpi"><small>Piezas en almacén</small><b>${pzs}</b></div>${can('costos')?`<div class="kpi ok"><small>Valor a costo</small><b>${money(val)}</b></div>`:''}<div class="kpi ${bajo?'warn':''}"><small>Bajo mínimo</small><b>${bajo}</b></div><div class="kpi ${cad90?'crit':''}"><small>Caducan ≤90 d</small><b>${cad90}</b></div><div class="kpi ${ab.length?'warn':''}"><small>Pedidos de farmacia</small><b>${ab.length}</b></div></div>
+ <div class="panel almcal"><div><b>Inventario semanal: ${hoy?'<span style="color:var(--warn)">hoy</span>':DSEM[ALM_DIA]+' '+nd.toLocaleDateString('es-MX',{day:'numeric',month:'short'})}</b><p class="note" style="margin:2px 0 0">Último inventario de almacén: ${LAST_CONTEO_A?fmtD(LAST_CONTEO_A):'ninguno todavía'}.</p></div>
+  ${canA?`<label class="note" style="display:flex;gap:6px;align-items:center">Cada<select id="almDia" style="width:auto">${DSEM.map((d,i)=>`<option value="${i}" ${i===ALM_DIA?'selected':''}>${d}</option>`).join('')}</select></label>
+  <button class="btn sm" id="almCal">📅 Agregar a mi Google Calendar</button><button class="btn sm pri" id="almCnt">Hacer inventario semanal</button>`:''}</div>
+ ${ab.length?`<section class="panel" style="margin-top:12px"><h3>Pedidos de Farmacia al almacén</h3>${ab.map(s=>{const p=PROD.find(x=>x.id===s.producto_id);if(!p)return '';const f=s.cantidad-s.surtido,hay=stockA(p);return `<div class="alert"><span class="bar" style="background:var(--warn)"></span><div><b>${esc(p.nm)} · ${f} pza${s.surtido?` (ya se enviaron ${s.surtido})`:''}</b><p>${esc(s.solicitante||'')} · ${fmtD(s.created_at.slice(0,10))}${s.nota?' · '+esc(s.nota):''} · en almacén ${hay} vigentes · en farmacia ${p.cap?stock(p):'—'}</p></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${canA?`${hay?`<button class="btn sm pri" data-tras="${p.id}|${Math.min(f,hay)}|${s.id}">Enviar ${Math.min(f,hay)} a farmacia</button>`:`<button class="btn sm pri" data-palp="${p.id}|${f}">Pedir al proveedor</button>`}<button class="btn sm" data-rech="${s.id}">Rechazar</button>`:''}</div></div>`}).join('')}</section>`:''}
+ ${al.length?`<section class="panel" style="margin-top:12px"><h3>Avisos del almacén</h3>${al.slice(0,8).map(alertRow).join('')}</section>`:''}
+ <div class="toolbar" style="margin-top:14px"><input type="search" id="almQ" placeholder="Buscar en almacén" value="${esc(almQ)}" style="max-width:300px">
+  <select id="almF" style="max-width:200px">${[['all','Todo el catálogo'],['con','Con existencia'],['bajo','Bajo mínimo'],['cad','Caducan ≤90 d o vencidos'],['sinl','Piezas sin lote']].map(([v,t])=>`<option value="${v}" ${v===almF?'selected':''}>${t}</option>`).join('')}</select><span class="spacer"></span>
+  ${canA?`<button class="btn" data-palp="0">Pedir al proveedor</button><button class="btn pri" data-enta="0">+ Entrada al almacén</button>`:''}</div>
+ <div class="panel tbl"><table class="invt"><thead><tr><th>Clave</th><th>Producto</th><th class="num">Almacén</th><th>Lote / caducidad</th><th class="num">Farmacia</th></tr></thead><tbody>
+ ${rows.map(p=>{const s=stockA(p),ls=[...(p.alm||[])].sort(lotSort);return `<tr><td class="mono" style="font-size:12px">${esc(p.cl)}${canA?`<div class="racts"><button class="btn sm" data-enta="${p.id}">+ Entrada</button>${s?`<button class="btn sm" data-tras="${p.id}|${Math.min(s,Math.max((p.min||1)*2-(p.cap?stock(p):0),1))}|">A farmacia</button>`:''}<button class="btn sm" data-edit="${p.id}">Editar</button></div>`:''}</td>
+  <td class="desc"><b>${esc(p.nm)}</b><div class="note">${esc(p.d)}</div></td>
+  <td class="num"><b>${p.capA?s:'—'}</b><div class="mm">mín ${p.minA||0}</div>${p.minA>0&&s<=p.minA?'<div>'+chip([s?'warn':'dead',s?'Bajo':'Agotado'])+'</div>':''}</td>
+  <td>${ls.map(l=>`<div class="lotl"><span class="mono" style="font-size:12px">${esc(l.l)}</span> · ${l.q} · ${chip(cadState(l.cad))}${!l.cad&&canA?` <button class="lnk sm" data-enta="${p.id}|1">asignar</button>`:''}${l.cad&&days(l.cad)<0&&can('ajuste')?` <button class="lnk sm" data-baja="${p.id}|${esc(l.k)}|alm">dar de baja</button>`:''}</div>`).join('')||'<span class="note">—</span>'}</td>
+  <td class="num">${p.cap?stock(p):'—'}<div class="mm">mín ${p.min}</div></td></tr>`}).join('')||'<tr><td colspan="5" class="note">Sin productos con ese filtro.</td></tr>'}
+ </tbody></table></div><p class="note">«A farmacia» mueve piezas al anaquel de Farmacia con su mismo lote y caducidad, primero las que caducan antes. Defina el mínimo de almacén de cada producto con «Editar».</p>`;
+}
+function vAlmConteo(){
+ const PR=PROD.filter(p=>!p.srv).sort((a,b)=>(sistemaA(b)>0)-(sistemaA(a)>0)||a.nm.localeCompare(b.nm));
+ PR.forEach(p=>{if(!CEDIT_A.has(p.id))CONTEO_A[p.id]=sistemaA(p)});
+ const pend=PR.filter(p=>CONTEO_A[p.id]!==sistemaA(p)&&!(JUST_A[p.id]||'').trim()).length;
+ return `<div class="toolbar" style="margin-bottom:6px"><button class="btn sm" id="almBack">← Volver al almacén</button></div><h2>Inventario semanal del almacén</h2>
+ <p class="note">Cuente lo que hay físicamente en el almacén. Toda diferencia pide una explicación; al firmar con su PIN, las diferencias quedan pendientes de autorizar por el Director.</p>
+ <div class="panel tbl"><table><thead><tr><th>Clave</th><th>Producto</th><th class="num">Conteo</th><th class="num">Sistema</th><th class="num">Dif.</th><th>Explicación</th></tr></thead><tbody>
+ ${PR.map(p=>{const s=sistemaA(p),c=CONTEO_A[p.id],df=c-s;return `<tr><td class="mono" style="font-size:12px">${esc(p.cl)}</td><td class="desc">${esc(p.nm)}</td><td class="num"><input class="cnt" type="number" min="0" data-cnta="${p.id}" value="${c}"></td><td class="num">${s}</td><td class="num ${df===0?'diff0':df<0?'diffn':'diffp'}">${df>0?'+':''}${df}</td><td>${df!==0?`<input type="text" data-justa="${p.id}" value="${esc(JUST_A[p.id]||'')}" placeholder="¿Por qué no cuadra?">`:''}</td></tr>`}).join('')}
+ </tbody></table></div>
+ <div class="toolbar" style="margin-top:14px;justify-content:flex-end"><span class="note">${pend?`Faltan ${pend} explicaciones.`:'Listo para firmar.'}</span><button class="btn pri" id="almFirmar">Firmar inventario con PIN</button></div>`;
+}
+function bindAlm(M){
+ const q=$('#almQ');if(q)q.oninput=e=>{almQ=e.target.value;const pos=e.target.selectionStart;render();const n=$('#almQ');n.focus();n.setSelectionRange(pos,pos)};
+ const f=$('#almF');if(f)f.onchange=e=>{almF=e.target.value;render()};
+ const ds=$('#almDia');if(ds)ds.onchange=async e=>{if(!needLive())return;try{await rpc('far_guardar_almacen_dia',{p_token:ME.token,p_dia:+e.target.value});ALM_DIA=+e.target.value;toast('Inventario de almacén: cada '+DSEM[ALM_DIA]+'. Actualice el recordatorio de su calendario.');render()}catch(er){toast(er.message)}};
+ const cl=$('#almCal');if(cl)cl.onclick=()=>{const u=calRemUrl();const w=window.open(u,'gcal','width=980,height=760,left=80,top=60');if(!w)location.href=u;toast('Pulse «Guardar» en Google Calendar: quedará un recordatorio cada '+DSEM[ALM_DIA]+'.')};
+ const cn=$('#almCnt');if(cn)cn.onclick=()=>{ALMC=true;render();window.scrollTo({top:0})};
+ const bk=$('#almBack');if(bk)bk.onclick=()=>{ALMC=false;render()};
+ M.querySelectorAll('[data-cnta]').forEach(c=>c.onchange=()=>{CONTEO_A[+c.dataset.cnta]=Math.max(0,+c.value||0);CEDIT_A.add(+c.dataset.cnta);render()});
+ M.querySelectorAll('[data-justa]').forEach(c=>c.oninput=()=>{JUST_A[+c.dataset.justa]=c.value});
+ const fi=$('#almFirmar');if(fi)fi.onclick=async()=>{const PR=PROD.filter(p=>!p.srv);const pend=PR.filter(p=>CONTEO_A[p.id]!==sistemaA(p)&&!(JUST_A[p.id]||'').trim());
+  if(pend.length){toast('Falta explicar: '+pend.map(p=>p.nm).join(', '));return}if(!needLive())return;if(!await askPin('Firma del inventario de almacén'))return;
+  const rows=PR.map(p=>({fecha:ISO(TODAY),ubicacion:'almacen',producto_id:p.id,conteo:CONTEO_A[p.id],existencia:sistemaA(p),explicacion:JUST_A[p.id]||null,firmado_por:ME.nombre,autorizado:CONTEO_A[p.id]===sistemaA(p)}));
+  const d=await db(sb.from('far_conteos').insert(rows),'Inventario de almacén');if(d===null)return;const nd=rows.filter(r=>!r.autorizado).length;
+  logDb('conteo_almacen',{productos:rows.length,diferencias:nd});CEDIT_A.clear();JUST_A={};ALMC=false;await reload();toast(nd?`Inventario firmado. ${nd} diferencia(s) pendientes de autorizar por el Director.`:'Inventario de almacén firmado. Todo cuadra.')};
+}
+
+/* Enviar del almacén a farmacia */
+function trasDlg(pid,qty,sol){if(!can('almacen')){toast('Solo Finanzas envía del almacén.');return}const p=PROD.find(x=>x.id===pid);if(!p)return;const hay=stockA(p);
+ if(!hay){toast('No hay piezas vigentes de '+p.nm+' en almacén.');return}
+ const ls=[...p.alm].filter(l=>vig(l)&&l.q>0).sort(lotSort);
+ dlg('Enviar a Farmacia',`<form id="trF"><p style="margin-top:0"><b>${esc(p.nm)}</b> · en almacén ${hay} vigentes · en farmacia ${p.cap?stock(p):'—'}</p>
+ <p class="note">Se envía primero lo que caduca antes: ${ls.map(l=>`${esc(l.l)} (${l.q}${l.cad?', vence '+fmtD(l.cad):', sin caducidad'})`).join(' · ')}</p>
+ <div class="fgrid"><label>Cantidad a enviar<input type="number" id="trQ" min="1" max="${hay}" value="${Math.min(qty||1,hay)}"></label></div>
+ <p class="ferr" id="dErr" hidden></p><div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn pri" type="submit" id="dGo">Enviar a Farmacia</button></div></form>`);
+ $('#trF').onsubmit=async e=>{e.preventDefault();const q=+$('#trQ').value;if(!(q>0&&q<=hay)){dErr('Cantidad no válida.');return}if(!needLive())return;
+  await busy($('#dGo'),async()=>{try{const r=await rpc('far_traspaso',{p_token:ME.token,p_producto_id:pid,p_cantidad:q,p_solicitud:sol||null});closeDlg();toast(`${r.cantidad} pza de ${p.nm} enviadas a Farmacia.`);await reload()}catch(er){dErr(er.message)}})};
+}
+/* Farmacia pide al almacén */
+function almReqDlg(items){const L=items.length?items.map(i=>({...i})):[{pid:null,cant:1}];let nota='';
+ dlg('Pedir al almacén','<form id="arF"><div id="arBox"></div></form>');
+ const paint=()=>{$('#arBox').innerHTML=`<p class="note" style="margin-top:0">Finanzas recibe el aviso y envía las piezas con su lote y caducidad.</p>
+ ${L.map((i,k)=>{const p=PROD.find(x=>x.id===i.pid);return `<div class="rq-row"><select data-arp="${k}"><option value="">Elegir producto…</option>${prodOpts(i.pid)}</select><input type="number" min="1" data-arc="${k}" value="${i.cant}"><button type="button" class="icon-btn" data-arx="${k}">✕</button>${p?`<small>Almacén ${stockA(p)} · farmacia ${p.cap?stock(p):'—'} (mín ${p.min})</small>`:''}</div>`}).join('')}
+ <button type="button" class="btn sm" id="arAdd">+ Agregar renglón</button>
+ <div class="fgrid" style="margin-top:12px"><label class="full">Nota (opcional)<input id="arN" value="${esc(nota)}"></label></div>
+ <p class="ferr" id="dErr" hidden></p><div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn pri" type="submit" id="dGo">Enviar pedido al almacén</button></div>`;
+  $('#arBox').querySelectorAll('[data-arp]').forEach(s=>s.onchange=()=>{L[+s.dataset.arp].pid=+s.value||null;paint()});
+  $('#arBox').querySelectorAll('[data-arc]').forEach(s=>s.oninput=()=>{L[+s.dataset.arc].cant=Math.max(1,parseInt(s.value)||1)});
+  $('#arBox').querySelectorAll('[data-arx]').forEach(s=>s.onclick=()=>{L.splice(+s.dataset.arx,1);if(!L.length)L.push({pid:null,cant:1});paint()});
+  $('#arAdd').onclick=()=>{L.push({pid:null,cant:1});paint()};$('#arN').oninput=e=>{nota=e.target.value}};
+ paint();
+ $('#arF').onsubmit=async e=>{e.preventDefault();const it=L.filter(i=>i.pid);if(!it.length){dErr('Elija al menos un producto.');return}if(!needLive())return;
+  await busy($('#dGo'),async()=>{try{await rpc('far_solicitar_almacen',{p_token:ME.token,p_detalle:it.map(i=>({producto_id:i.pid,cantidad:+i.cant})),p_nota:nota||null});closeDlg();toast('Pedido enviado al almacén de Finanzas.');await reload()}catch(er){dErr(er.message)}})};
+}
 
 /* ===== conexión con Supabase ===== */
 const SB_URL='https://ckjkdenwqicdjvodflba.supabase.co',SB_KEY='sb_publishable_6kfSTYsmi2KxAeX0AMwymQ_dWPTAxYz';
@@ -1362,15 +1485,18 @@ async function loadAll(){
  const R=await Promise.all([sb.from('far_productos').select('*').eq('activo',true).order('nombre'),sb.from('far_lotes').select('*').eq('ejemplo',false),sb.from('far_pedidos').select('*').order('created_at',{ascending:false}).limit(200),sb.from('far_permisos').select('*'),sb.from('far_alertas_atendidas').select('alerta_id'),sb.from('far_usuarios').select('id,nombre,usuario,perfil,activo,debe_cambiar,debe_pin,ultimo_acceso').order('id'),sb.from('rec_plantillas').select('*').eq('activa',true).order('orden').order('id'),sb.from('rec_recetas').select('folio,paciente,estado,created_at').neq('estado','prueba').gte('created_at',new Date(TODAY.getFullYear(),TODAY.getMonth(),TODAY.getDate()).toISOString()).order('created_at',{ascending:false}),
   sb.from('far_movimientos').select('producto_id,tipo,cantidad,created_at').eq('tipo','salida').gte('created_at',new Date(Date.now()-28*864e5).toISOString()).limit(5000),
   sb.from('far_conteos').select('*').eq('autorizado',false).order('id'),
-  sb.from('far_conteos').select('fecha').order('fecha',{ascending:false}).limit(1),
-  sb.from('far_log').select('created_at,detalle').eq('accion','import_eoptics').order('created_at',{ascending:false}).limit(1)]);
+  sb.from('far_conteos').select('fecha').eq('ubicacion','farmacia').order('fecha',{ascending:false}).limit(1),
+  sb.from('far_log').select('created_at,detalle').eq('accion','import_eoptics').order('created_at',{ascending:false}).limit(1),
+  sb.from('far_solicitudes_alm').select('*').in('estado',['pendiente','parcial']).order('id'),
+  sb.from('far_conteos').select('fecha').eq('ubicacion','almacen').order('fecha',{ascending:false}).limit(1),
+  sb.rpc('far_almacen_dia')]);
  R.forEach((r,k)=>{if(r.error&&k!==6&&k<8)throw r.error});TPL_DB=!R[6].error;
- const [p,l,pe,pm,at,us,pl,rh,mv,cp,lc,li]=R.map(r=>r.data||[]);
+ const [p,l,pe,pm,at,us,pl,rh,mv,cp,lc,li,so,lca]=R.map(r=>r.data||[]);SOLS=so;LAST_CONTEO_A=lca[0]?lca[0].fecha:null;if(R[14]&&!R[14].error&&R[14].data!=null)ALM_DIA=+R[14].data;
  CONTEOS_PEND=cp.filter(c=>c.conteo!==c.existencia);LAST_CONTEO=lc[0]?lc[0].fecha:null;LAST_IMPORT=li[0]?li[0].created_at:null;LAST_IMPORT_N=li[0]&&li[0].detalle?li[0].detalle.claves:0;HAS_SALIDAS=mv.length>0;
  const SAL={};mv.forEach(m=>{SAL[m.producto_id]=(SAL[m.producto_id]||0)-m.cantidad});RXHOY=rh;if(TPL_DB)TPLS=pl.map(r=>({id:r.id,nombre:r.nombre,icono:r.icono,dx:r.diagnostico||'',meds:r.medicamentos||[]}));
  if(!p.length)throw new Error('vacio');
- PROD=p.map(r=>({id:r.id,cl:r.clave,d:r.descripcion,nm:r.nombre,pa:r.principio||'',g:r.grupo,cat:r.categoria,min:r.minimo,cri:r.critico,c:+r.costo,v:+r.venta,sal:SAL[r.id]||0,srv:r.servicio,ejp:r.ejemplo_parametros,cat0:r.categoria,cap:l.some(x=>x.producto_id===r.id),lotes:l.filter(x=>x.producto_id===r.id&&x.cantidad>0).map(x=>({id:x.id,l:x.lote,cad:x.caducidad,q:x.cantidad}))}));
- PEDIDOS=pe.map(r=>({id:r.folio,dbid:r.id,items:r.items,monto:+r.monto,prio:r.prioridad,est:r.estado,por:r.solicitante||'',fecha:r.created_at.slice(0,10),nota:r.nota,firma:!!r.firmado_por,det:r.detalle||[]}));
+ PROD=p.map(r=>({id:r.id,cl:r.clave,d:r.descripcion,nm:r.nombre,pa:r.principio||'',g:r.grupo,cat:r.categoria,min:r.minimo,cri:r.critico,c:+r.costo,v:+r.venta,sal:SAL[r.id]||0,srv:r.servicio,ejp:r.ejemplo_parametros,cat0:r.categoria,minA:r.minimo_alm||0,cap:l.some(x=>x.producto_id===r.id&&x.ubicacion!=='almacen'),capA:l.some(x=>x.producto_id===r.id&&x.ubicacion==='almacen'),lotes:l.filter(x=>x.producto_id===r.id&&x.cantidad>0&&x.ubicacion!=='almacen').map(x=>({id:x.id,l:x.lote,cad:x.caducidad,q:x.cantidad})),alm:l.filter(x=>x.producto_id===r.id&&x.cantidad>0&&x.ubicacion==='almacen').map(x=>({id:x.id,k:x.lote,l:x.lote.replace(' ·ALM',''),cad:x.caducidad,q:x.cantidad}))}));
+ PEDIDOS=pe.map(r=>({id:r.folio,dbid:r.id,items:r.items,monto:+r.monto,prio:r.prioridad,est:r.estado,por:r.solicitante||'',fecha:r.created_at.slice(0,10),nota:r.nota,firma:!!r.firmado_por,det:r.detalle||[],origen:r.origen}));
  pm.forEach(r=>{PERMS[r.perfil]=r.permisos});
  ATENDIDAS=new Set(at.map(r=>r.alerta_id));
  if(us.length)USERS=us.map(r=>({dbid:r.id,n:r.nombre,u:r.usuario,p:r.perfil,a:r.activo?1:0,dc:r.debe_cambiar,dp:r.debe_pin,ua:r.ultimo_acceso}));
@@ -1444,7 +1570,7 @@ let LOADED=false;
 async function startData(){
  try{await loadAll();await loadCals();LOADED=true;remap();setOnline(true,'En línea · sincronizado');renderTabs();render();loadBusy(true);setInterval(()=>loadBusy(),5*60000);
   const ch=sb.channel('coe-farmacia');
-  ['far_productos','far_lotes','far_pedidos','far_alertas_atendidas','far_permisos','far_usuarios','rec_recetas','rec_plantillas','far_conteos'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{clearTimeout(rlT);rlT=setTimeout(reload,500)}));
+  ['far_productos','far_lotes','far_pedidos','far_alertas_atendidas','far_permisos','far_usuarios','rec_recetas','rec_plantillas','far_conteos','far_solicitudes_alm'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{clearTimeout(rlT);rlT=setTimeout(reload,500)}));
   ch.subscribe();setTimeout(checkPop,600);setInterval(checkPop,60000);
  }catch(e){setOnline(false,'Sin conexión');renderTabs();render();toast('No se pudieron cargar los datos. Revise su conexión.')}
 }
@@ -1544,7 +1670,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610180846';
+const APP_VER='202610192300';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
