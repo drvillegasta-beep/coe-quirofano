@@ -335,7 +335,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.10';
+const VERSION='3.11';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -3009,7 +3009,7 @@ function drawQRes(){
   ${Q.items.length?`<div class="sec-t">Descuento</div>
    <div class="dchips">${[['','Sin'],['5','5%'],['10','10%'],['15','15%']].map(([v,t])=>`<button class="${Q.desc_tipo==='pct'&&String(Q.desc_val||'')===v?'on':''}" onclick="Q.desc_tipo='pct';Q.desc_val='${v}';drawQRes()">${t}</button>`).join('')}<button class="${Q.desc_tipo==='monto'?'on':''}" onclick="Q.desc_tipo='monto';Q.desc_val='';drawQRes();setTimeout(()=>$('#qDV')?.focus(),0)">$</button></div>
    ${Q.desc_tipo==='monto'?`<input id="qDV" type="number" inputmode="decimal" placeholder="Monto del descuento" value="${h(Q.desc_val)}" onchange="Q.desc_val=this.value;drawQRes()">`:''}
-   ${r.descuento>0?`<input id="qDM" style="margin-top:6px" placeholder="Motivo del descuento" value="${h(Q.desc_motivo)}" oninput="Q.desc_motivo=this.value"><div class="muted">${r.requiereAut&&!can.descuento()?'Supera el máximo: Dirección lo autoriza con su PIN al guardar.':'Queda firmado con tu PIN al guardar.'}</div>`:''}`:''}
+   ${r.descuento>0?`<input id="qDM" style="margin-top:6px" placeholder="Motivo del descuento" value="${h(Q.desc_motivo)}" oninput="Q.desc_motivo=this.value"><div class="muted">Queda firmado con tu PIN al guardar.</div>`:''}`:''}
   ${r.descuento?`<div class="rline"><span>Descuento</span><b>− ${money(r.descuento)}</b></div>`:''}
   ${bilQ(Q)?`<div class="muted" style="margin-top:6px">Ambos ojos: se muestra el costo por ojo, sin sumar.${r.descuento?' El descuento se reparte en cada ojo.':''}</div>`:`<div class="rline tot"><span>Total</span><b>${money(r.total)}</b></div>`}
   <div class="grid2" style="margin-top:8px"><div><label for="qAnt">Anticipo</label><input id="qAnt" type="number" inputmode="decimal" value="${h(Q.anticipo??r.anticipo)}" onchange="Q.anticipo=this.value===''?null:num(this.value)"></div>
@@ -3026,7 +3026,7 @@ function autorizarDescDir(){return new Promise(res=>{const r=calcCot(Q),aut=S.us
 async function autorizarDesc(){
   const r=calcCot(Q),aut=S.usuarios.filter(u=>u.activo&&permsOf(u).includes('descuento'));
   if(!Q.desc_motivo.trim())return toast('Escribe primero el motivo del descuento',true);
-  if(!r.requiereAut){if(!await pedirPIN('Descuento de '+money(r.descuento)+' · '+Q.desc_motivo))return;Q.autorizado={id:S.user.id,nombre:S.user.nombre,at:new Date().toISOString(),monto:r.descuento};drawQRes();return}
+  {if(!await pedirPIN('Descuento de '+money(r.descuento)+' · '+Q.desc_motivo))return;Q.autorizado={id:S.user.id,nombre:S.user.nombre,at:new Date().toISOString(),monto:r.descuento};drawQRes();return}
   const m=modal(`${mhead('Autorizar descuento')}<div>Descuento de <b>${money(r.descuento)}</b> (${r.subtotal?Math.round(r.descuento/r.subtotal*1000)/10:0}% del subtotal). El máximo sin autorización es ${money(r.descMax)}.</div>
   <div class="muted" style="margin-top:4px">Motivo: ${h(Q.desc_motivo||'sin motivo')}</div>
   <label for="adU">Autoriza</label><select id="adU">${aut.map(u=>`<option value="${u.id}" ${u.id===S.user.id?'selected':''}>${h(u.nombre)}</option>`).join('')}</select>
@@ -3062,7 +3062,6 @@ async function guardarCot(){
   if(Q.vigencia&&Q.vigencia<hoyISO())return toast('La fecha de validez ya pasó',true);
   if(r.descuento>0&&!Q.desc_motivo.trim())return toast('Escribe el motivo del descuento',true);
   let autor=null;
-  if(r.descuento>0&&r.requiereAut&&!can.descuento()){autor=await autorizarDescDir();if(!autor)return}
   if(!await pedirPIN((r.descuento?'Descuento '+money(r.descuento)+' · ':'')+'Guardar cotización de '+Q.paciente_nombre))return;
   if(r.descuento>0&&!autor)autor=S.user.nombre;
   const row={folio:'COT-'+folio('').slice(1),token:randTok(),sede_id:S.sede,paciente_nombre:Q.paciente_nombre.trim(),expediente:Q.expediente||null,telefono1:t1,telefono2:t2||null,motivo:Q.motivo.trim(),anestesia:Q.anestesia||null,medico:Q.medico||null,
