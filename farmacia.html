@@ -513,6 +513,7 @@ body.locked .shell{visibility:hidden}
 .pm-q{font-size:12.5px;color:var(--muted)}.pm-l.sl{background:var(--warn-soft);border-radius:8px;padding:4px 6px}
 .pm-foot{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:12px}
 .il-prn{font-weight:800;font-size:15px;border:2.5px solid #111;border-radius:8px;padding:2px 8px;align-self:center}
+.ocr-dud{background:var(--warn-soft)}
 body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 </style>
 
@@ -1314,14 +1315,17 @@ function parseGrid(g){
 function parseText(t){const L=t.replace(/\r/g,'').split('\n').filter(x=>x.trim());const d=L.some(x=>x.includes('\t'))?'\t':(L[0].split(';').length>L[0].split(',').length?';':',');
  return parseGrid(L.map(x=>x.split(d).map(c=>c.replace(/^"|"$/g,'').trim())))}
 function importDlg(){if(!can('entrada')){toast('Su perfil no importa inventario.');return}
- dlg('Importar reporte de eOptics',`<p class="note" style="margin-top:0">En eOptics abra la <b>toma de inventario</b> y expórtela a Excel. Se leen las columnas <b>Clave</b>, <b>Descripción</b> y <b>Existencia</b>. Antes de aplicar verá qué cambia.</p>
- <label class="btn pri" style="display:inline-block;cursor:pointer">Elegir archivo Excel o CSV<input type="file" id="imF" accept=".xlsx,.xls,.csv,.txt" hidden></label>
+ dlg('Importar reporte de eOptics',`<p class="note" style="margin-top:0">En eOptics abra la <b>toma de inventario</b> y súbala en Excel, PDF o en fotos. Se leen las columnas <b>Clave</b>, <b>Descripción</b> y <b>Existencia</b>. Antes de aplicar verá qué cambia.</p>
+ <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn pri" style="display:inline-block;cursor:pointer">📄 Archivo Excel, CSV o PDF<input type="file" id="imF" accept=".xlsx,.xls,.csv,.txt,.pdf" hidden></label><label class="btn pri" style="display:inline-block;cursor:pointer">📷 Fotos o capturas de pantalla<input type="file" id="imI" accept="image/*" multiple hidden></label></div>
+ <p class="note">Con fotos: una o varias del reporte, de frente y con buena luz. El sistema lee el texto y le muestra lo leído para que lo corrija antes de aplicar.</p>
  <details style="margin-top:12px"><summary class="note" style="cursor:pointer">O pegar las columnas copiadas</summary><textarea id="imT" rows="6" style="width:100%;margin-top:6px;font-family:var(--f-mono);font-size:12px" placeholder="Clave	Descripción	Existencia"></textarea><button class="btn sm" type="button" id="imTB" style="margin-top:6px">Revisar</button></details>
  <p class="ferr" id="dErr" hidden></p><div id="imPrev"></div>`,true);
  let fname=null;
  $('#imF').onchange=async e=>{const f=e.target.files[0];if(!f)return;fname=f.name;dErr('');$('#imPrev').innerHTML='<p class="note">Leyendo…</p>';
+  if(/\.pdf$/i.test(f.name)){importImgs([f]);return}
   try{let rows;if(/\.(csv|txt)$/i.test(f.name))rows=parseText(await f.text());else{await loadXLSX();const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];rows=parseGrid(XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''}))}
    impPreview(rows,fname)}catch(er){$('#imPrev').innerHTML='';dErr(er.message)}};
+ $('#imI').onchange=e=>{if(e.target.files.length)importImgs(e.target.files);e.target.value=''};
  $('#imTB').onclick=()=>{dErr('');try{fname='pegado '+new Date().toLocaleString('es-MX');impPreview(parseText($('#imT').value),fname)}catch(er){dErr(er.message)}};
 }
 function impPreview(rows,fname){
@@ -1595,6 +1599,69 @@ function newProdDlg(cb){if(!(can('entrada')||can('recetar')||eff()==='dir')){toa
   await busy($('#dGo'),async()=>{const d=await db(sb.from('far_productos').insert(row).select().single(),'Producto');if(!d)return;logDb('producto_alta',{clave:cl,nombre:nm});closeDlg();await reload();toast(nm+' agregado al catálogo.');const p=PROD.find(x=>x.id===d.id);if(cb&&p)cb(p)})};
  setTimeout(()=>$('#npN').focus(),60);
 }
+/* ===== Importar desde fotos o PDF (lectura de texto) ===== */
+function loadScript(src,test){return test()?Promise.resolve():new Promise((res,rej)=>{const x=document.createElement('script');x.src=src;x.onload=res;x.onerror=()=>rej(new Error('No se pudo cargar el lector. Revise la conexión.'));document.head.appendChild(x)})}
+const loadTess=()=>loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',()=>!!window.Tesseract);
+const loadPdfJs=async()=>{await loadScript('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js',()=>!!window.pdfjsLib);pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'};
+function prepImg(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>{const k=Math.min(3,Math.max(1,2400/im.width)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);const g=c.getContext('2d',{willReadFrequently:true});g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);
+  const W=c.width,H=c.height,d=g.getImageData(0,0,W,H),p=d.data,G=new Uint8Array(W*H);for(let i=0;i<W*H;i++)G[i]=(p[i*4]*.3+p[i*4+1]*.59+p[i*4+2]*.11)|0;
+  const dk=v=>v<200,wh=i=>{G[i]=255};
+  for(let y=0;y<H;y++){let run=0,st=0;for(let x=0;x<=W;x++){const D=x<W&&dk(G[y*W+x]);if(D){if(!run)st=x;run++}else{if(run>W*.15)for(let q=st;q<st+run;q++)wh(y*W+q);run=0}}}
+  const vmin=Math.max(40,H*.03,24*k);for(let x=0;x<W;x++){let run=0,st=0;for(let y=0;y<=H;y++){const D=y<H&&dk(G[y*W+x]);if(D){if(!run)st=y;run++}else{if(run>vmin)for(let q=st;q<st+run;q++)wh(q*W+x);run=0}}}
+  for(let i=0;i<W*H;i++){p[i*4]=p[i*4+1]=p[i*4+2]=G[i];p[i*4+3]=255}g.putImageData(d,0,0);res(c)};
+ im.onerror=()=>rej(new Error('No se pudo abrir la imagen (use JPG o PNG; en iPhone, Ajustes → Cámara → Formatos → «Más compatible»).'));im.src=src})}
+async function ocrCanvases(cs,st){await loadTess();st('Preparando el lector de texto (la primera vez tarda un poco)…');
+ const w=await Tesseract.createWorker('spa',1,{logger:m=>{if(m.status==='recognizing text')st(`Leyendo ${Math.round(m.progress*100)}%…`)}});
+ await w.setParameters({preserve_interword_spaces:'1'});let L=[];
+ for(let i=0;i<cs.length;i++){st(`Leyendo imagen ${i+1} de ${cs.length}…`);const r=await w.recognize(cs[i]);L=L.concat(r.data.text.split('\n'))}
+ await w.terminate();return L}
+async function pdfLines(file,st){await loadPdfJs();const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let L=[],vacio=true;
+ for(let n=1;n<=pdf.numPages;n++){st(`Leyendo página ${n} de ${pdf.numPages}…`);const pg=await pdf.getPage(n),tc=await pg.getTextContent();const rows={};
+  tc.items.forEach(it=>{if(!it.str.trim())return;vacio=false;const y=Math.round(it.transform[5]/3);(rows[y]=rows[y]||[]).push(it)});
+  Object.keys(rows).sort((a,b)=>b-a).forEach(y=>L.push(rows[y].sort((a,b)=>a.transform[4]-b.transform[4]).map(i=>i.str.trim()).join('  ')))}
+ if(!vacio)return L;
+ const cs=[];for(let n=1;n<=pdf.numPages;n++){const pg=await pdf.getPage(n),vp=pg.getViewport({scale:2.5}),c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;cs.push(c)}
+ return ocrCanvases(cs,st)}
+function lev(a,b){if(a===b)return 0;const m=a.length,n=b.length;if(Math.abs(m-n)>2)return 9;let p=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]}
+function matchProd(cl,desc){const z=s=>s.replace(/^0+/,'');let p=PROD.find(x=>x.cl===cl||z(x.cl)===z(cl));if(p)return{p,seguro:true};
+ const c=PROD.map(x=>({x,d:lev(z(x.cl),z(cl))})).filter(o=>o.d<=2).sort((a,b)=>a.d-b.d);if(c.length&&(c.length===1||c[0].d<c[1].d))return{p:c[0].x,seguro:false};
+ const w=nrm(desc).split(/\s+/).filter(t=>t.length>3);if(w.length){const s=PROD.map(x=>({x,k:w.filter(t=>nrm(x.d).includes(t)).length})).sort((a,b)=>b.k-a.k);if(s[0]&&s[0].k>=2&&(!s[1]||s[0].k>s[1].k))return{p:s[0].x,seguro:false}}
+ return{p:null,seguro:false}}
+function linesToRows(L){const out=[],seen=new Set();let modo3=null;
+ L.forEach(raw=>{const t=raw.replace(/[|¦]/g,' ').replace(/\s+/g,' ').trim();if(!t)return;const n0=nrm(t);
+  if(/clave/.test(n0)&&/exist/.test(n0)){modo3=/conteo/.test(n0)?(/diferen/.test(n0)?'cXd':'cX'):/diferen/.test(n0)?'Xd':'X';return}
+  if(/^total|totales/.test(n0))return;
+  const tk=t.split(' ');const cl=(tk[0]||'').replace(/[Oo]/g,'0').replace(/[^0-9A-Za-z-]/g,'');if(!/\d{3,}/.test(cl))return;
+  const nums=[];let k=tk.length-1;while(k>0&&/^-?[\d.,]+$/.test(tk[k].replace(/[Oo]/g,'0'))){nums.unshift(parseFloat(tk[k].replace(/[Oo]/g,'0').replace(/,/g,'')));k--}
+  if(!nums.length||seen.has(cl))return;seen.add(cl);
+  const desc=tk.slice(1,k+1).join(' ');let ex;
+  if(modo3==='cXd'||modo3==='cX')ex=nums.length>=2?nums[1]:nums[0];else if(modo3==='Xd')ex=nums[0];else if(modo3==='X')ex=nums[nums.length-1];else ex=nums.length>=3?nums[nums.length-2]:nums[nums.length-1];
+  const m=matchProd(cl,desc);out.push({clave:m.p?m.p.cl:cl,leida:cl,descripcion:desc,existencia:Number.isFinite(ex)?Math.max(0,Math.round(ex)):null,p:m.p,seguro:m.seguro,usar:true})});
+ return out}
+async function importImgs(files){const st=t=>{const e=$('#imPrev');if(e)e.innerHTML=`<p class="note">${esc(t)}</p>`};dErr('');
+ try{let L=[];const imgs=[...files].filter(f=>/^image\//.test(f.type)||/\.(jpe?g|png|webp|heic)$/i.test(f.name)),pdfs=[...files].filter(f=>/\.pdf$/i.test(f.name));
+  for(const f of pdfs)L=L.concat(await pdfLines(f,st));
+  if(imgs.length){const cs=[];for(const f of imgs){const u=URL.createObjectURL(f);try{cs.push(await prepImg(u))}finally{URL.revokeObjectURL(u)}}L=L.concat(await ocrCanvases(cs,st))}
+  const rows=linesToRows(L);if(!rows.length)throw new Error('No encontré renglones con clave y existencia. Tome la foto de frente, con buena luz y que se vean las columnas Clave y Existencia.');
+  ocrReview(rows,[...files].map(f=>f.name).join(', '))}catch(er){$('#imPrev').innerHTML='';dErr(er.message)}}
+function ocrReview(rows,fname){
+ const paint=()=>{const dud=rows.filter(r=>r.usar&&(!r.p||!r.seguro)).length;
+  $('#imPrev').innerHTML=`<div class="cur" style="margin-top:14px">${chip(['info',rows.length+' renglones leídos'])}${dud?chip(['warn',dud+' por revisar']):chip(['ok','todo coincide con el catálogo'])}</div>
+  <p class="note">Revise contra la foto: corrija la existencia si se leyó mal y elija el producto donde diga «revisar». Desmarque lo que no quiera importar.</p>
+  <div class="imp-tbl" style="max-height:340px"><table><thead><tr><th></th><th>Leído en la imagen</th><th>Producto</th><th class="num">Existencia</th></tr></thead><tbody>
+  ${rows.map((r,i)=>`<tr class="${r.usar&&(!r.p||!r.seguro)?'ocr-dud':''}"><td><input type="checkbox" data-ou="${i}" ${r.usar?'checked':''} style="width:auto"></td><td><span class="mono">${esc(r.leida)}</span><div class="note">${esc(r.descripcion)}</div></td>
+   <td><select data-op="${i}" style="width:100%;min-width:130px;max-width:230px;font-size:13px;padding:6px 8px"><option value="">${r.p?'':'¿Cuál es? (o clave nueva)'}</option>${prodOpts(r.p?r.p.id:null,p=>!p.srv)}</select>${r.p&&!r.seguro?'<div class="note" style="color:var(--warn)">revisar</div>':''}</td>
+   <td class="num"><input type="number" min="0" data-oe="${i}" value="${r.existencia??''}" style="width:70px;text-align:right;padding:6px 8px"></td></tr>`).join('')}
+  </tbody></table></div><div style="display:flex;justify-content:flex-end"><button class="btn pri" id="ocrGo">Ver cambios antes de aplicar</button></div>`;
+  $('#imPrev').querySelectorAll('[data-ou]').forEach(c=>c.onchange=()=>{rows[+c.dataset.ou].usar=c.checked;paint()});
+  $('#imPrev').querySelectorAll('[data-op]').forEach(s=>s.onchange=()=>{const r=rows[+s.dataset.op],p=PROD.find(x=>x.id===+s.value);r.p=p||null;r.seguro=!!p;r.clave=p?p.cl:r.leida;paint()});
+  $('#imPrev').querySelectorAll('[data-oe]').forEach(s=>s.oninput=()=>{const v=s.value.trim();rows[+s.dataset.oe].existencia=v===''?null:Math.max(0,parseInt(v)||0)});
+  $('#ocrGo').onclick=()=>{const ok=rows.filter(r=>r.usar);if(!ok.length){dErr('No hay renglones marcados.');return}
+   if(ok.some(r=>!r.p)&&!confirmNuevas(ok.filter(r=>!r.p).length))return;
+   impPreview(ok.map(r=>({clave:r.p?r.p.cl:r.leida,descripcion:r.p?r.p.d:r.descripcion,existencia:r.existencia})),fname)}};
+ paint()}
+let NUEVAS_OK=0;function confirmNuevas(n){if(NUEVAS_OK===n)return true;NUEVAS_OK=n;dErr(`${n} renglón(es) no tienen producto: se agregarán como claves nuevas. Si está bien, pulse otra vez; si no, elija el producto o desmárquelos.`);return false}
+
 /* ===== conexión con Supabase ===== */
 const SB_URL='https://ckjkdenwqicdjvodflba.supabase.co',SB_KEY='sb_publishable_6kfSTYsmi2KxAeX0AMwymQ_dWPTAxYz';
 let sb=null,DEMO=true;
@@ -1792,7 +1859,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610201337';
+const APP_VER='202610201459';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
