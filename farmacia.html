@@ -516,6 +516,9 @@ body.locked .shell{visibility:hidden}
 .ocr-dud{background:var(--warn-soft)}
 .cnt-ok{color:var(--ok);font-weight:700}.cnt-x{color:var(--crit);font-weight:700;display:block}
 .cntt tr.cnt-no td{background:var(--crit-soft)}.cntt td{vertical-align:top}
+.dias-otro{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:999px;padding:2px 4px 2px 12px;font-size:14px;font-weight:600}
+.dias-otro input{width:64px!important;padding:4px 6px!important;border-radius:999px!important;text-align:center}
+.dias-otro.on{border-color:var(--accent);background:var(--accent-soft)}
 body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 </style>
 
@@ -934,7 +937,7 @@ function vRx(){
      <div class="esq-t"><div class="esq-r esq-hd"><span>Fase</span><span>Duración</span><span>Posología</span><span></span></div>
      ${fasesOf(m).map((ph,k)=>`<div class="esq-r"><input type="text" id="fn${i}_${k}" data-fx="${i}:${k}:n" value="${esc(ph.n)}" aria-label="Fase ${k+1}"><span class="esq-d"><input type="number" id="fd${i}_${k}" data-fx="${i}:${k}:d" value="${ph.d}" min="1" max="90" aria-label="Días fase ${k+1}"><small>días</small></span><select id="fp${i}_${k}" data-fx="${i}:${k}:p" aria-label="Posología fase ${k+1}">${[1,2].flatMap(g=>FASE_FQ.map(([f,t])=>`<option value="${g}:${f}" ${ph.g==g&&ph.f==f?'selected':''}>${g} gota${g>1?'s':''} ${t}</option>`)).join('')}</select><button type="button" class="icon-btn" data-fdel="${i}:${k}" aria-label="Quitar fase ${k+1}">✕</button></div>`).join('')}</div>
      <button type="button" class="lnk sm" data-fadd="${i}">+ Agregar fase</button></div>`:`<div class="mc-row"><span class="lbl">${m.prn?'No antes de':'Cada'}</span><div class="chips">${[[1,'24 h'],[2,'12 h'],[3,'8 h'],[4,'6 h'],[6,'4 h'],...(isOft(m)?[]:[[0,'Dosis única']])].map(([k,t])=>`<button data-fq="${i}:${k}" aria-pressed="${m.f==k}">${t}</button>`).join('')}</div></div>
-    ${!isOft(m)&&+m.f===0?'':`<div class="mc-row"><span class="lbl">Días</span><div class="chips">${(isOft(m)?[[5,'5'],[7,'7'],[14,'14'],[21,'21'],[28,'28'],[0,'Continuo']]:[[1,'1'],[3,'3'],[5,'5'],[7,'7'],[10,'10'],[14,'14'],[30,'30'],[0,'Continuo']]).map(([k,t])=>`<button data-du="${i}:${k}" aria-pressed="${m.d==k}">${t}</button>`).join('')}</div></div>`}`}
+    ${!isOft(m)&&+m.f===0?'':`<div class="mc-row"><span class="lbl">Días</span><div class="chips">${(isOft(m)?[[5,'5'],[7,'7'],[14,'14'],[21,'21'],[28,'28'],[0,'Continuo']]:[[1,'1'],[3,'3'],[5,'5'],[7,'7'],[10,'10'],[14,'14'],[30,'30'],[0,'Continuo']]).map(([k,t])=>`<button data-du="${i}:${k}" aria-pressed="${m.d==k}">${t}</button>`).join('')}<label class="dias-otro ${[[[5,'5'],[7,'7'],[14,'14'],[21,'21'],[28,'28'],[0,'Continuo']],[[1,'1'],[3,'3'],[5,'5'],[7,'7'],[10,'10'],[14,'14'],[30,'30'],[0,'Continuo']]].flat().some(([k])=>k==m.d)?'':'on'}">Otro <input type="number" min="1" max="365" inputmode="numeric" data-dux="${i}" value="${[[[5,'5'],[7,'7'],[14,'14'],[21,'21'],[28,'28'],[0,'Continuo']],[[1,'1'],[3,'3'],[5,'5'],[7,'7'],[10,'10'],[14,'14'],[30,'30'],[0,'Continuo']]].flat().some(([k])=>k==m.d)?'':m.d}" placeholder="días" aria-label="Número de días"></label></div></div>`}`}
     ${h?`<div class="hint ${h.k}"><span>${h.t}</span>${h.btn?`<button class="btn sm pri" data-chg="${i}">${h.btn}</button>`:''}${h.ped?`<button class="btn sm" data-pedp="${p.id}">Pedir a Finanzas</button>`:''}</div>`:''}
    </div>`}).join('')}
    <button class="addmed" id="addMed">+ Agregar medicamento</button>
@@ -1223,6 +1226,7 @@ function bind(){
  M.querySelectorAll('[data-uni]').forEach(s=>s.onchange=()=>{const m=RX.meds[+s.dataset.uni];m.uni=s.value;if(m.uni!=='tableta')m.dose=Math.max(1,Math.round(m.dose));render()});
  M.querySelectorAll('[data-prn]').forEach(c=>c.onchange=()=>{const m=RX.meds[+c.dataset.prn];m.prn=c.checked;if(m.prn&&m.f===0)m.f=3;render()});
  M.querySelectorAll('[data-fq]').forEach(b=>b.onclick=()=>{const[i,v]=b.dataset.fq.split(':');RX.meds[+i].f=+v;render()});
+ M.querySelectorAll('[data-dux]').forEach(c=>c.onchange=()=>{const v=parseInt(c.value);if(v>0){RX.meds[+c.dataset.dux].d=Math.min(365,v);setTimeout(render,0)}});
  M.querySelectorAll('[data-du]').forEach(b=>b.onclick=()=>{const[i,v]=b.dataset.du.split(':');RX.meds[+i].d=+v;render()});
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&MODAL){MODAL=null;render()}});
@@ -1890,7 +1894,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610201510';
+const APP_VER='202610201647';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
