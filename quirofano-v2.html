@@ -335,7 +335,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.9';
+const VERSION='3.10';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -651,7 +651,12 @@ function cierrePendiente(){
     for(const d of [t,new Date(t.getTime()-864e5)])if(ini<d&&now>=d)return c}
   return null}
 function vigilaCierre(){const c=cierrePendiente();if(c)salir('Sesión cerrada automáticamente a las '+c+'. Vuelve a entrar.')}
-setInterval(vigilaCierre,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)vigilaCierre()});
+setInterval(vigilaCierre,30000);
+/* aviso de versión nueva: compara con el archivo publicado y recarga sin caché */
+async function checarVersion(){try{if(location.protocol==='file:'||document.getElementById('nuevaVer'))return;const t=await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'}).then(r=>r.text());const v=(t.match(/const VERSION='([^']+)'/)||[])[1];
+  if(v&&v!==VERSION){const d=document.createElement('div');d.id='nuevaVer';d.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0px));z-index:99;background:var(--pr);color:#fff;border-radius:12px;padding:10px 16px;box-shadow:0 6px 20px rgba(0,0,0,.2);display:flex;gap:12px;align-items:center;font-weight:600';
+    d.innerHTML=`Hay una versión nueva (v${v}) <button style="border:0;border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer" onclick="location.replace(location.pathname+'?v='+Date.now())">Actualizar</button>`;document.body.appendChild(d)}}catch(e){}}
+setTimeout(checarVersion,4000);setInterval(checarVersion,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checarVersion()});document.addEventListener('visibilitychange',()=>{if(!document.hidden)vigilaCierre()});
 let rtChan=null;
 async function iniciar(){
   if(!safeLS('qx_login_at'))safeLS('qx_login_at',new Date().toISOString());
@@ -1124,9 +1129,9 @@ function renderForm(){
   <div id="itemsF">${renderItemsF()}</div>
   <div class="row" style="margin-top:8px"><select id="addMat"><option value="">＋ Agregar material…</option>${matsQX().map(m=>`<option value="${m.id}">${h(m.nombre)} (${fmtN(stockMat(m.id,ubicIdsSede()))} ${h(m.unidad)})</option>`).join('')}</select><button class="btn sec" style="flex:0 0 auto" onclick="addItemF(true)">Agregar extra</button></div>
   <div class="sec-t">Lente intraocular</div>
-  <div class="sw"><input type="checkbox" id="rl" ${F.requiere_lio?'checked':''} onchange="F.requiere_lio=this.checked;renderForm()"><label for="rl" style="margin:0;text-transform:none;font-size:15px;color:var(--ink)">Requiere LIO</label></div>
+  <div class="sw"><input type="checkbox" id="rl" ${F.requiere_lio?'checked':''} onchange="F.requiere_lio=this.checked;if(F.requiere_lio&&!F.lio.tipo)F.lio.tipo='Monofocal';renderForm()"><label for="rl" style="margin:0;text-transform:none;font-size:15px;color:var(--ink)">Requiere LIO</label></div>
   ${F.requiere_lio?`<div class="grid3">
-    <div><label>Tipo</label><select onchange="F.lio.tipo=this.value;renderForm()">${['','Monofocal','Tórico','Multifocal','Multifocal tórico','EDOF','EDOF tórico','Cámara anterior','Fijación escleral','Fijación iridiana','Otro'].map(o=>`<option ${o===F.lio.tipo?'selected':''}>${o}</option>`).join('')}</select></div>
+    <div><label>Tipo</label><select onchange="F.lio.tipo=this.value;renderForm()">${['Monofocal','Tórico','Multifocal','Multifocal tórico','EDOF','EDOF tórico','Cámara anterior','Fijación escleral','Fijación iridiana','Otro'].map(o=>`<option ${o===(F.lio.tipo||'Monofocal')?'selected':''}>${o}</option>`).join('')}</select></div>
     <div><label>Modelo preferido</label><input value="${h(F.lio.modelo)}" oninput="F.lio.modelo=this.value"></div>
     <div><label>Dioptría (D) <span class="muted" style="text-transform:none;letter-spacing:0">· opcional, se puede capturar después</span></label><input inputmode="decimal" placeholder="Pendiente" value="${h(F.lio.dioptria)}" onchange="F.lio.dioptria=this.value;renderForm()"></div>
     <div><label>Cilindro</label><input inputmode="decimal" value="${h(F.lio.cilindro)}" oninput="F.lio.cilindro=this.value"></div>
@@ -1216,6 +1221,7 @@ async function guardarCirugia(){
   if(!F.paciente_nombre.trim())return toast('Falta el nombre del paciente',true);
   if(!F.sala_id||!F.fecha||!F.hora)return toast('Falta quirófano, fecha u hora',true);
   if(!F.ojo)return toast('Indica el ojo o lado a operar',true);
+  if(F.requiere_lio&&!F.lio.tipo)F.lio.tipo='Monofocal';
   let override=null,sinCot=null;
   if(!F.id&&!F.cotizacion_id){
     if(F.origen!=='manual'||!tiene('aprobar'))return toast('Primero llama la cotización del paciente: no se puede programar sin cotización.',true);
@@ -2960,16 +2966,17 @@ function addItemQ(pid,idx,ojoPre){
   const p=pById(pid),edit=idx!=null?Q.items[idx]:null;
   const it=edit?JSON.parse(JSON.stringify(edit)):nuevoIt(p);
   if(ojoPre&&!edit)it.ojos=ojoPre==='AO'?['OD','OI']:[ojoPre];
-  const lios=S.precios.filter(x=>x.categoria==='lio'&&precioOk(x));
+  const lios=S.precios.filter(x=>x.categoria==='lio'&&x.activo&&precioVig(x)).sort((a,b)=>(/monofocal/i.test(b.nombre)&&!/t[oó]rico|multi/i.test(b.nombre))-(/monofocal/i.test(a.nombre)&&!/t[oó]rico|multi/i.test(a.nombre))||(a.orden||0)-(b.orden||0));
+  const lioBase=()=>{const l=lios[0];return l?{precio_id:l.id,nombre:l.nombre,precio:num(l.precio),poder:''}:{precio_id:null,nombre:'LIO monofocal',precio:0,poder:''}};
   const m=modal('<div id="aiq"></div>','sm');
-  const draw=()=>{const c=calcItem(it),lat=it.lateralidad!=='sin_lado';
+  const draw=()=>{if(it.requiere_lio){it.lio=it.lio||{};it.ojos.forEach(o=>{if(!it.lio[o])it.lio[o]=lioBase()})}const c=calcItem(it),lat=it.lateralidad!=='sin_lado';
     m.querySelector('#aiq').innerHTML=`${mhead(h(it.nombre))}<div class="muted">${CATS[it.categoria]} · ${LAT_TXT[it.lateralidad]}${it.precio_bilateral?' · especial por los dos ojos '+money(it.precio_bilateral):''}</div>
     ${it.lateralidad==='por_ojo'?`<label>Ojo</label><div class="seg">${[['OD','OD derecho'],['OI','OI izquierdo'],['AO','Ambos ojos']].map(([k,t])=>{const on=k==='AO'?it.ojos.length===2:it.ojos.length===1&&it.ojos[0]===k;return `<button class="${on?'on':''}" data-ojo="${k}">${t}</button>`}).join('')}</div>`:''}
     ${it.lateralidad==='ambos_ojos'?'<div class="pill p-azul" style="margin-top:10px">Este precio incluye los dos ojos</div>':''}
     ${it.lateralidad==='por_ojo'&&it.ojos.length===2&&it.categoria!=='estudio'?`<label>¿Con qué ojo se inicia?</label><div class="seg">${['OD','OI'].map(k=>`<button class="${it.ojo_inicio===k?'on':''}" data-ini="${k}">Inicia ${k}</button>`).join('')}</div>`:''}
     ${it.lateralidad==='sin_lado'?`<label for="aiC">Cantidad</label><input id="aiC" type="number" min="1" value="${it.cantidad||1}">`:''}
-    ${it.requiere_lio&&it.ojos.length?it.ojos.map(o=>`<label>Lente intraocular ${o}</label><div class="row"><select data-lio="${o}"><option value="">Selecciona tipo de lente…</option>${lios.map(l=>`<option value="${l.id}" ${it.lio?.[o]?.precio_id===l.id?'selected':''}>${h(l.nombre)} · ${money(l.precio)}</option>`).join('')}</select><input data-pod="${o}" placeholder="Poder (D)" inputmode="decimal" value="${h(it.lio?.[o]?.poder||'')}" style="flex:0 0 110px;min-width:0"></div>`).join(''):''}
-    ${lat&&!it.ojos.length?'<div class="muted" style="margin-top:10px">Elige el ojo para ver el precio.</div>':`<div class="card" style="margin-top:12px;background:var(--fondo)"><div>${h(c.et)}${c.lioSum?' + lentes '+money(c.lioSum):''}</div><div style="font-size:20px;font-weight:700;margin-top:4px">${money(c.subtotal)}</div></div>`}
+    ${it.requiere_lio&&it.ojos.length?it.ojos.map(o=>`<label>Lente intraocular ${o}</label><div class="row"><select data-lio="${o}">${lios.length?'':'<option value="">LIO monofocal</option>'}${lios.map(l=>`<option value="${l.id}" ${it.lio?.[o]?.precio_id===l.id?'selected':''}>${h(l.nombre)} · ${num(l.precio)?money(l.precio):'incluido'}</option>`).join('')}</select><input data-pod="${o}" placeholder="Poder (D) opcional" inputmode="decimal" value="${h(it.lio?.[o]?.poder||'')}" style="flex:0 0 110px;min-width:0"></div>`).join(''):''}
+    ${lat&&!it.ojos.length?'<div class="muted" style="margin-top:10px">Elige el ojo para ver el precio.</div>':`<div class="card" style="margin-top:12px;background:var(--fondo)"><div>${h(c.et)}${c.lioSum?' + lentes '+money(c.lioSum):''}</div>${it.lateralidad==='por_ojo'&&it.ojos.length===2?costosOjo({items:[it],descuento:0},{...it,ojo_inicio:it.ojo_inicio||it.ojos[0]}).map(x=>`<div class="rline"><span>${x.etq==="OJO DERECHO"?"OD":"OI"}</span><b style="font-size:20px">${money(x.monto)} <small class="muted" style="font-weight:400">por ojo</small></b></div>`).join(''):`<div style="font-size:20px;font-weight:700;margin-top:4px">${money(c.subtotal)}</div>`}</div>`}
     <div class="acts"><button class="btn" id="aiOk">${edit?'Guardar cambios':'Agregar a la cotización'}</button></div>`;
     m.querySelectorAll('[data-ojo]').forEach(b=>b.onclick=()=>{const k=b.dataset.ojo;it.ojos=k==='AO'?['OD','OI']:[k];if(it.ojos.length<2)it.ojo_inicio=null;const nl={};it.ojos.forEach(o=>{if(it.lio[o])nl[o]=it.lio[o]});it.lio=nl;draw()});
     m.querySelectorAll('[data-ini]').forEach(b=>b.onclick=()=>{it.ojo_inicio=b.dataset.ini;draw()});
@@ -2979,7 +2986,7 @@ function addItemQ(pid,idx,ojoPre){
     m.querySelector('#aiOk').onclick=()=>{
       if(it.lateralidad==='por_ojo'&&!it.ojos.length)return toast('Elige el ojo',true);
       if(it.lateralidad==='por_ojo'&&it.ojos.length===2&&it.categoria!=='estudio'&&!it.ojo_inicio)return toast('Indica con qué ojo se inicia',true);
-      if(it.requiere_lio&&it.ojos.some(o=>!it.lio[o]))return toast('Elige el tipo de lente para cada ojo',true);
+      if(it.requiere_lio)it.ojos.forEach(o=>{if(!it.lio[o])it.lio[o]=lioBase()});
       if(edit)Q.items[idx]=it;else Q.items.push(it);
       Q.autorizado=null;m.remove();drawQItems();drawQRes();
     };
@@ -2993,21 +3000,23 @@ function drawQItems(){
     ${incluyeTxt(it)?`<div class="muted">Incluye: ${h(incluyeTxt(it))}</div>`:''}${it.permite_descuento?'':'<div class="muted">Sin descuento</div>'}</div>
     <div style="text-align:right;flex:0 0 auto"><b>${money(c.subtotal)}</b><div style="display:flex;gap:4px;margin-top:6px"><button class="btn sec sm" onclick="addItemQ('${it.precio_id}',${i})">Editar</button><button class="btn sec sm" onclick="Q.items.splice(${i},1);Q.autorizado=null;drawQItems();drawQRes()">✕</button></div></div></div>`}).join('')||'<div class="muted">Elige los conceptos arriba. Puedes combinar cirugía, láser y estudios en una sola cotización.</div>';
 }
+const bilQ=c=>(c.items||[]).some(it=>it.lateralidad==='por_ojo'&&(it.ojos||[]).length===2);
+function porOjoQ(c,r){const it=(c.items||[]).find(it=>it.lateralidad==='por_ojo'&&(it.ojos||[]).length===2);const xs=costosOjo({items:c.items,descuento:c.descuento!=null?c.descuento:(r?.descuento||0)},it);return Math.max(...xs.map(x=>x.monto))}
 function drawQRes(){
   const el=$('#qRes');if(!el)return;const r=calcCot(Q);
   el.innerHTML=`<h3>Resumen</h3>
-  ${Q.items.map((it,i)=>`<div class="rline"><span>${h(it.nombre)} <span class="muted">${it.lateralidad!=='sin_lado'?ojosTxt(it):''}</span></span><b>${money(r.cs[i].subtotal)}</b></div>`).join('')||'<div class="muted">Agrega conceptos</div>'}
+  ${Q.items.map((it,i)=>it.lateralidad==='por_ojo'&&it.ojos.length===2?`<div class="rline"><span>${h(it.nombre)} <span class="muted">ambos ojos</span></span><span></span></div>${costosOjo({items:Q.items,descuento:r.descuento},it).map(x=>`<div class="rline" style="padding-left:12px"><span>${x.etq==='OJO DERECHO'?'OD':'OI'}${x.primero?' · se opera primero':''}</span><b style="font-size:20px">${money(x.monto)} <small class="muted" style="font-weight:400">por ojo</small></b></div>`).join('')}`:`<div class="rline"><span>${h(it.nombre)} <span class="muted">${it.lateralidad!=='sin_lado'?ojosTxt(it):''}</span></span><b>${money(r.cs[i].subtotal)}</b></div>`).join('')||'<div class="muted">Agrega conceptos</div>'}
   ${Q.items.length?`<div class="sec-t">Descuento</div>
    <div class="dchips">${[['','Sin'],['5','5%'],['10','10%'],['15','15%']].map(([v,t])=>`<button class="${Q.desc_tipo==='pct'&&String(Q.desc_val||'')===v?'on':''}" onclick="Q.desc_tipo='pct';Q.desc_val='${v}';drawQRes()">${t}</button>`).join('')}<button class="${Q.desc_tipo==='monto'?'on':''}" onclick="Q.desc_tipo='monto';Q.desc_val='';drawQRes();setTimeout(()=>$('#qDV')?.focus(),0)">$</button></div>
    ${Q.desc_tipo==='monto'?`<input id="qDV" type="number" inputmode="decimal" placeholder="Monto del descuento" value="${h(Q.desc_val)}" onchange="Q.desc_val=this.value;drawQRes()">`:''}
    ${r.descuento>0?`<input id="qDM" style="margin-top:6px" placeholder="Motivo del descuento" value="${h(Q.desc_motivo)}" oninput="Q.desc_motivo=this.value"><div class="muted">${r.requiereAut&&!can.descuento()?'Supera el máximo: Dirección lo autoriza con su PIN al guardar.':'Queda firmado con tu PIN al guardar.'}</div>`:''}`:''}
   ${r.descuento?`<div class="rline"><span>Descuento</span><b>− ${money(r.descuento)}</b></div>`:''}
-  <div class="rline tot"><span>Total</span><b>${money(r.total)}</b></div>
+  ${bilQ(Q)?`<div class="muted" style="margin-top:6px">Ambos ojos: se muestra el costo por ojo, sin sumar.${r.descuento?' El descuento se reparte en cada ojo.':''}</div>`:`<div class="rline tot"><span>Total</span><b>${money(r.total)}</b></div>`}
   <div class="grid2" style="margin-top:8px"><div><label for="qAnt">Anticipo</label><input id="qAnt" type="number" inputmode="decimal" value="${h(Q.anticipo??r.anticipo)}" onchange="Q.anticipo=this.value===''?null:num(this.value)"></div>
   <div><label for="qVig">Válida hasta</label><input id="qVig" type="date" value="${h(Q.vigencia||r.vigencia)}" onchange="Q.vigencia=this.value||null"></div></div>
   <button class="btn" style="width:100%;margin-top:12px" onclick="guardarCot()" ${Q.items.length?'':'disabled'}>Guardar con PIN</button>
   ${Q.items.length||Q.paciente_nombre?`<button class="lnk" onclick="confirmar('¿Borrar la cotización en captura?').then(ok=>{if(ok){Q=nuevaQ();vCotizar()}})">Borrar todo</button>`:''}`;
-  const qb=$('#qBar');if(qb)qb.innerHTML=Q.items.length?`<b>${money(r.total)}</b><button class="btn" onclick="guardarCot()">Guardar</button>`:'';
+  const qb=$('#qBar');if(qb)qb.innerHTML=Q.items.length?`<b>${bilQ(Q)?money(porOjoQ(Q,r))+' <small>por ojo</small>':money(r.total)}</b><button class="btn" onclick="guardarCot()">Guardar</button>`:'';
 }
 function autorizarDescDir(){return new Promise(res=>{const r=calcCot(Q),aut=S.usuarios.filter(u=>u.activo&&permsOf(u).includes('descuento'));
   const m=modal(`${mhead('Autoriza Dirección')}<div>Descuento de <b>${money(r.descuento)}</b>; sin autorización el máximo es ${money(r.descMax)}.</div><div class="muted">Motivo: ${h(Q.desc_motivo)}</div><label>Autoriza</label><select id="adU">${aut.map(u=>`<option value="${u.id}">${h(u.nombre)}</option>`).join('')}</select><label>PIN</label><input id="adP" type="password" inputmode="numeric" maxlength="4"><div id="adE" class="muted" style="color:var(--rojo);margin-top:6px"></div><div class="acts"><button class="btn" id="ok">Autorizar</button></div>`,'sm');
@@ -3149,7 +3158,7 @@ async function cargarCotLista(){
   ${segHTML}
   ${l.map(c=>{const e=estadoCot(c),d=diasHasta(c.vigencia_hasta);return `<div class="card" style="cursor:pointer" onclick="hojaCot(S.cots.find(x=>x.id==='${c.id}'))"><div class="row" style="flex-wrap:nowrap"><div style="flex:3;min-width:0"><b>${h(c.paciente_nombre)}</b> <span class="muted">${h(c.folio)}</span>
    <div class="muted">${(c.items||[]).map(it=>h(it.nombre)+(it.lateralidad!=='sin_lado'?' '+ojosTxt(it):'')).join(' · ')}</div><div class="muted">${fCorta(c.created_at)} · ${h(c.elaboro||'')} · Tel. ${h(c.telefono1||'')}${c.telefono2?' / '+h(c.telefono2):''}${c.anestesia?' · '+h(anestTxt(c.anestesia)):''}${pagadoCot(c)?' · pagado '+money(pagadoCot(c)):''}</div></div>
-   <div style="text-align:right;flex:0 0 auto"><b>${money(c.total)}</b><div><span class="pill ${EST_COT[e][0]}">${EST_COT[e][1]}${e==='vigente'?' · '+d+' d':''}</span></div>${num(c.descuento)?`<div class="muted">desc. ${money(c.descuento)}</div>`:''}</div></div></div>`}).join('')||'<div class="card empty">Sin cotizaciones en esta vista</div>'}`;
+   <div style="text-align:right;flex:0 0 auto"><b>${bilQ(c)?money(porOjoQ(c))+'</b> <span class="muted">por ojo</span><b>':money(c.total)}</b><div><span class="pill ${EST_COT[e][0]}">${EST_COT[e][1]}${e==='vigente'?' · '+d+' d':''}</span></div>${num(c.descuento)?`<div class="muted">desc. ${money(c.descuento)}</div>`:''}</div></div></div>`}).join('')||'<div class="card empty">Sin cotizaciones en esta vista</div>'}`;
 }
 async function renovarCot(id){
   const c=S.cots.find(x=>x.id===id);
