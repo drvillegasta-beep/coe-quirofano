@@ -514,6 +514,8 @@ body.locked .shell{visibility:hidden}
 .pm-foot{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:12px}
 .il-prn{font-weight:800;font-size:15px;border:2.5px solid #111;border-radius:8px;padding:2px 8px;align-self:center}
 .ocr-dud{background:var(--warn-soft)}
+.cnt-ok{color:var(--ok);font-weight:700}.cnt-x{color:var(--crit);font-weight:700;display:block}
+.cntt tr.cnt-no td{background:var(--crit-soft)}.cntt td{vertical-align:top}
 body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 </style>
 
@@ -788,23 +790,49 @@ function vInv(){
  </tbody></table></div><p class="note">Cada reporte de eOptics que importe descuenta las salidas del lote que caduca primero. Las piezas que llegan sin lote quedan como «Sin lote ni caducidad» hasta que se les asigna. Un lote vencido no cuenta como existencia.</p>`;
 }
 
+let CNTF='all';
 function vConteo(){
- const cats={col:[0,0],med:[0,0],var:[0,0]};
- PROD.forEach(p=>{cats[p.cat][0]+=CONTEO[p.id];cats[p.cat][1]+=sistema(p)});
- const pending=PROD.filter(p=>CONTEO[p.id]!==sistema(p)&&!(JUST[p.id]||'').trim()).length;
+ const PR=PROD.filter(p=>!p.srv),cats={col:[0,0],med:[0,0],var:[0,0]};
+ PR.forEach(p=>{const k=cats[p.cat]?p.cat:'var';cats[k][0]+=CONTEO[p.id];cats[k][1]+=sistema(p)});
+ const pending=PR.filter(p=>CONTEO[p.id]!==sistema(p)&&!(JUST[p.id]||'').trim()).length;
+ const noC=PR.filter(p=>CONTEO[p.id]!==sistema(p)),bajo=PR.filter(p=>p.cap&&p.min>0&&stock(p)<=p.min),cad=PR.filter(p=>p.lotes.some(l=>l.cad&&days(l.cad)<=90));
+ let L=PR;if(CNTF==='no')L=noC;if(CNTF==='bajo')L=bajo;if(CNTF==='cad')L=cad;
  return `<h2>Conteo del lunes · toma de inventario</h2>
- <p class="note">Mismo formato que el reporte de eOptics: Clave, Descripción, Conteo, Existencia y Diferencia. Escriba lo que hay físicamente en el anaquel; toda diferencia pide una explicación antes de firmar y queda pendiente de autorizar por el Director.</p>
- <div class="panel tbl"><table><thead><tr><th>Clave</th><th>Descripción</th><th class="num">Conteo</th><th class="num">Existencia</th><th class="num">Diferencia</th><th>Explicación</th></tr></thead><tbody>
- ${PROD.map(p=>{const s=sistema(p),c=CONTEO[p.id],df=c-s,venc=p.lotes.filter(l=>days(l.cad)<0).reduce((a,l)=>a+l.q,0);
-  return `<tr><td class="mono" style="font-size:12px">${esc(p.cl)}</td><td class="desc">${esc(p.d)}${venc?`<div>${chip(['dead',venc+' vencida · apartar'])}</div>`:''}</td>
+ <p class="note">Escriba lo que hay físicamente en el anaquel, o cárguelo desde la foto o el archivo de la toma de inventario de eOptics. Toda diferencia pide una explicación antes de firmar y queda pendiente de autorizar por el Director.</p>
+ <div class="toolbar"><button class="btn pri" id="cntImp">📷 Cargar conteo desde foto o archivo</button>
+  <div class="cur">${chip(['ok',(PR.length-noC.length)+' cuadran'])}${noC.length?chip(['crit',noC.length+' no cuadran']):''}${bajo.length?chip(['warn',bajo.length+' en mínimo o menos']):''}${cad.length?chip(['warn',cad.length+' caducan ≤90 días']):''}</div>
+  <span class="spacer"></span><select id="cntF" style="max-width:220px">${[['all','Todos'],['no','Solo los que no cuadran'],['bajo','En mínimo o menos'],['cad','Caducan ≤90 días']].map(([v,t])=>`<option value="${v}" ${CNTF===v?'selected':''}>${t}</option>`).join('')}</select></div>
+ <div class="panel tbl"><table class="cntt"><thead><tr><th>Producto</th><th class="num">Conteo</th><th class="num">Sistema</th><th>¿Cuadra?</th><th>Caducidad</th><th class="num">Mín.</th><th class="num">Almacén</th><th></th></tr></thead><tbody>
+ ${L.map(p=>{const s=sistema(p),c=CONTEO[p.id],df=c-s,fl=[...p.lotes].filter(l=>l.cad).sort(lotSort)[0],venc=p.lotes.filter(l=>l.cad&&days(l.cad)<0).reduce((a,l)=>a+l.q,0),st=stock(p),sa=stockA(p),falta=p.cap&&p.min>0&&st<=p.min;
+  return `<tr class="${df?'cnt-no':''}"><td class="desc"><b>${esc(p.nm)}</b><div class="mono note" style="font-size:11px">${esc(p.cl)}</div>${venc?`<div>${chip(['dead',venc+' vencida · apartar'])}</div>`:''}</td>
   <td class="num"><input class="cnt" type="number" min="0" id="cnt${p.id}" data-cnt="${p.id}" value="${c}"></td><td class="num">${s}</td>
-  <td class="num ${df===0?'diff0':df<0?'diffn':'diffp'}">${df>0?'+':''}${df}</td>
-  <td>${df!==0?`<input type="text" id="just${p.id}" data-just="${p.id}" value="${esc(JUST[p.id]||'')}" placeholder="¿Por qué no cuadra?">`:''}</td></tr>`}).join('')}
+  <td>${df===0?'<span class="cnt-ok">✓ Cuadra</span>':`<span class="cnt-x">✗ ${df>0?'Sobran '+df:'Faltan '+(-df)}</span><input type="text" id="just${p.id}" data-just="${p.id}" value="${esc(JUST[p.id]||'')}" placeholder="¿Por qué no cuadra?" style="margin-top:4px">`}</td>
+  <td>${fl?`${chip(cadState(fl.cad))}<div class="note">${fmtD(fl.cad)}${p.lotes.filter(l=>l.cad).length>1?' (más próxima)':''}</div>`:p.lotes.length?chip(['info','Sin caducidad']):'<span class="note">—</span>'}</td>
+  <td class="num">${p.min}${falta?`<div>${chip([st?'warn':'dead',st?'En mínimo':'Agotado'])}</div>`:''}</td>
+  <td class="num">${sa||'<span class="note">—</span>'}</td>
+  <td>${falta&&can('pedir')?(sa?`<button class="btn sm pri" data-palm="${p.id}">Pedir al almacén</button>`:`<button class="btn sm pri" data-ped="${p.id}">Solicitar</button>`):''}</td></tr>`}).join('')||'<tr><td colspan="8" class="note">Nada con ese filtro.</td></tr>'}
  </tbody></table></div>
- <div class="totals"><span></span><span class="note">Conteo</span><span class="note">Existencia</span><span class="note">Diferencia</span>
+ <div class="totals"><span></span><span class="note">Conteo</span><span class="note">Sistema</span><span class="note">Diferencia</span>
  ${Object.entries(cats).map(([k,[c,s]])=>`<span>${CAT[k]}</span><b>${c}</b><b>${s}</b><b class="${c-s===0?'diff0':c-s<0?'diffn':'diffp'}">${c-s>0?'+':''}${c-s}</b>`).join('')}</div>
  <div class="toolbar" style="margin-top:16px;justify-content:flex-end"><span class="note">${pending?`Faltan ${pending} explicaciones.`:'Listo para firmar.'}</span><button class="btn pri" id="cuadrar">Cuadrar inventario · firmar con PIN</button></div>
  ${CONTEOS_PEND.length?`<section class="panel" style="margin-top:16px"><h3>Discrepancias pendientes de autorizar (${CONTEOS_PEND.length})</h3><p class="note">Al autorizar, la existencia del sistema se ajusta al conteo físico.</p>${can('ajuste')?'<button class="btn pri" data-autc="1">Revisar y autorizar con PIN</button>':'<p class="note">Las autoriza el Director.</p>'}</section>`:''}`;
+}
+/* Cargar el conteo desde foto, PDF, Excel o texto pegado (toma de inventario de eOptics) */
+function conteoImpDlg(){
+ dlg('Cargar conteo',`<p class="note" style="margin-top:0">Suba la toma de inventario de eOptics donde capturó el <b>Conteo</b>. Se llena la columna Conteo y usted revisa en la tabla lo que cuadra y lo que no antes de firmar.</p>
+ <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn pri" style="cursor:pointer">📷 Fotos o capturas<input type="file" id="ciI" accept="image/*" multiple hidden></label><label class="btn" style="cursor:pointer">📄 Excel, CSV o PDF<input type="file" id="ciF" accept=".xlsx,.xls,.csv,.txt,.pdf" hidden></label></div>
+ <p class="ferr" id="dErr" hidden></p><div id="imPrev"></div>`);
+ const aplicar=rows=>{let n=0;const nf=[];rows.forEach(r=>{const v=r.conteo??null;if(v==null)return;const m=matchProd(r.clave||r.leida||'',r.descripcion||'');if(!m.p||m.p.srv){nf.push((r.leida||r.clave)+' '+(r.descripcion||''));return}CONTEO[m.p.id]=Math.max(0,Math.round(v));CEDIT.add(m.p.id);n++});
+  if(!n){dErr('No se encontró la columna Conteo o ningún renglón coincide con el catálogo.');$('#imPrev').innerHTML='';return}
+  closeDlg();CNTF='all';render();const noC=PROD.filter(p=>!p.srv&&CONTEO[p.id]!==sistema(p)).length;
+  showMsg('Conteo cargado',`<p><b>${n}</b> productos cargados. <b style="color:var(--ok)">${PROD.filter(p=>!p.srv).length-noC} cuadran</b> y <b style="color:var(--crit)">${noC} no cuadran</b>.</p>${nf.length?`<p class="note">No se reconocieron ${nf.length} renglones; revíselos a mano:<br>${nf.slice(0,8).map(esc).join('<br>')}</p>`:''}<p class="note">Revise los que dicen «✗», escriba por qué no cuadran y firme con su PIN.</p><div style="display:flex;justify-content:flex-end"><button class="btn pri" id="ciOk">Ver conteo</button></div>`);
+  $('#ciOk').onclick=()=>{$('#msgOvl').hidden=true;CNTF=noC?'no':'all';render()}};
+ const leer=async files=>{dErr('');const st=t=>{$('#imPrev').innerHTML=`<p class="note">${esc(t)}</p>`};try{
+  const f0=files[0];if(files.length===1&&/\.(xlsx|xls|csv|txt)$/i.test(f0.name)){let rows;if(/\.(csv|txt)$/i.test(f0.name))rows=parseText(await f0.text());else{await loadXLSX();const wb=XLSX.read(await f0.arrayBuffer(),{type:'array'});rows=parseGrid(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:false,defval:''}))}aplicar(rows);return}
+  let L=[];for(const f of [...files].filter(f=>/\.pdf$/i.test(f.name)))L=L.concat(await pdfLines(f,st));
+  const imgs=[...files].filter(f=>!/\.pdf$/i.test(f.name));if(imgs.length){const cs=[];for(const f of imgs){const u=URL.createObjectURL(f);try{cs.push(await prepImg(u))}finally{URL.revokeObjectURL(u)}}L=L.concat(await ocrCanvases(cs,st))}
+  aplicar(linesToRows(L))}catch(er){$('#imPrev').innerHTML='';dErr(er.message)}};
+ $('#ciI').onchange=e=>{if(e.target.files.length)leer(e.target.files)};$('#ciF').onchange=e=>{if(e.target.files.length)leer(e.target.files)};
 }
 function vAlert(){return `<h2>Alertas</h2><p class="note">Las importantes (caducidades, existencias bajas y discrepancias) también aparecen como ventana emergente al entrar y cada vez que surge una nueva.</p>${alerts().map(alertRow).join('')||'<p class="note">Sin alertas.</p>'}`}
 function vPed(){
@@ -1132,6 +1160,7 @@ function bind(){
  const f=$('#invF');if(f)f.onchange=e=>{invFilter=e.target.value;render()};
  M.querySelectorAll('[data-cnt]').forEach(c=>c.onchange=()=>{CONTEO[+c.dataset.cnt]=Math.max(0,+c.value||0);CEDIT.add(+c.dataset.cnt);render()});
  M.querySelectorAll('[data-just]').forEach(c=>c.oninput=()=>{JUST[+c.dataset.just]=c.value});
+ const ci=$('#cntImp');if(ci)ci.onclick=conteoImpDlg;const cf=$('#cntF');if(cf)cf.onchange=e=>{CNTF=e.target.value;render()};
  const cu=$('#cuadrar');if(cu)cu.onclick=()=>{const pend=PROD.filter(p=>CONTEO[p.id]!==sistema(p)&&!(JUST[p.id]||'').trim());if(pend.length){toast(`Falta explicar la diferencia de: ${pend.map(p=>p.nm).join(', ')}.`);render();return}if(sb){askPin('Firma del conteo físico').then(ok=>{if(!ok)return;const rows=PROD.filter(p=>!p.srv).map(p=>({fecha:ISO(TODAY),producto_id:p.id,conteo:CONTEO[p.id],existencia:sistema(p),explicacion:JUST[p.id]||null,firmado_por:ME?ME.nombre:PERFILES[eff()],autorizado:CONTEO[p.id]===sistema(p)}));db(sb.from('far_conteos').insert(rows),'Conteo').then(async d=>{if(d!==null){const nd=rows.filter(r=>!r.autorizado).length;logDb('conteo_firmado',{productos:rows.length,diferencias:nd});JUST={};CEDIT.clear();await reload();toast(nd?`Conteo firmado. ${nd} diferencia(s) quedan pendientes de autorización del Director.`:'Conteo firmado. Todo cuadra.')}})});return}toast('Conteo firmado por el mostrador. Los ajustes quedan pendientes de autorización del Director.')};
 
  M.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{if(TPL_EDIT){tplDlg(b.dataset.tpl);return}loadTpl(b.dataset.tpl)});
@@ -1300,15 +1329,16 @@ let PAST_OK='';function confirmPast(d){if(PAST_OK===d)return true;PAST_OK=d;dErr
 const nrm=t=>String(t??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
 function loadXLSX(){return window.XLSX?Promise.resolve():new Promise((res,rej)=>{const x=document.createElement('script');x.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';x.onload=res;x.onerror=()=>rej(new Error('No se pudo cargar el lector de Excel. Revise la conexión.'));document.head.appendChild(x)})}
 function parseGrid(g){
- let h=-1,ci=-1,di=-1,ei=-1;
+ let h=-1,ci=-1,di=-1,ei=-1,xi=-1;
  for(let r=0;r<Math.min(g.length,40)&&h<0;r++){const row=(g[r]||[]).map(nrm);const c=row.findIndex(x=>x==='clave'||x.startsWith('clave')||x==='codigo'||x.startsWith('codigo'));
   let e=row.findIndex(x=>x==='existencia'||x==='existencias');if(e<0)e=row.findIndex(x=>x.startsWith('exist'));
-  if(c>=0&&e>=0){h=r;ci=c;ei=e;di=row.findIndex(x=>x.startsWith('descrip'));if(di<0)di=row.findIndex(x=>x.startsWith('producto')||x.startsWith('nombre')||x.startsWith('articulo'))}}
+  if(c>=0&&e>=0){h=r;ci=c;ei=e;xi=row.findIndex(x=>x.startsWith('conteo')||x.startsWith('fisico'));di=row.findIndex(x=>x.startsWith('descrip'));if(di<0)di=row.findIndex(x=>x.startsWith('producto')||x.startsWith('nombre')||x.startsWith('articulo'))}}
  if(h<0)throw new Error('No encontré las columnas «Clave» y «Existencia». Use el reporte de toma de inventario de eOptics exportado a Excel.');
  const out=[],seen=new Set();
  for(let r=h+1;r<g.length;r++){const row=g[r]||[];const cl=String(row[ci]??'').trim();if(!cl||/total/i.test(cl)||seen.has(cl))continue;
   const ex=String(row[ei]??'').replace(/[,\s]/g,'');const n=ex===''?null:Number(ex);seen.add(cl);
-  out.push({clave:cl,descripcion:di>=0?String(row[di]??'').trim():'',existencia:Number.isFinite(n)?Math.max(0,Math.floor(n)):null})}
+  const cx=xi>=0?String(row[xi]??'').replace(/[,\s]/g,''):'',cn=cx===''?null:Number(cx);
+  out.push({clave:cl,descripcion:di>=0?String(row[di]??'').trim():'',existencia:Number.isFinite(n)?Math.max(0,Math.floor(n)):null,conteo:Number.isFinite(cn)?Math.max(0,Math.floor(cn)):null})}
  if(!out.length)throw new Error('El archivo no trae renglones con clave.');
  return out;
 }
@@ -1636,7 +1666,8 @@ function linesToRows(L){const out=[],seen=new Set();let modo3=null;
   if(!nums.length||seen.has(cl))return;seen.add(cl);
   const desc=tk.slice(1,k+1).join(' ');let ex;
   if(modo3==='cXd'||modo3==='cX')ex=nums.length>=2?nums[1]:nums[0];else if(modo3==='Xd')ex=nums[0];else if(modo3==='X')ex=nums[nums.length-1];else ex=nums.length>=3?nums[nums.length-2]:nums[nums.length-1];
-  const m=matchProd(cl,desc);out.push({clave:m.p?m.p.cl:cl,leida:cl,descripcion:desc,existencia:Number.isFinite(ex)?Math.max(0,Math.round(ex)):null,p:m.p,seguro:m.seguro,usar:true})});
+  const cn=(modo3==='cXd'||modo3==='cX')?nums[0]:(!modo3&&nums.length>=3)?nums[nums.length-3]:null;
+  const m=matchProd(cl,desc);out.push({clave:m.p?m.p.cl:cl,leida:cl,descripcion:desc,conteo:Number.isFinite(cn)?Math.max(0,Math.round(cn)):null,existencia:Number.isFinite(ex)?Math.max(0,Math.round(ex)):null,p:m.p,seguro:m.seguro,usar:true})});
  return out}
 async function importImgs(files){const st=t=>{const e=$('#imPrev');if(e)e.innerHTML=`<p class="note">${esc(t)}</p>`};dErr('');
  try{let L=[];const imgs=[...files].filter(f=>/^image\//.test(f.type)||/\.(jpe?g|png|webp|heic)$/i.test(f.name)),pdfs=[...files].filter(f=>/\.pdf$/i.test(f.name));
@@ -1859,7 +1890,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610201506';
+const APP_VER='202610201510';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
