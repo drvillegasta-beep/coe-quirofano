@@ -664,14 +664,14 @@ function alerts(){
 }
 
 const ACC_TABS=[['dash','Panel'],['inv','Inventario'],['conteo','Conteo del lunes'],['alert','Alertas'],['ped','Pedidos a Finanzas'],['alm','Almacén (Finanzas)'],['rx','Receta']];
-const ACC_ACT=[['almacen','Manejar el almacén: entradas, inventario semanal, envíos a farmacia y pedidos al proveedor'],['resumen','Ver barra de resumen superior'],['costos','Ver costos y valor del inventario'],['entrada','Registrar entradas e importar eOptics'],['pedir','Generar pedidos a Finanzas'],['autorizar','Autorizar y avanzar pedidos'],['ajuste','Autorizar ajustes de conteo y bajas por caducidad'],['recetar','Emitir y modificar recetas'],['surtir','Surtir recetas en mostrador']];
+const ACC_ACT=[['almacen','Manejar el almacén: entradas, inventario semanal, envíos a farmacia y pedidos al proveedor'],['resumen','Ver barra de resumen superior'],['costos','Ver costos y valor del inventario'],['entrada','Cargar existencias (eOptics y entradas), asignar lotes y definir mínimos · administración'],['pedir','Generar pedidos a Finanzas'],['autorizar','Autorizar y avanzar pedidos'],['ajuste','Autorizar ajustes de conteo y bajas por caducidad'],['recetar','Emitir y modificar recetas'],['surtir','Surtir recetas en mostrador']];
 const PERFILES={dir:'Director General',dra:'Dirección',mos:'Mostrador de Farmacia',fin:'Finanzas · Contadora',med:'Médico'};
 let PERMS={dir:{alm:1,almacen:1,resumen:1,dash:1,inv:1,conteo:1,alert:1,ped:1,rx:1,costos:1,entrada:1,pedir:1,autorizar:1,ajuste:1,recetar:1,surtir:1},
  dra:{resumen:1,dash:1,inv:1,alert:1,ped:1,rx:1,costos:1,pedir:1,autorizar:1,recetar:1},
- mos:{resumen:1,dash:1,inv:1,conteo:1,alert:1,ped:1,rx:1,costos:1,entrada:1,pedir:1,surtir:1},
+ mos:{resumen:1,dash:1,inv:1,conteo:1,alert:1,ped:1,rx:1,pedir:1,surtir:1},
  fin:{resumen:1,dash:1,inv:1,ped:1,costos:1,autorizar:1},
  med:{dash:1,inv:1,rx:1,recetar:1}};
-PERMS.fin.alm=1;PERMS.fin.almacen=1;
+PERMS.fin.alm=1;PERMS.fin.almacen=1;PERMS.fin.entrada=1;PERMS.dra.entrada=1;
 let USERS=[{n:'Dr. José Antonio Villegas Ávila',u:'jvillegas',p:'dir',a:1},{n:'Dra. Mónica A. Rivera Bustos',u:'mrivera',p:'dra',a:1},{n:'Mostrador Farmacia (turno matutino)',u:'farmacia1',p:'mos',a:1},{n:'Mostrador Farmacia (turno vespertino)',u:'farmacia2',p:'mos',a:1},{n:'Contadora',u:'contabilidad',p:'fin',a:1},{n:'Médico general',u:'medico1',p:'med',a:1}];
 let viewAs=null;const PERM_DIRTY=new Set();
 const eff=()=>viewAs||role;
@@ -723,7 +723,7 @@ function vSetup(){
  </ol></section>`;
 }
 function vDash(){
- const al=alerts().filter(a=>!ATENDIDAS.has(a.id)).slice(0,6);
+ const al=alerts().filter(a=>!ATENDIDAS.has(a.id)&&!((a.imp||a.sinl||a.cls)&&!can('entrada'))).slice(0,6);
  const top=PROD.filter(p=>!p.srv&&p.sal>0).sort((a,b)=>b.sal-a.sal).slice(0,8),mx=top.length?top[0].sal:1;
  const sinMov=PROD.filter(p=>p.cap&&p.sal===0&&!p.srv&&stock(p)>0);
  return `${DEMO?'<div class="proto"><b>Modo demostración:</b> no hay conexión con la base de datos de farmacia; los datos no se guardan.</div>':''}${vSetup()}
@@ -1243,9 +1243,9 @@ function renderReq(){const B=$('#rqBox');if(!B||!REQ)return;
  B.innerHTML=`<p class="note" style="margin-top:0">${REQ.alm?'Pedido de Finanzas al proveedor para surtir el almacén.':'Elija del catálogo o escriba un medicamento que no tenemos. Finanzas recibe el aviso al momento.'}${!REQ.alm&&REQ.items.some(i=>{const p=PROD.find(x=>x.id===i.pid);return p&&stockA(p)})?' <b>Ojo:</b> algún producto ya está en el almacén; puede pedirlo al almacén en lugar de comprarlo.':''}</p>
  ${REQ.items.map((i,k)=>{const p=PROD.find(x=>x.id===i.pid);return `<div class="rq-row"><div>${i.pid===0||(!i.pid&&i.nombre)?`<input type="text" data-rqn="${k}" value="${esc(i.nombre)}" placeholder="Nombre, presentación y concentración">`:`<select data-rqp="${k}"><option value="">Elegir producto…</option>${prodOpts(i.pid)}<option value="0">Otro (no está en catálogo)…</option></select>`}</div>
   <input type="number" min="1" data-rqc="${k}" value="${esc(i.cant)}" aria-label="Cantidad"><button type="button" class="icon-btn" data-rqx="${k}" aria-label="Quitar">✕</button>
-  ${p?`<small>${REQ.alm?`Almacén ${stockA(p)} (mín ${p.minA||0}) · farmacia ${p.cap?stock(p):'—'}`:`Existencia ${p.cap?stock(p):'sin capturar'} · mínimo ${p.min}${stockA(p)?` · almacén ${stockA(p)}`:''}`}${p.c?` · costo ${money(p.c)} c/u`:''}</small>`:''}</div>`}).join('')}
+  ${p?`<small>${REQ.alm?`Almacén ${stockA(p)} (mín ${p.minA||0}) · farmacia ${p.cap?stock(p):'—'}`:`Existencia ${p.cap?stock(p):'sin capturar'} · mínimo ${p.min}${stockA(p)?` · almacén ${stockA(p)}`:''}`}${p.c&&can('costos')?` · costo ${money(p.c)} c/u`:''}</small>`:''}</div>`}).join('')}
  <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" id="rqAdd">+ Agregar renglón</button>${low.length?`<button type="button" class="btn sm" id="rqLow">+ Agregar lo que está bajo (${low.length})</button>`:''}</div>
- <div class="rq-tot"><span>Total estimado</span><span class="mono">${money(tot)}${sinc?` <small class="note">+ ${sinc} sin costo</small>`:''}</span></div>
+ ${can('costos')?'':'<!--'}<div class="rq-tot"><span>Total estimado</span><span class="mono">${money(tot)}${sinc?` <small class="note">+ ${sinc} sin costo</small>`:''}</span></div>${can('costos')?'':'-->'}
  <div class="fgrid"><label>Prioridad<select id="rqPr"><option ${REQ.prio==='Normal'?'selected':''}>Normal</option><option ${REQ.prio==='Urgente'?'selected':''}>Urgente</option></select></label>
  <label>${REQ.alm?'Nota (proveedor, forma de pago…)':'Nota para Finanzas (opcional)'}<input type="text" id="rqNo" value="${esc(REQ.nota)}" placeholder="Proveedor, paciente que espera…"></label></div>
  ${pinHtml('Su PIN para confirmar',REQ.alm?'Firmar y registrar pedido':'Firmar y enviar a Finanzas')}`;
@@ -1270,7 +1270,7 @@ function renderReq(){const B=$('#rqBox');if(!B||!REQ)return;
 /* ---------- Entrada de mercancía / asignar lote ---------- */
 function entradaDlg(pid,o){o=o||{};const A=!!o.alm,SL=p=>A?sinLoteA(p):sinLote(p),LT=p=>A?(p.alm||[]):p.lotes;if(!can(A?'almacen':'entrada')){toast('Su perfil no registra entradas.');return}
  const E={pid:pid||null,sinl:!!o.sinl,qty:o.qty||'',lote:'',cad:'',costo:'',doc:o.doc||''};
- const p0=PROD.find(x=>x.id===E.pid);if(p0){if(E.sinl&&!SL(p0))E.sinl=false;if(E.sinl&&!E.qty)E.qty=SL(p0);E.costo=p0.c||''}
+ const p0=PROD.find(x=>x.id===E.pid);if(p0){if(E.sinl&&!SL(p0))E.sinl=false;if(E.sinl&&!E.qty)E.qty=SL(p0);E.costo=can('costos')&&p0.c||''}
  dlg((A?'Almacén · ':'')+(E.sinl?'Asignar lote y caducidad':'Entrada de mercancía'),'<form id="enF" autocomplete="off"><div id="enBox"></div></form>');
  const paint=()=>{const p=PROD.find(x=>x.id===E.pid),sl=p?SL(p):0;
   $('#enBox').innerHTML=`<div class="fgrid">
@@ -1284,7 +1284,7 @@ function entradaDlg(pid,o){o=o||{};const A=!!o.alm,SL=p=>A?sinLoteA(p):sinLote(p
   <label class="full">Factura o documento (opcional)<input type="text" id="enD" value="${esc(E.doc)}" placeholder="Folio de factura o pedido PF-…"></label>`}
   </div><p class="ferr" id="dErr" hidden></p><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap"><button class="btn" type="button" id="enMore">Guardar y otro lote</button><button class="btn pri" type="submit" id="dGo">Guardar</button></div>`;
   const keep=()=>{E.qty=$('#enQ').value;E.lote=$('#enL').value;E.cad=$('#enC').value;if($('#enCo'))E.costo=$('#enCo').value;if($('#enD'))E.doc=$('#enD').value};
-  $('#enP').onchange=e=>{keep();E.pid=+e.target.value||null;const p=PROD.find(x=>x.id===E.pid);E.sinl=!!(p&&SL(p)&&!LT(p).some(l=>l.cad));E.qty=E.sinl?SL(p):'';E.costo=p&&p.c||'';paint()};
+  $('#enP').onchange=e=>{keep();E.pid=+e.target.value||null;const p=PROD.find(x=>x.id===E.pid);E.sinl=!!(p&&SL(p)&&!LT(p).some(l=>l.cad));E.qty=E.sinl?SL(p):'';E.costo=can('costos')&&p&&p.c||'';paint()};
   const cb=$('#enSl');if(cb)cb.onchange=()=>{keep();E.sinl=cb.checked;if(E.sinl)E.qty=SL(PROD.find(x=>x.id===E.pid));paint()};
   const save=async(more,btn)=>{keep();dErr('');if(!E.pid){dErr('Elija el producto.');return}if(!(+E.qty>0)){dErr('Escriba la cantidad.');return}if(!E.lote.trim()){dErr('Escriba el lote.');return}if(!E.cad){dErr('Escriba la caducidad.');return}
    if(days(E.cad)<0&&!confirmPast(E.cad))return;if(!needLive())return;
@@ -1394,7 +1394,7 @@ function popMark(ids){ids.forEach(i=>POP_MEM.add(i));try{sessionStorage.setItem(
 function popEvents(){
  if(!ME||DEMO||viewAs||!LOADED)return[];
  const ev=[];
- if(tabsFor().includes('alert'))alerts().filter(a=>a.grp&&a.grp!=='info'&&!ATENDIDAS.has(a.id)).forEach(a=>ev.push(a));
+ if(tabsFor().includes('alert'))alerts().filter(a=>a.grp&&a.grp!=='info'&&!ATENDIDAS.has(a.id)&&!((a.imp||a.sinl)&&!can('entrada'))).forEach(a=>ev.push(a));
  if(can('almacen'))alertsAlm().filter(a=>!ATENDIDAS.has(a.id)).forEach(a=>ev.push(a));
  if(can('autorizar'))PEDIDOS.filter(p=>p.est===0&&p.por!==ME.nombre).forEach(p=>ev.push({id:'p'+p.id,k:p.prio==='Urgente'?'crit':'warn',grp:'ped',t:`Solicitud ${p.id} por autorizar${p.prio==='Urgente'?' · URGENTE':''}`,d:`${p.items} · ${p.monto?money(p.monto):'costo por definir'} · ${p.por}${p.nota?' · '+p.nota:''}`}));
  return ev;
@@ -1859,7 +1859,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610201459';
+const APP_VER='202610201506';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
