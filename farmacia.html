@@ -501,6 +501,17 @@ body.locked .shell{visibility:hidden}
 .citaok{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--ok-soft);color:var(--ok);font-weight:600}
 .strip2{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .almcal{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.almcal>div{flex:1;min-width:220px}
+.dlg.pw.xwide{width:min(1100px,100%)}
+.pm-tbl{overflow:auto;max-height:min(58vh,560px);border:1px solid var(--line);border-radius:10px}
+.pm-tbl table{width:100%;border-collapse:collapse;min-width:640px}.pm-tbl th{position:sticky;top:0;background:var(--surface);z-index:1}
+.pm-tbl td,.pm-tbl th{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+.pm-tbl input{width:auto!important;padding:6px 8px!important;font-size:14px!important}
+.pm-tbl td.num,.pm-tbl th.num{width:96px}
+.pm-tbl .pm-n{width:72px!important;text-align:right}
+.pm-l{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.pm-tbl .pm-lote{width:130px!important;text-transform:uppercase}.pm-tbl .pm-cad{width:160px!important}.pm-tbl .pm-qi{width:64px!important}
+.pm-q{font-size:12.5px;color:var(--muted)}.pm-l.sl{background:var(--warn-soft);border-radius:8px;padding:4px 6px}
+.pm-foot{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:12px}
 body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 </style>
 
@@ -705,8 +716,8 @@ function vSetup(){
  const st=(ok,t,d,btn)=>`<li class="${ok?'done':''}"><span class="ck">${ok?'✓':''}</span><div><b>${t}</b><p class="note">${d}</p></div>${ok?'':btn}</li>`;
  return `<section class="panel setup"><h3>Puesta en marcha con datos reales</h3><ol>
   ${st(!nocap,'Cargar existencias',nocap?`${nocap} de ${PR.length} productos aún sin existencia. Suba el Excel de toma de inventario de eOptics o registre entradas una por una.`:`Existencias cargadas${LAST_IMPORT?' · último reporte '+fmtD(LAST_IMPORT.slice(0,10)):''}.`,'<button class="btn sm pri" data-imp="1">Importar eOptics</button>')}
-  ${st(!sl&&nocap<PR.length,'Asignar lote y caducidad',sl?`${sl} pieza${sl>1?'s':''} de ${slp} producto${slp>1?'s':''} sin lote. Sin caducidad no hay alertas de vencimiento.`:nocap<PR.length?'Todas las piezas tienen lote y caducidad.':'Después de cargar existencias.','<button class="btn sm" data-goinv="sinl">Ver productos</button>')}
-  ${st(!par,'Definir mínimo, crítico y precios',par?`${par} producto${par>1?'s':''} con valores predeterminados (mínimo 2, crítico 1, precio $0).`:'Parámetros revisados.','<button class="btn sm" data-goinv="param">Ver productos</button>')}
+  ${st(!sl&&nocap<PR.length,'Asignar lote y caducidad',sl?`${sl} pieza${sl>1?'s':''} de ${slp} producto${slp>1?'s':''} sin lote. Sin caducidad no hay alertas de vencimiento.`:nocap<PR.length?'Todas las piezas tienen lote y caducidad.':'Después de cargar existencias.','<button class="btn sm pri" data-prm="0">Capturar lotes</button>')}
+  ${st(!par,'Definir mínimo, crítico y precios',par?`${par} producto${par>1?'s':''} con valores predeterminados (mínimo 2, crítico 1, precio $0).`:'Parámetros revisados.','<button class="btn sm pri" data-prm="0">Definir mínimos</button>')}
  </ol></section>`;
 }
 function vDash(){
@@ -767,7 +778,7 @@ function vInv(){
  <div class="toolbar"><input type="search" id="invQ" placeholder="Buscar por clave, nombre o principio activo" value="${esc(invQ)}" style="max-width:340px">
   <select id="invF" style="max-width:210px">${[['all','Todos'],['crit','Críticos'],['warn','En mínimo'],['dead','Agotados'],['c30','Caducan ≤30 d'],['c90','Caducan 31–90 d'],['venc','Con lote vencido'],['sinl','Piezas sin lote'],['nocap','Sin existencia capturada'],['param','Mínimo/precio por definir'],['sc','Sin clasificar']].map(([v,t])=>`<option value="${v}" ${v===f?'selected':''}>${t}</option>`).join('')}</select>
   <span class="spacer"></span>
-  ${canE?`<button class="btn" id="scanBtn" title="Con el lector: escanee el código y se abre la entrada de ese producto">Escanear</button><button class="btn pri" data-ent="0">+ Entrada</button>`:'<span class="note">Solo lectura para este usuario.</span>'}
+  ${canE?`<button class="btn" data-prm="0">Mínimos, lotes y caducidades</button><button class="btn" id="scanBtn" title="Con el lector: escanee el código y se abre la entrada de ese producto">Escanear</button><button class="btn pri" data-ent="0">+ Entrada</button>`:'<span class="note">Solo lectura para este usuario.</span>'}
  </div>
  <div class="panel tbl"><table class="invt"><thead><tr><th>Clave</th><th>Descripción (eOptics)</th><th>Grupo</th><th class="num">Exist.</th><th>Estado</th><th>Lote / caducidad</th>${!can('costos')?'':'<th class="num">Costo</th><th class="num">Venta</th>'}</tr></thead><tbody>
  ${rows.map(p=>{const ls=[...p.lotes].sort(lotSort);return `<tr><td class="mono" style="font-size:12px">${esc(p.cl)}${canEd?`<div class="racts">${canE&&!p.srv?`<button class="btn sm" data-ent="${p.id}">+ Entrada</button>`:''}<button class="btn sm" data-edit="${p.id}">Editar</button></div>`:''}</td><td class="desc"><b>${esc(p.d)}</b>${p.pa&&p.pa!=='—'?`<div class="note">${esc(p.pa)}</div>`:''}</td><td>${p.g==='sc'?chip(['info','Sin clasificar']):esc(GRUPOS[p.g])}</td><td class="num"><b>${p.srv?'—':p.cap?stock(p):'—'}</b>${p.srv||!p.cap?'':`<div class="mm">mín ${p.min}<br>crít ${p.cri}</div>`}${stockA(p)?`<div class="mm" style="color:var(--accent)">almacén ${stockA(p)}</div>`:''}</td><td>${chip(stockState(p))}${p.ejp&&!p.srv?'<div style="margin-top:3px">'+chip(['info','Por definir'])+'</div>':''}</td>
@@ -1174,6 +1185,7 @@ function bindActs(R){
  R.querySelectorAll('[data-imp]').forEach(b=>b.onclick=()=>{closePop();importDlg()});
  R.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editDlg(+b.dataset.edit));
  R.querySelectorAll('[data-goinv]').forEach(b=>b.onclick=()=>{closePop();invFilter=b.dataset.goinv;invQ='';go('inv')});
+ R.querySelectorAll('[data-prm]').forEach(b=>b.onclick=()=>{closePop();paramDlg(b.dataset.prm==='1')});
  R.querySelectorAll('[data-goped]').forEach(b=>b.onclick=()=>{closePop();go('ped')});
 }
 
@@ -1405,12 +1417,12 @@ function vAlm(){
  <div class="strip2"><div class="kpi"><small>Piezas en almacén</small><b>${pzs}</b></div>${can('costos')?`<div class="kpi ok"><small>Valor a costo</small><b>${money(val)}</b></div>`:''}<div class="kpi ${bajo?'warn':''}"><small>Bajo mínimo</small><b>${bajo}</b></div><div class="kpi ${cad90?'crit':''}"><small>Caducan ≤90 d</small><b>${cad90}</b></div><div class="kpi ${ab.length?'warn':''}"><small>Pedidos de farmacia</small><b>${ab.length}</b></div></div>
  <div class="panel almcal"><div><b>Inventario semanal: ${hoy?'<span style="color:var(--warn)">hoy</span>':DSEM[ALM_DIA]+' '+nd.toLocaleDateString('es-MX',{day:'numeric',month:'short'})}</b><p class="note" style="margin:2px 0 0">Último inventario de almacén: ${LAST_CONTEO_A?fmtD(LAST_CONTEO_A):'ninguno todavía'}.</p></div>
   ${canA?`<label class="note" style="display:flex;gap:6px;align-items:center">Cada<select id="almDia" style="width:auto">${DSEM.map((d,i)=>`<option value="${i}" ${i===ALM_DIA?'selected':''}>${d}</option>`).join('')}</select></label>
-  <button class="btn sm" id="almCal">📅 Agregar a mi Google Calendar</button><button class="btn sm pri" id="almCnt">Hacer inventario semanal</button>`:''}</div>
+<button class="btn sm pri" id="almCnt">Hacer inventario semanal</button>`:''}</div>
  ${ab.length?`<section class="panel" style="margin-top:12px"><h3>Pedidos de Farmacia al almacén</h3>${ab.map(s=>{const p=PROD.find(x=>x.id===s.producto_id);if(!p)return '';const f=s.cantidad-s.surtido,hay=stockA(p);return `<div class="alert"><span class="bar" style="background:var(--warn)"></span><div><b>${esc(p.nm)} · ${f} pza${s.surtido?` (ya se enviaron ${s.surtido})`:''}</b><p>${esc(s.solicitante||'')} · ${fmtD(s.created_at.slice(0,10))}${s.nota?' · '+esc(s.nota):''} · en almacén ${hay} vigentes · en farmacia ${p.cap?stock(p):'—'}</p></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${canA?`${hay?`<button class="btn sm pri" data-tras="${p.id}|${Math.min(f,hay)}|${s.id}">Enviar ${Math.min(f,hay)} a farmacia</button>`:`<button class="btn sm pri" data-palp="${p.id}|${f}">Pedir al proveedor</button>`}<button class="btn sm" data-rech="${s.id}">Rechazar</button>`:''}</div></div>`}).join('')}</section>`:''}
  ${al.length?`<section class="panel" style="margin-top:12px"><h3>Avisos del almacén</h3>${al.slice(0,8).map(alertRow).join('')}</section>`:''}
  <div class="toolbar" style="margin-top:14px"><input type="search" id="almQ" placeholder="Buscar en almacén" value="${esc(almQ)}" style="max-width:300px">
   <select id="almF" style="max-width:200px">${[['all','Todo el catálogo'],['con','Con existencia'],['bajo','Bajo mínimo'],['cad','Caducan ≤90 d o vencidos'],['sinl','Piezas sin lote']].map(([v,t])=>`<option value="${v}" ${v===almF?'selected':''}>${t}</option>`).join('')}</select><span class="spacer"></span>
-  ${canA?`<button class="btn" data-palp="0">Pedir al proveedor</button><button class="btn pri" data-enta="0">+ Entrada al almacén</button>`:''}</div>
+  ${canA?`<button class="btn" data-prm="1">Mínimos, lotes y caducidades</button><button class="btn" data-palp="0">Pedir al proveedor</button><button class="btn pri" data-enta="0">+ Entrada al almacén</button>`:''}</div>
  <div class="panel tbl"><table class="invt"><thead><tr><th>Clave</th><th>Producto</th><th class="num">Almacén</th><th>Lote / caducidad</th><th class="num">Farmacia</th></tr></thead><tbody>
  ${rows.map(p=>{const s=stockA(p),ls=[...(p.alm||[])].sort(lotSort);return `<tr><td class="mono" style="font-size:12px">${esc(p.cl)}${canA?`<div class="racts"><button class="btn sm" data-enta="${p.id}">+ Entrada</button>${s?`<button class="btn sm" data-tras="${p.id}|${Math.min(s,Math.max((p.min||1)*2-(p.cap?stock(p):0),1))}|">A farmacia</button>`:''}<button class="btn sm" data-edit="${p.id}">Editar</button></div>`:''}</td>
   <td class="desc"><b>${esc(p.nm)}</b><div class="note">${esc(p.d)}</div></td>
@@ -1434,7 +1446,6 @@ function bindAlm(M){
  const q=$('#almQ');if(q)q.oninput=e=>{almQ=e.target.value;const pos=e.target.selectionStart;render();const n=$('#almQ');n.focus();n.setSelectionRange(pos,pos)};
  const f=$('#almF');if(f)f.onchange=e=>{almF=e.target.value;render()};
  const ds=$('#almDia');if(ds)ds.onchange=async e=>{if(!needLive())return;try{await rpc('far_guardar_almacen_dia',{p_token:ME.token,p_dia:+e.target.value});ALM_DIA=+e.target.value;toast('Inventario de almacén: cada '+DSEM[ALM_DIA]+'. Actualice el recordatorio de su calendario.');render()}catch(er){toast(er.message)}};
- const cl=$('#almCal');if(cl)cl.onclick=()=>{const u=calRemUrl();const w=window.open(u,'gcal','width=980,height=760,left=80,top=60');if(!w)location.href=u;toast('Pulse «Guardar» en Google Calendar: quedará un recordatorio cada '+DSEM[ALM_DIA]+'.')};
  const cn=$('#almCnt');if(cn)cn.onclick=()=>{ALMC=true;render();window.scrollTo({top:0})};
  const bk=$('#almBack');if(bk)bk.onclick=()=>{ALMC=false;render()};
  M.querySelectorAll('[data-cnta]').forEach(c=>c.onchange=()=>{CONTEO_A[+c.dataset.cnta]=Math.max(0,+c.value||0);CEDIT_A.add(+c.dataset.cnta);render()});
@@ -1472,6 +1483,56 @@ function almReqDlg(items){const L=items.length?items.map(i=>({...i})):[{pid:null
  paint();
  $('#arF').onsubmit=async e=>{e.preventDefault();const it=L.filter(i=>i.pid);if(!it.length){dErr('Elija al menos un producto.');return}if(!needLive())return;
   await busy($('#dGo'),async()=>{try{await rpc('far_solicitar_almacen',{p_token:ME.token,p_detalle:it.map(i=>({producto_id:i.pid,cantidad:+i.cant})),p_nota:nota||null});closeDlg();toast('Pedido enviado al almacén de Finanzas.');await reload()}catch(er){dErr(er.message)}})};
+}
+
+/* ===== Ventana: mínimos, lotes y caducidades (captura en bloque) ===== */
+let PRM={alm:false,todo:false,q:''};
+function paramDlg(alm){
+ const A=!!alm;if(!can(A?'almacen':'entrada')&&eff()!=='dir'){toast('Solo lectura.');return}
+ PRM={alm:A,todo:false,q:''};
+ dlg(A?'Almacén · mínimos, lotes y caducidades':'Mínimos, lotes y caducidades','<div id="pmBox"></div>',true);
+ $('#msgOvl .dlg').classList.add('xwide');paintParam();
+}
+function paintParam(){const A=PRM.alm,B=$('#pmBox');if(!B)return;
+ const LT=p=>A?(p.alm||[]):p.lotes,ST=p=>A?stockA(p):stock(p);
+ let L=PROD.filter(p=>!p.srv);
+ if(!PRM.todo)L=L.filter(p=>LT(p).length||(!A&&p.ejp));
+ if(PRM.q)L=L.filter(p=>(p.nm+p.cl+p.d).toLowerCase().includes(PRM.q.toLowerCase()));
+ L.sort((a,b)=>(LT(b).some(l=>!l.cad)-LT(a).some(l=>!l.cad))||a.nm.localeCompare(b.nm));
+ const hoy=ISO(TODAY);
+ B.innerHTML=`<div class="toolbar" style="margin:0 0 10px"><input type="search" id="pmQ" placeholder="Buscar producto" value="${esc(PRM.q)}" style="max-width:260px"><label class="note" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pmT" ${PRM.todo?'checked':''} style="width:auto"> Todo el catálogo</label><span class="spacer"></span><span class="note">${A?'Almacén de Finanzas':'Farmacia'} · ${L.length} productos</span></div>
+ <p class="note" style="margin-top:0">Escriba los valores y pulse <b>Guardar todo</b> al final. Las piezas <b>sin lote</b> aparecen primero: anote lote y caducidad (si son de varios lotes, cambie la cantidad y guarde; lo que sobre queda sin lote para el siguiente).</p>
+ <div class="pm-tbl"><table><thead><tr><th>Producto</th>${A?'<th class="num">Mín. almacén</th>':'<th class="num">Mínimo</th><th class="num">Crítico</th>'}<th>Lotes y caducidades</th></tr></thead><tbody>
+ ${L.map(p=>{const ls=[...LT(p)].sort(lotSort);return `<tr data-pmp="${p.id}"><td><b>${esc(p.nm)}</b><div class="note mono" style="font-size:11px">${esc(p.cl)}</div><div class="note">Existencia ${ST(p)}</div></td>
+  ${A?`<td class="num"><input type="number" min="0" class="pm-n" data-f="minA" value="${p.minA||0}"></td>`:`<td class="num"><input type="number" min="0" class="pm-n" data-f="min" value="${p.min}"></td><td class="num"><input type="number" min="0" class="pm-n" data-f="cri" value="${p.cri}"></td>`}
+  <td>${ls.map(l=>l.cad?`<div class="pm-l" data-lid="${l.id}" data-l0="${esc(l.l)}" data-c0="${l.cad}"><input class="pm-lote" value="${esc(l.l)}" aria-label="Lote"><input type="date" class="pm-cad" value="${l.cad}"><span class="pm-q">${l.q} pza</span>${days(l.cad)<0?chip(['dead','Vencido']):days(l.cad)<=90?chip(cadState(l.cad)):''}</div>`
+   :`<div class="pm-l sl" data-sl="${p.id}" data-max="${l.q}"><input class="pm-lote" placeholder="Lote" aria-label="Lote"><input type="date" class="pm-cad" min="${hoy}"><span class="pm-q"><input type="number" class="pm-qi" min="1" max="${l.q}" value="${l.q}"> de ${l.q} sin lote</span></div>`).join('')||'<span class="note">Sin piezas</span>'}</td></tr>`}).join('')||`<tr><td colspan="4" class="note">Nada que mostrar. Marque «Todo el catálogo».</td></tr>`}
+ </tbody></table></div>
+ <p class="ferr" id="dErr" hidden></p><div class="pm-foot"><span class="note" id="pmSt"></span><button class="btn pri" id="pmGo">Guardar todo</button></div>`;
+ $('#pmQ').oninput=e=>{PRM.q=e.target.value;const pos=e.target.selectionStart;paintParam();const n=$('#pmQ');n.focus();n.setSelectionRange(pos,pos)};
+ $('#pmT').onchange=e=>{PRM.todo=e.target.checked;paintParam()};
+ $('#pmGo').onclick=()=>saveParam();
+}
+async function saveParam(){const A=PRM.alm;dErr('');if(!needLive())return;
+ const prod=[],cor=[],asg=[],errs=[];
+ document.querySelectorAll('#pmBox tr[data-pmp]').forEach(tr=>{const p=PROD.find(x=>x.id===+tr.dataset.pmp);const up={};
+  tr.querySelectorAll('.pm-n').forEach(i=>{const v=Math.max(0,parseInt(i.value)||0);const k=i.dataset.f;if(k==='min'&&v!==p.min)up.minimo=v;if(k==='cri'&&v!==p.cri)up.critico=v;if(k==='minA'&&v!==(p.minA||0))up.minimo_alm=v});
+  const mi=up.minimo??p.min,cr=up.critico??p.cri;if(!A&&cr>mi)errs.push(`${p.nm}: el crítico no puede ser mayor que el mínimo`);
+  if(Object.keys(up).length)prod.push({p,up});
+  tr.querySelectorAll('.pm-l[data-lid]').forEach(d=>{const lo=d.querySelector('.pm-lote').value.trim().toUpperCase(),ca=d.querySelector('.pm-cad').value;if(lo!==d.dataset.l0||ca!==d.dataset.c0){if(!lo||!ca)errs.push(`${p.nm}: lote y caducidad no pueden quedar vacíos`);else cor.push({p,id:+d.dataset.lid,lo,ca})}});
+  tr.querySelectorAll('.pm-l[data-sl]').forEach(d=>{const lo=d.querySelector('.pm-lote').value.trim(),ca=d.querySelector('.pm-cad').value,q=parseInt(d.querySelector('.pm-qi').value)||0;
+   if(!lo&&!ca)return;if(!lo||!ca){errs.push(`${p.nm}: escriba lote y caducidad`);return}if(!(q>0&&q<=+d.dataset.max)){errs.push(`${p.nm}: cantidad no válida`);return}asg.push({p,lo,ca,q})});
+ });
+ if(errs.length){dErr(errs.slice(0,4).join(' · '));return}
+ const n=prod.length+cor.length+asg.length;if(!n){toast('No hay cambios.');return}
+ const btn=$('#pmGo');btn.disabled=true;let ok=0;const fail=[];const st=t=>{const e=$('#pmSt');if(e)e.textContent=t};
+ for(const x of prod){st(`Guardando ${ok+1} de ${n}…`);const d=await db(sb.from('far_productos').update({...x.up,ejemplo_parametros:false,updated_at:new Date().toISOString()}).eq('id',x.p.id),'Producto');d===null?fail.push(x.p.nm):ok++}
+ for(const x of cor){st(`Guardando ${ok+1} de ${n}…`);try{await rpc('far_corregir_lote',{p_token:ME.token,p_lote_id:x.id,p_lote:x.lo,p_caducidad:x.ca});ok++}catch(e){fail.push(x.p.nm+': '+e.message)}}
+ for(const x of asg){st(`Guardando ${ok+1} de ${n}…`);try{await rpc(A?'far_entrada_alm':'far_entrada',{p_token:ME.token,p_producto_id:x.p.id,p_lote:x.lo,p_caducidad:x.ca,p_cantidad:x.q,p_costo:null,p_factura:null,p_de_sin_lote:true});ok++}catch(e){fail.push(x.p.nm+': '+e.message)}}
+ if(prod.length)logDb('parametros_en_bloque',{productos:prod.length,ubicacion:A?'almacen':'farmacia'});
+ await reload();
+ if($('#pmBox')){paintParam();if(fail.length)dErr('No se guardó: '+fail.join(' · '));const e=$('#pmSt');if(e)e.textContent=`${ok} cambio(s) guardados.`}
+ toast(fail.length?`${ok} guardados, ${fail.length} con error.`:`${ok} cambio(s) guardados.`);
 }
 
 /* ===== conexión con Supabase ===== */
@@ -1550,7 +1611,7 @@ const sGet=()=>{try{return JSON.parse(localStorage.getItem(SKEY)||'null')}catch(
 const sSet=v=>{try{v?localStorage.setItem(SKEY,JSON.stringify(v)):localStorage.removeItem(SKEY)}catch(e){}};
 function nextCut(){const n=new Date(),c=new Date(n);for(const [h,m] of [[14,30],[18,30]]){c.setHours(h,m,0,0);if(c>n)return c}c.setDate(c.getDate()+1);c.setHours(14,30,0,0);return c}
 const hm=d=>d.toLocaleTimeString('es-MX',{hour:'numeric',minute:'2-digit'});
-function showMsg(t,html){document.querySelector('#msgOvl .dlg').classList.remove('wide');$('#msgT').textContent=t;$('#msgB').innerHTML=html;$('#msgOvl').hidden=false}
+function showMsg(t,html){document.querySelector('#msgOvl .dlg').classList.remove('wide','xwide');$('#msgT').textContent=t;$('#msgB').innerHTML=html;$('#msgOvl').hidden=false}
 $('#msgX').onclick=()=>{$('#msgOvl').hidden=true;TED=null};
 function lgErr(t){const e=$('#lgErr');e.textContent=t;e.hidden=!t}
 function paintMe(){if(!ME)return;$('#meName').textContent=ME.nombre;$('#mePerf').textContent=PERFILES[ME.perfil]||ME.perfil;const exp=new Date(ME.expira);$('#meClose').textContent='Cierre automático '+hm(exp)}
@@ -1670,7 +1731,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610192300';
+const APP_VER='202610200705';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
