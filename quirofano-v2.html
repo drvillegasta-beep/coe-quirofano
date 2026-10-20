@@ -335,7 +335,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.11';
+const VERSION='3.12';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -372,13 +372,13 @@ const S={user:null,sede:null,tab:'inicio',calMes:hoyISO().slice(0,7),escal:[],su
   sedes:[],ubic:[],esp:[],mat:[],lotes:[],lios:[],paq:[],paqItems:[],cx:[],cxItems:[],tanques:[],lect:[],conteos:[],evid:[],msj:[],precios:[],cots:[],config:{},prov:[],pedidos:[],usuarios:[],carroRev:[]};
 const ROLES={director:'Dirección General',direccion:'Dirección',enfermeria:'Enfermería quirófano',contabilidad:'Contabilidad / Administración',consultorio:'Consultorio (asistentes y médicos)'};
 const MODULOS=[['inicio','Inicio (tablero)'],['agenda','Agenda quirúrgica'],['cotizar','Cotizar'],['campana','Campaña (cuando hay una activa)'],['inventario','Inventario de quirófano'],['carro','Carro rojo'],['lio','Stock de LIO'],['alertas','Alertas y pedidos'],['tanques','Tanques'],['mas','Reportes, catálogo y paquetes']];
-const PERMISOS=[['cotizar','Elaborar cotizaciones'],['programar','Programar cirugías y capturar pagos'],['validar','Validar pagos (Contabilidad)'],['inventario','Entradas, salidas y conteos'],['aprobar','Aprobar conteos y autorizar excepciones'],['descuento','Autorizar descuentos mayores al máximo'],['precios','Precios y vigencias'],['catalogo','Catálogo de materiales y paquetes'],['pedir','Pedidos a COE Finanzas'],['usuarios','Usuarios y accesos'],['config','Configuración']];
+const PERMISOS=[['cotizar','Elaborar cotizaciones'],['programar','Programar cirugías y capturar pagos'],['validar','Validar pagos (Contabilidad)'],['inventario','Entradas, salidas y conteos'],['aprobar','Aprobar conteos y autorizar excepciones'],['descuento','Autorizar descuentos mayores al máximo'],['precios','Precios y vigencias'],['catalogo','Catálogo de materiales y paquetes'],['pedir','Pedidos a COE Finanzas'],['almacen','Almacén de Administración: llegadas y envíos a quirófano'],['usuarios','Usuarios y accesos'],['config','Configuración']];
 const TODOS_MOD=MODULOS.map(x=>x[0]);
 const ROL_DEF={
   director:{m:TODOS_MOD,p:PERMISOS.map(x=>x[0])},
-  direccion:{m:TODOS_MOD,p:['cotizar','programar','inventario','aprobar','descuento','precios','catalogo','pedir']},
+  direccion:{m:TODOS_MOD,p:['cotizar','programar','inventario','aprobar','descuento','precios','catalogo','pedir','almacen']},
   enfermeria:{m:TODOS_MOD,p:['cotizar','programar','inventario','pedir']},
-  contabilidad:{m:TODOS_MOD.filter(k=>k!=='carro'),p:['validar','pedir']},
+  contabilidad:{m:TODOS_MOD.filter(k=>k!=='carro'),p:['validar','pedir','almacen']},
   consultorio:{m:['agenda','cotizar','campana','mas'],p:['cotizar']}};
 const modsOf=u=>Array.isArray(u?.modulos)&&u.modulos.length?u.modulos:(ROL_DEF[u?.rol]||{m:[]}).m;
 const permsOf=u=>u?.rol==='director'?PERMISOS.map(x=>x[0]):Array.isArray(u?.permisos)?u.permisos:(ROL_DEF[u?.rol]||{p:[]}).p;
@@ -391,8 +391,10 @@ const matById=id=>S.mat.find(m=>m.id===id);
 const espById=id=>S.esp.find(e=>e.id===id);
 const sedeById=id=>S.sedes.find(s=>s.id===id);
 const salasSede=()=>S.ubic.filter(u=>u.sede_id===S.sede&&u.tipo==='sala'&&u.activa).sort((a,b)=>a.orden-b.orden);
-const ubicSede=()=>S.ubic.filter(u=>u.sede_id===S.sede&&u.activa&&u.tipo!=='carro').sort((a,b)=>a.orden-b.orden);
-const ubicIdsSede=()=>new Set(S.ubic.filter(u=>u.sede_id===S.sede&&u.activa).map(u=>u.id));
+const esAdm=u=>u&&u.area==='administracion';
+const ubicSede=()=>S.ubic.filter(u=>u.sede_id===S.sede&&u.activa&&u.tipo!=='carro'&&!esAdm(u)).sort((a,b)=>a.orden-b.orden);
+const ubicIdsSede=()=>new Set(S.ubic.filter(u=>u.sede_id===S.sede&&u.activa&&!esAdm(u)).map(u=>u.id));
+const ubicAdm=()=>S.ubic.find(u=>u.sede_id===S.sede&&u.activa&&esAdm(u));
 const carroUb=()=>S.ubic.find(u=>u.sede_id===S.sede&&u.tipo==='carro'&&u.activa);
 const esCarro=m=>m?.area==='carro_rojo';
 const matsQX=()=>S.mat.filter(m=>m.activo&&!esCarro(m));
@@ -1591,7 +1593,7 @@ function imprimirAgenda(){
    ============================================================ */
 function vInventario(){
   const A=invAlertas();
-  const st=subtabs('inv',[['alertas',`⚠ Alertas${A.total?` <span class="tcount ${A.urg?'crit':'warn'}">${A.total}</span>`:''}`],['conteo','Conteos'],['criticos','Críticos'],['exist','Existencias'],['mov','Movimientos'],['cal','Calendario']],A.urg?'alertas':'conteo');
+  const st=subtabs('inv',[['alertas',`⚠ Alertas${A.total?` <span class="tcount ${A.urg?'crit':'warn'}">${A.total}</span>`:''}`],['conteo','Conteos'],['criticos','Críticos'],['exist','Existencias'],['mov','Movimientos'],['cal','Calendario'],...(ubicAdm()&&(tiene('almacen')||can.inventario())?[['adm','Almacén Administración']]:[])],A.urg?'alertas':(tiene('almacen')&&!can.inventario()&&ubicAdm()?'adm':'conteo'));
   let html=`<div class="row" style="margin-bottom:10px"><h2 style="flex:3">Inventario de quirófano</h2>${can.pedir()?`<button class="btn sec" style="flex:0 0 auto" onclick="formPedido(alertasMat().filter(a=>critOf(a.m)==='critico'&&!pedidoAbierto(a.m.id)).map(a=>a.m.id))">Solicitar a Finanzas</button>`:''}</div>${alertStrip(A)}${st.html}`;
   if(st.cur==='alertas')html+=vInvAlertas(A);
   else if(st.cur==='exist'){
@@ -1599,7 +1601,7 @@ function vInventario(){
     const ubs=ubicSede();
     html+=`<div class="row" style="margin-bottom:10px"><input placeholder="Buscar material" value="${h(S.sub.invQ||'')}" oninput="S.sub.invQ=this.value;clearTimeout(window._iq);window._iq=setTimeout(()=>{render();const i=document.querySelector('#main input');i.focus();i.setSelectionRange(i.value.length,i.value.length)},350)">
       <select onchange="S.sub.invU=this.value;render()"><option value="todas">Todas las ubicaciones</option>${ubs.map(u=>`<option value="${u.id}" ${fu===u.id?'selected':''}>${h(u.nombre)}</option>`).join('')}</select></div>
-      ${can.inventario()?`<div class="row" style="margin-bottom:12px"><button class="btn" onclick="formEntrada()">＋ Entrada</button><button class="btn sec" onclick="formTraspaso()">⇄ Traspaso</button><button class="btn sec" onclick="formMerma()">Merma / caducado</button></div>`:''}`;
+      ${can.inventario()?`<div class="row" style="margin-bottom:12px">${ubicAdm()?`<button class="btn" onclick="S.sub.inv='adm';render()">Llegadas: Almacén Administración</button>${tiene('aprobar')?'<button class="btn sec" onclick="formEntrada()">Entrada directa</button>':''}`:'<button class="btn" onclick="formEntrada()">＋ Entrada</button>'}<button class="btn sec" onclick="formTraspaso()">⇄ Traspaso</button><button class="btn sec" onclick="formMerma()">Merma / caducado</button></div>`:''}`;
     const uSet=fu==='todas'?ubicIdsSede():new Set([fu]);
     const mats=matsQX().filter(m=>(!fq||m.nombre.toLowerCase().includes(fq)||(m.codigo||'').toLowerCase().includes(fq)||(m.categoria||'').toLowerCase().includes(fq)));
     html+=`<div class="tabs">${[['todos','Todos'],...CRIT_ORD.map(k=>[k,CRIT[k][0]])].map(([k,t])=>`<button class="${(S.sub.invC||'todos')===k?'on':''}" onclick="S.sub.invC='${k}';render()">${t} ${k==='todos'?'':mats.filter(m=>critOf(m)===k).length}</button>`).join('')}</div>`;
@@ -1609,6 +1611,7 @@ function vInventario(){
   }else if(st.cur==='conteo')html+=vConteos();
   else if(st.cur==='criticos')html+=vCriticos();
   else if(st.cur==='cal')html+=vCalInv();
+  else if(st.cur==='adm')html+=vAlmacenAdm();
   else html+=`<div id="movs" class="card"><div class="muted">Cargando…</div></div>`;
   $('#main').innerHTML=html;
   if(st.cur==='mov')cargarMovs();
@@ -1659,6 +1662,87 @@ function formEntrada(mid){
       await logA('entrada','qx_lotes',mid,{cantidad:c});m.remove();toast('Entrada registrada');await loadAll();render()}catch(e){}
   };
 }
+/* ============================================================
+   ALMACÉN DE ADMINISTRACIÓN → QUIRÓFANO
+   Llegan los pedidos a Administración (lote, caducidad, cantidad) y de ahí
+   se envían a quirófano con firma de quien entrega y de quien recibe.
+   ============================================================ */
+function stockAdm(mid){const a=ubicAdm();return a?S.lotes.filter(l=>l.material_id===mid&&l.ubicacion_id===a.id).reduce((s,l)=>s+num(l.cantidad),0):0}
+function sugeridoEnvio(m){const st=semaforo(m).st,min=num(m.stock_minimo),max=num(m.stock_maximo)||min*2;return Math.max(0,Math.min(stockAdm(m.id),Math.ceil(max-st)))}
+function vAlmacenAdm(){
+  const a=ubicAdm();if(!a)return '<div class="card empty">No hay almacén de Administración en esta sede.</div>';
+  const lotes=S.lotes.filter(l=>l.ubicacion_id===a.id&&num(l.cantidad)>0);
+  const mats=[...new Set(lotes.map(l=>l.material_id))].map(matById).filter(Boolean).sort((x,y)=>x.nombre.localeCompare(y.nombre));
+  const venc=lotes.filter(l=>l.caducidad&&diasHasta(l.caducidad)<0),prox=lotes.filter(l=>l.caducidad&&diasHasta(l.caducidad)>=0&&diasHasta(l.caducidad)<=90);
+  const fal=matsQX().filter(m=>semaforo(m).nivel!=='ok'&&num(m.stock_minimo)>0);
+  const puede=tiene('almacen');const fq=(S.sub.admQ||'').toLowerCase();
+  return `<div class="card" style="display:grid;gap:8px"><div class="muted">Aquí se registran las <b>llegadas</b> (pedidos, compras, donaciones) con lote, caducidad y cantidad. Quirófano solo recibe por <b>envío</b> desde este almacén, firmado por quien entrega y por quien recibe.</div>
+    ${puede?`<div class="row"><button class="btn" onclick="formLlegada()">＋ Registrar llegada</button><button class="btn sec" onclick="formEnvio()">→ Enviar a quirófano</button></div>`:''}</div>
+   <div class="kpis" style="margin:10px 0"><div class="kpi"><b>${mats.length}</b><span>Materiales en almacén</span></div><div class="kpi"><b>${prox.length}</b><span>Lotes caducan en 90 días</span></div><div class="kpi"><b>${venc.length}</b><span>Lotes vencidos</span></div><div class="kpi"><b>${fal.filter(m=>stockAdm(m.id)>0).length}</b><span>Faltan en quirófano y hay aquí</span></div></div>
+   ${fal.filter(m=>stockAdm(m.id)>0).length?`<div class="card"><h3>Para enviar a quirófano</h3><div class="muted">Están bajo mínimo en quirófano y hay existencia en Administración.</div>${fal.filter(m=>stockAdm(m.id)>0).map(m=>`<div class="list-item"><div class="grow"><b>${h(m.nombre)}</b> ${critPill(m)}<div class="muted">Quirófano ${fmtN(semaforo(m).st)} de ${fmtN(m.stock_minimo)} mín. · Administración ${fmtN(stockAdm(m.id))}</div></div><span class="pill p-azul">enviar ${fmtN(sugeridoEnvio(m))}</span></div>`).join('')}${puede?`<button class="btn sec" style="margin-top:8px" onclick="formEnvio(true)">Preparar envío con lo sugerido</button>`:''}</div>`:''}
+   <input placeholder="Buscar material" value="${h(S.sub.admQ||'')}" oninput="S.sub.admQ=this.value;clearTimeout(window._aq);window._aq=setTimeout(()=>{render();const i=document.querySelector('#main input[placeholder=\\'Buscar material\\']');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}},350)" style="margin:6px 0">
+   <div class="tblwrap"><table><tr><th>Material</th><th>Lote</th><th>Caducidad</th><th style="text-align:right">Cantidad</th><th style="text-align:right">En quirófano</th></tr>
+   ${mats.filter(m=>!fq||m.nombre.toLowerCase().includes(fq)||(m.codigo||'').toLowerCase().includes(fq)).map(m=>lotes.filter(l=>l.material_id===m.id).sort((x,y)=>(x.caducidad||'9')<(y.caducidad||'9')?-1:1).map((l,i)=>{const d=l.caducidad?diasHasta(l.caducidad):null;return `<tr><td>${i?'':`<b>${h(m.nombre)}</b><div class="muted">${h(m.codigo||'')} · ${h(m.unidad)}</div>`}</td><td>${h(l.lote||'—')}</td><td><span class="pill ${d==null?'':d<0?'k-crit':d<=90?'k-warn':''}">${l.caducidad?fCorta(l.caducidad):'sin fecha'}</span></td><td style="text-align:right"><b>${fmtN(l.cantidad)}</b></td><td style="text-align:right">${i?'':fmtN(semaforo(m).st)}</td></tr>`}).join('')).join('')||'<tr><td colspan="5" class="muted">Sin existencias en Administración. Registra la primera llegada.</td></tr>'}</table></div>`;
+}
+function formLlegada(mid){
+  const a=ubicAdm();const rows=[];
+  const m=modal(`${mhead('Llegada al Almacén de Administración')}<div class="muted">Captura cada material con su lote y caducidad. Puedes agregar varios renglones de la misma factura.</div>
+  <label>Pedido de Finanzas (opcional)</label><select id="lP"><option value="">—</option>${S.pedidos.filter(p=>!p.recibido_at).map(p=>`<option value="${p.id}">${h(p.folio)} · ${h((p.descripcion||'').slice(0,50))}</option>`).join('')}</select>
+  <label>Proveedor / factura / nota</label><input id="lN">
+  <div id="lRows"></div><button class="btn sec sm" id="lAdd" style="margin-top:6px">＋ Otro material</button>
+  <div class="acts"><button class="btn" id="ok">Registrar llegada con PIN</button></div>`);
+  const add=v=>{const d=document.createElement('div');d.className='card';d.style.cssText='margin-top:8px;padding:10px';d.innerHTML=`${selMat('x',v).replace('id="x"','class="lM"')}<div class="grid3" style="margin-top:6px"><div><label>Cantidad</label><input class="lC" type="number" step="any" inputmode="decimal"></div><div><label>Lote</label><input class="lL"></div><div><label>Caducidad</label><input class="lD" type="date"></div></div>`;m.querySelector('#lRows').appendChild(d)};
+  add(mid);m.querySelector('#lAdd').onclick=()=>add();
+  m.querySelector('#ok').onclick=async()=>{
+    const its=[...m.querySelectorAll('#lRows .card')].map(d=>({mid:d.querySelector('.lM').value,c:num(d.querySelector('.lC').value),lote:d.querySelector('.lL').value.trim(),cad:d.querySelector('.lD').value})).filter(x=>x.mid&&x.c>0);
+    if(!its.length)return toast('Captura al menos un material con cantidad',true);
+    for(const x of its){const mt=matById(x.mid);if(mt.controla_caducidad&&!x.cad&&!await confirmar(`${h(mt.nombre)} controla caducidad y no tiene fecha. ¿Continuar?`))return}
+    if(!await pedirPIN('Llegada de '+its.length+' material(es) a Administración'))return;
+    try{const ped=m.querySelector('#lP').value,nota=[m.querySelector('#lN').value,ped?'Pedido '+(S.pedidos.find(p=>p.id===ped)?.folio):''].filter(Boolean).join(' · ');
+      for(const x of its)await ingresar(x.mid,a.id,x.lote,x.cad,x.c,{nota:'Llegada a Administración'+(nota?' · '+nota:'')});
+      if(ped)await sb.from('fin_pedidos').update({recibido_at:new Date().toISOString(),notas:(S.pedidos.find(p=>p.id===ped)?.notas||'')+'\nRecibido en Administración por '+S.user.nombre}).eq('id',ped);
+      await logA('llegada_admin','qx_lotes',null,{items:its.length});m.remove();toast('Llegada registrada');await loadAll();S.sub.inv='adm';render()}catch(e){}
+  };
+}
+function firmaRecibe(titulo){
+  return new Promise(res=>{const cands=S.usuarios.filter(u=>u.activo&&u.id!==S.user.id);
+    const m=modal(`${mhead(h(titulo))}<div class="muted">Firma de quien recibe en quirófano.</div><label>Recibe</label><select id="frU">${cands.map(u=>`<option value="${u.id}" ${u.rol==='enfermeria'?'selected':''}>${h(u.nombre)}</option>`).join('')}</select><label>Su PIN</label><input id="frP" type="password" inputmode="numeric" maxlength="4"><div id="frE" class="muted" style="color:var(--rojo);margin-top:6px"></div><div class="acts"><button class="btn" id="ok">Firmar recibido</button></div>`,'sm');
+    m.querySelector('.x').onclick=()=>{m.remove();res(null)};
+    m.querySelector('#ok').onclick=async()=>{const uid=m.querySelector('#frU').value,u=S.usuarios.find(x=>x.id===uid);const rr=await sb.from('qx_usuarios').select('pin_hash,activo').eq('id',uid).single();
+      if(!rr.data||!rr.data.activo||rr.data.pin_hash!==await pinHash(u.usuario,m.querySelector('#frP').value))return m.querySelector('#frE').textContent='PIN incorrecto';m.remove();res(u)}})
+}
+function formEnvio(sugerido){
+  const a=ubicAdm();const dests=ubicSede();
+  const mats=[...new Set(S.lotes.filter(l=>l.ubicacion_id===a.id&&num(l.cantidad)>0).map(l=>l.material_id))].map(matById).filter(Boolean).sort((x,y)=>x.nombre.localeCompare(y.nombre));
+  if(!mats.length)return toast('No hay existencias en Administración',true);
+  const m=modal(`${mhead('Enviar a quirófano')}<div class="muted">Se toman primero los lotes que caducan antes. Al final firma quien entrega y quien recibe.</div>
+  <div class="grid2"><div><label>Destino</label><select id="enD">${dests.map(u=>`<option value="${u.id}" ${u.tipo==='almacen'?'selected':''}>${h(u.nombre)}</option>`).join('')}</select></div><div><label>Buscar</label><input id="enQ" placeholder="Material"></div></div>
+  <div style="margin-top:8px;max-height:52vh;overflow:auto">${mats.map(mt=>{const sg=sugerido?sugeridoEnvio(mt):0;return `<div class="list-item" data-n="${h(mt.nombre.toLowerCase())}"><div class="grow"><b>${h(mt.nombre)}</b><div class="muted">Admin ${fmtN(stockAdm(mt.id))} · Quirófano ${fmtN(semaforo(mt).st)}${num(mt.stock_minimo)?' (mín. '+fmtN(mt.stock_minimo)+')':''} · ${h(mt.unidad)}</div></div><input class="qty" type="number" min="0" step="any" inputmode="decimal" data-m="${mt.id}" value="${sg||''}" placeholder="0" style="width:90px"></div>`}).join('')}</div>
+  <div class="acts"><button class="btn" id="ok">Firmar entrega</button></div>`);
+  m.querySelector('#enQ').oninput=e=>{const t=e.target.value.toLowerCase();m.querySelectorAll('[data-n]').forEach(r=>r.style.display=r.dataset.n.includes(t)?'':'none')};
+  m.querySelector('#ok').onclick=async()=>{
+    const d=m.querySelector('#enD').value;const its=[...m.querySelectorAll('[data-m]')].map(i=>({mid:i.dataset.m,c:num(i.value)})).filter(x=>x.c>0);
+    if(!its.length)return toast('Captura cuánto se envía',true);
+    const exc=its.find(x=>x.c>stockAdm(x.mid)+1e-9);if(exc)return toast('No alcanza: '+matById(exc.mid).nombre,true);
+    if(!await pedirPIN('Entrega de '+its.length+' material(es) a '+ubicById(d).nombre))return;
+    const rec=await firmaRecibe('Recibe '+ubicById(d).nombre);if(!rec)return;
+    const fol='ENV-'+folio('').slice(1),det=[];
+    try{for(const x of its){let resto=x.c;const ls=S.lotes.filter(l=>l.material_id===x.mid&&l.ubicacion_id===a.id&&num(l.cantidad)>0).sort((p,q)=>(p.caducidad||'9')<(q.caducidad||'9')?-1:1);
+        for(const l of ls){if(resto<=0)break;const t=Math.min(resto,num(l.cantidad));
+          await q(sb.from('qx_lotes').update({cantidad:num(l.cantidad)-t,updated_at:new Date().toISOString()}).eq('id',l.id));l.cantidad=num(l.cantidad)-t;
+          await q(sb.from('qx_movimientos').insert({tipo:'traspaso_sal',material_id:x.mid,lote_id:l.id,ubicacion_id:a.id,cantidad:-t,usuario_id:S.user.id,usuario_nombre:S.user.nombre,envio:fol,nota:fol+' · a '+ubicById(d).nombre+' · recibe '+rec.nombre}));
+          const nl=await ingresar(x.mid,d,l.lote,l.caducidad,t,{tipo:'traspaso_ent',nota:fol+' · de Administración · entrega '+S.user.nombre+' · recibe '+rec.nombre});
+          det.push({m:matById(x.mid),lote:l.lote,cad:l.caducidad,c:t});resto-=t}}
+      await logA('envio_quirofano','qx_movimientos',fol,{destino:ubicById(d).nombre,recibe:rec.nombre,partidas:det.length});
+      m.remove();toast('Envío '+fol+' registrado');await loadAll();render();valeEnvio(fol,d,rec,det)}catch(e){}
+  };
+}
+function valeEnvio(folio,d,rec,det){
+  printWin(`<div class="hoja"><div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid #222;padding-bottom:8px">${logoTag()}<div style="flex:1"><div style="font-size:20px;font-weight:700">VALE DE ENVÍO A QUIRÓFANO</div><div>${h(folio)} · ${fFecha(hoyISO())} ${new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}</div></div></div>
+   <p>De: <b>Almacén de Administración</b> · A: <b>${h(ubicById(d)?.nombre||'')}</b></p>
+   <table style="width:100%;border-collapse:collapse" border="1" cellpadding="6"><tr><th align="left">Material</th><th>Lote</th><th>Caducidad</th><th align="right">Cantidad</th></tr>
+   ${det.map(x=>`<tr><td>${h(x.m?.nombre||'')}</td><td align="center">${h(x.lote||'—')}</td><td align="center">${x.cad?fCorta(x.cad):'—'}</td><td align="right">${fmtN(x.c)} ${h(x.m?.unidad||'')}</td></tr>`).join('')}</table>
+   <div style="display:flex;gap:40px;margin-top:50px"><div style="flex:1;border-top:1px solid #000;text-align:center;padding-top:4px">Entrega: ${h(S.user.nombre)}<br><small>Firmado con PIN</small></div><div style="flex:1;border-top:1px solid #000;text-align:center;padding-top:4px">Recibe: ${h(rec.nombre)}<br><small>Firmado con PIN</small></div></div></div>`)}
 function formTraspaso(){
   const m=modal(`${mhead('Traspaso entre ubicaciones')}<label>Material</label>${selMat('tM')}<div class="grid2"><div><label>De</label>${selUb('tO',(ubicSede().find(u=>u.tipo==='almacen')||{}).id)}</div><div><label>A</label>${selUb('tD',(salasSede()[0]||{}).id)}</div></div><label>Cantidad</label><input id="tC" type="number" step="any"><div class="muted" id="tInfo"></div><div class="acts"><button class="btn" id="ok">Traspasar con PIN</button></div>`);
   const info=()=>{const mid=m.querySelector('#tM').value,o=m.querySelector('#tO').value;m.querySelector('#tInfo').textContent=mid?'Disponible en origen: '+fmtN(stockUbic(mid,o)):''};
@@ -1730,9 +1814,9 @@ async function abrirConteo(cid){
     ${pz>1?`<div class="cajas"><input class="qc" type="number" min="0" inputmode="numeric" placeholder="cajas" value="${i.cajas??''}" data-pz="${pz}"><span>×${pz} +</span><input class="qs" type="number" min="0" inputmode="numeric" placeholder="sueltas" value="${i.sueltas??''}"><b class="qt">${i.contado??'—'}</b></div>`
     :`<input class="qty" type="number" step="any" inputmode="decimal" value="${i.contado??''}" placeholder="—">`}</div>`};
   const m=modal(`${mhead('Conteo · '+h(ubicById(c.ubicacion_id)?.nombre))}<div class="muted">Cuenta lo que físicamente encuentras, gaveta por gaveta. Se guarda solo.</div>
-  <div class="row" style="margin:8px 0;gap:8px"><input placeholder="Buscar…" id="cQ"><button class="btn sec" style="flex:0 0 auto" id="cScan">📷 Escanear etiqueta</button></div>
+  <div class="row" style="margin:8px 0;gap:8px"><input placeholder="Buscar…" id="cQ"><button class="btn sec" style="flex:0 0 auto" id="cScan">▦ Leer QR (cámara o foto)</button></div>
   <div class="muted" id="cProg"></div>
-  <div id="cL">${secs.map(s=>`<div class="gav" data-g="${h(s)}"><div class="gav-h"><b>${h(s)}</b><span class="muted" data-fc="${h(s)}"></span><button class="btn sec sm" data-foto="${h(s)}">📷 Foto de la gaveta</button></div>${mats.filter(i=>gavetaDe(matById(i.material_id))===s).map(fila).join('')}</div>`).join('')}
+  <div id="cL">${secs.map(s=>`<div class="gav" data-g="${h(s)}"><div class="gav-h"><b>${h(s)}</b><span class="muted" data-fc="${h(s)}"></span><button class="btn sec sm" data-qrg="${h(s)}">▦ Leer QR</button><button class="btn sec sm" data-foto="${h(s)}">📷 Foto de la gaveta</button></div>${mats.filter(i=>gavetaDe(matById(i.material_id))===s).map(fila).join('')}</div>`).join('')}
   ${lios.length?`<div class="gav"><div class="gav-h"><b>Lentes intraoculares</b><span class="muted">marca los que están presentes</span></div>${lios.map(i=>{const l=S.lios.find(x=>x.id===i.lio_unidad_id);return `<div class="list-item" data-n="${h(((l?.modelo||'')+' '+(l?.serie||'')).toLowerCase())}"><div class="grow">${h(l?.modelo||'LIO')} <b>${fmtN(l?.dioptria)} D</b><div class="muted">Serie ${h(l?.serie||'—')} · cad. ${fCorta(l?.caducidad)}</div></div><input type="checkbox" style="width:26px;height:26px" data-lio="${i.id}" ${i.contado===1?'checked':''}></div>`}).join('')}</div>`:''}</div>
   <input type="file" id="cFoto" accept="image/*" capture="environment" style="display:none">
   <div class="acts"><button class="btn sec" onclick="closeModal(this.closest('.modal'))">Guardar y salir</button><button class="btn" id="env">Terminar conteo</button></div>`);
@@ -1748,6 +1832,9 @@ async function abrirConteo(cid){
   m.querySelectorAll('[data-foto]').forEach(b=>b.onclick=()=>{secFoto=b.dataset.foto;m.querySelector('#cFoto').click()});
   m.querySelector('#cFoto').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{toast('Subiendo foto…');const url=await subirArchivo(f,'conteos');fotos.push({seccion:secFoto,url,at:new Date().toISOString(),por:S.user.nombre});
     await q(sb.from('qx_conteos').update({fotos}).eq('id',cid));c.fotos=fotos;toast('Foto guardada');prog()}catch(x){dbErr(x,'Foto')}e.target.value=''};
+  m.querySelectorAll('[data-qrg]').forEach(b=>b.onclick=()=>{const g0=b.dataset.qrg;escanear(cod=>{const gv=b.closest('.gav');
+    if(/^GAV:/i.test(cod)){if(cod.slice(4)===g0){gv.classList.add('flash');setTimeout(()=>gv.classList.remove('flash'),1600);gv.dataset.qrok=1;b.textContent='✓ QR de gaveta';return toast('Gaveta '+g0+' confirmada')}return toast('Ese QR es de la gaveta '+cod.slice(4)+', no de '+g0,true)}
+    const r=[...gv.querySelectorAll('.cnt')].find(x=>x.dataset.cod&&cod.toUpperCase().includes(x.dataset.cod.toUpperCase()));if(!r)return toast('Ese material no está en esta gaveta',true);const it=r.closest('.list-item');it.scrollIntoView({behavior:'smooth',block:'center'});it.classList.add('flash');setTimeout(()=>it.classList.remove('flash'),1600);(it.querySelector('.qc')||it.querySelector('.qty'))?.focus()})});
   m.querySelector('#cScan').onclick=()=>escanear(cod=>{if(/^GAV:/i.test(cod)){const g=[...m.querySelectorAll('.gav')].find(x=>x.dataset.g===cod.slice(4));if(!g)return toast('Esa gaveta no está en este conteo',true);m.querySelector('#cQ').value='';m.querySelectorAll('#cL .list-item').forEach(x=>x.style.display='');g.scrollIntoView({behavior:'smooth',block:'start'});g.classList.add('flash');setTimeout(()=>g.classList.remove('flash'),1600);return}const r=[...m.querySelectorAll('.cnt')].find(x=>x.dataset.cod&&cod.toUpperCase().includes(x.dataset.cod.toUpperCase()));
     if(!r)return toast('Esa etiqueta no está en este conteo',true);m.querySelector('#cQ').value='';m.querySelectorAll('#cL .list-item').forEach(x=>x.style.display='');r.scrollIntoView({behavior:'smooth',block:'center'});r.classList.add('flash');setTimeout(()=>r.classList.remove('flash'),1600);(r.querySelector('.qc')||r.querySelector('.qty')).focus()});
   prog();
@@ -1827,14 +1914,30 @@ async function revisarConteo(cid,soloVer){
   }
 }
 /* ----- escaneo de etiquetas (cámara del celular) ----- */
+/* lector de QR: cámara en vivo (BarcodeDetector o jsQR) o foto de la etiqueta; funciona en iPhone/iPad */
+const JSQR_URL='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+function qrDeCanvas(cv){const d=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,cv.width,cv.height);const r=window.jsQR&&jsQR(d.data,cv.width,cv.height,{inversionAttempts:'attemptBoth'});return r?r.data:null}
+async function qrDeFoto(file){await cargarScript(JSQR_URL);const img=await createImageBitmap(file);
+  for(const max of [1400,900,2000]){const k=Math.min(1,max/Math.max(img.width,img.height));const cv=document.createElement('canvas');cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);const r=qrDeCanvas(cv);if(r)return r}
+  if('BarcodeDetector' in window){try{const r=await new BarcodeDetector({formats:['qr_code','code_128','ean_13']}).detect(img);if(r.length)return r[0].rawValue}catch(e){}}
+  return null}
 async function escanear(cb){
-  if(!('BarcodeDetector' in window)){const v=await pedirTexto('Código de la etiqueta','Este navegador no lee códigos con la cámara. Escribe el código impreso en la etiqueta (p. ej. QX-012)');if(v)cb(v.trim());return}
-  let stream;try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})}catch(e){return toast('No se pudo abrir la cámara',true)}
-  const det=new BarcodeDetector({formats:['qr_code','code_128','ean_13']});
-  const m=modal(`${mhead('Apunta a la etiqueta')}<video id="scV" playsinline muted style="width:100%;border-radius:12px;background:#000"></video>`,'sm');
-  const v=m.querySelector('#scV');v.srcObject=stream;await v.play();let on=true;
-  const stop=()=>{on=false;stream.getTracks().forEach(t=>t.stop());m.remove()};m.querySelector('.x').onclick=stop;
-  const loop=async()=>{if(!on)return;try{const r=await det.detect(v);if(r.length){stop();return cb(r[0].rawValue)}}catch(e){}requestAnimationFrame(loop)};loop();
+  const m=modal(`${mhead('Leer QR de la etiqueta')}<video id="scV" playsinline muted style="width:100%;border-radius:12px;background:#000;display:none"></video><canvas id="scC" style="display:none"></canvas>
+   <div class="muted" id="scI" style="margin:6px 0">Apunta la cámara a la etiqueta, o toma una foto del QR.</div>
+   <div class="acts" style="flex-wrap:wrap"><label class="btn" style="flex:1;text-align:center;cursor:pointer">📷 Tomar foto del QR<input type="file" id="scF" accept="image/*" capture="environment" style="display:none"></label><button class="btn sec" id="scT" style="flex:1">Escribir código</button></div>`,'sm');
+  let stream=null,on=true;const fin=v=>{on=false;if(stream)stream.getTracks().forEach(t=>t.stop());m.remove();if(v)cb(String(v).trim())};
+  m.querySelector('.x').onclick=()=>fin(null);
+  m.querySelector('#scT').onclick=async()=>{const v=await pedirTexto('Código de la etiqueta','Escribe el código impreso (p. ej. QX-012 o GAV:Oftalmo A)');if(v)fin(v)};
+  m.querySelector('#scF').onchange=async e=>{const f=e.target.files[0];if(!f)return;m.querySelector('#scI').textContent='Leyendo la foto…';
+    try{const r=await qrDeFoto(f);if(r)return fin(r);m.querySelector('#scI').textContent='No se encontró un QR en la foto. Acércate más, con buena luz y sin reflejo, e inténtalo de nuevo.'}catch(err){m.querySelector('#scI').textContent='No se pudo leer la foto.'}};
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})}catch(e){m.querySelector('#scI').textContent='La cámara en vivo no está disponible: usa “Tomar foto del QR”.';return}
+  const v=m.querySelector('#scV'),cv=m.querySelector('#scC');v.style.display='';v.srcObject=stream;try{await v.play()}catch(e){}
+  let det=null;if('BarcodeDetector' in window){try{det=new BarcodeDetector({formats:['qr_code','code_128','ean_13']})}catch(e){}}
+  if(!det){try{await cargarScript(JSQR_URL)}catch(e){}}
+  const loop=async()=>{if(!on)return;try{
+      if(det){const r=await det.detect(v);if(r.length)return fin(r[0].rawValue)}
+      else if(window.jsQR&&v.videoWidth){const k=Math.min(1,720/v.videoWidth);cv.width=v.videoWidth*k|0;cv.height=v.videoHeight*k|0;cv.getContext('2d',{willReadFrequently:true}).drawImage(v,0,0,cv.width,cv.height);const r=qrDeCanvas(cv);if(r)return fin(r)}
+    }catch(e){}setTimeout(()=>requestAnimationFrame(loop),120)};loop();
 }
 /* ----- etiquetas QR para gavetas y materiales ----- */
 async function imprimirEtiquetas(area,modo){
@@ -2917,7 +3020,7 @@ function vCotizar(){
     <div style="grid-column:1/-1"><label for="qMo">Diagnóstico / motivo</label><input id="qMo" placeholder="Ej. Catarata OD" value="${h(Q.motivo)}" oninput="Q.motivo=this.value"></div></div>
    </div>
    <div class="card"><h3>Agregar concepto</h3>
-    <input id="qBus" placeholder="🔎 Escribe: catarata, YAG, OCT, pterigión, amígdalas…" value="${h(Q.bus||'')}" oninput="Q.bus=this.value;drawBus()" autocomplete="off"><div id="qBusR"></div>
+    <input id="qBus" placeholder="🔎 Escribe: catarata, YAG, OCT, pterigión, amígdalas…" value="${h(Q.bus||'')}" oninput="Q.bus=this.value;drawBus()" autocomplete="off"><div id="qBusR"></div><button type="button" class="lnk" style="margin:4px 0 8px" onclick="itemLibreQ()">＋ Procedimiento que no está en el sistema (monto abierto)</button>
     <div class="cattabs">${catTabs().map(([k,t,sub])=>`<button class="${Q.cat===k?'on':''}" onclick="Q.cat='${k}';vCotizar()"><b>${t}</b><span>${sub}</span></button>`).join('')}</div>
     <div class="picker">${pickerCat(Q.cat)}</div>
    </div>
@@ -2949,7 +3052,7 @@ function pickHTML(p){const ok=precioOk(p);
 const normTxt=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
 function drawBus(){const el=$('#qBusR');if(!el)return;const t=normTxt(Q.bus).trim();if(t.length<2){el.innerHTML='';return}
   const ws=t.split(/\s+/);const ps=S.precios.filter(p=>p.activo&&p.categoria!=='lio'&&ws.every(w=>normTxt(p.nombre+' '+(p.incluye||'')+' '+(p.componentes||[]).join(' ')+' '+(CATS[p.categoria]||'')+' '+(espById(p.especialidad_id)?.nombre||'')).includes(w))).slice(0,12);
-  el.innerHTML=ps.length?`<div class="pickgrid" style="margin:8px 0">${ps.map(pickHTML).join('')}</div>`:'<div class="muted" style="margin:6px 0">Sin coincidencias. Revisa la ortografía o búscalo por categoría.</div>'}
+  el.innerHTML=ps.length?`<div class="pickgrid" style="margin:8px 0">${ps.map(pickHTML).join('')}</div>`:`<div class="muted" style="margin:6px 0">Sin coincidencias. Revisa la ortografía o <button class="lnk" onclick="itemLibreQ(Q.bus)">captúralo como procedimiento libre</button>.</div>`}
 function drawFreq(){const el=$('#qFreq');if(!el)return;
   if(!S._freq){S._freq={};sb.from('qx_cotizaciones').select('items').order('created_at',{ascending:false}).limit(300).then(r=>{const c={};(r.data||[]).forEach(x=>(x.items||[]).forEach(it=>{if(it.precio_id)c[it.precio_id]=(c[it.precio_id]||0)+1}));S._freq=c;drawFreq()})}
   const ps=S.precios.filter(p=>p.activo&&p.categoria!=='lio'&&precioOk(p)).sort((a,b)=>(S._freq[b.id]||0)-(S._freq[a.id]||0)||(a.categoria==='cirugia'?0:1)-(b.categoria==='cirugia'?0:1)||(a.orden||0)-(b.orden||0)).slice(0,8);
@@ -2962,6 +3065,34 @@ function quickAdd(pid,ojo){const p=pById(pid);
   Q.items.push(it);Q.autorizado=null;drawQItems();drawQRes();toast('Agregado: '+p.nombre+(ojo?' · '+ojo:''))}
 function ahorroPaq(p){const comp=(p.componentes||[]).map(n=>S.precios.find(x=>x.nombre===n&&x.categoria==='estudio'&&!x.es_paquete)).filter(Boolean);if(comp.length!==(p.componentes||[]).length)return 0;return comp.reduce((a,c)=>a+num(c.precio)*(c.lateralidad==='por_ojo'?2:1),0)-num(p.precio)}
 const incluyeTxt=it=>[it.componentes&&it.componentes.length?it.componentes.join(' + '):'',it.incluye||''].filter(Boolean).join(' · ');
+/* procedimiento que no está en el catálogo, con monto capturado a mano */
+function itemLibreQ(nom){
+  const L={nombre:(nom||'').trim(),categoria:'cirugia',lat:'por_ojo',ojos:['OD'],ini:'',monto:'',lio:false};
+  const m=modal('<div id="ilq"></div>','sm');
+  const draw=()=>{m.querySelector('#ilq').innerHTML=`${mhead('Procedimiento libre')}<div class="muted">Para lo que todavía no está en la lista de precios. El monto queda registrado como capturado a mano.</div>
+    <label>Nombre del procedimiento</label><input id="ilN" value="${h(L.nombre)}" placeholder="p. ej. Facco + LIO + retiro de silicón">
+    <label>Tipo</label><div class="seg">${[['cirugia','Cirugía'],['laser','Láser'],['estudio','Estudio'],['otro','Otro']].map(([k,t])=>`<button type="button" class="${L.categoria===k?'on':''}" data-cat="${k}">${t}</button>`).join('')}</div>
+    <label>Cobro</label><div class="seg">${[['por_ojo','Por ojo'],['ambos_ojos','Un precio por ambos ojos'],['sin_lado','Sin ojo']].map(([k,t])=>`<button type="button" class="${L.lat===k?'on':''}" data-lat="${k}">${t}</button>`).join('')}</div>
+    ${L.lat==='por_ojo'?`<label>Ojo</label><div class="seg">${[['OD','OD derecho'],['OI','OI izquierdo'],['AO','Ambos ojos']].map(([k,t])=>{const on=k==='AO'?L.ojos.length===2:L.ojos.length===1&&L.ojos[0]===k;return `<button type="button" class="${on?'on':''}" data-ojo="${k}">${t}</button>`}).join('')}</div>
+      ${L.ojos.length===2&&L.categoria==='cirugia'?`<label>¿Con qué ojo se inicia?</label><div class="seg">${['OD','OI'].map(k=>`<button type="button" class="${L.ini===k?'on':''}" data-ini="${k}">Inicia ${k}</button>`).join('')}</div>`:''}`:''}
+    <label>${L.lat==='por_ojo'?'Monto por ojo':'Monto'}</label><input id="ilM" type="number" inputmode="decimal" value="${h(L.monto)}" placeholder="$">
+    ${L.categoria==='cirugia'?`<label class="chk" style="margin-top:8px"><input type="checkbox" id="ilL" ${L.lio?'checked':''}> Lleva lente intraocular (monofocal por omisión)</label>`:''}
+    <div class="acts"><button class="btn" id="ilOk">Agregar a la cotización</button></div>`;
+    const keep=()=>{L.nombre=m.querySelector('#ilN').value;L.monto=m.querySelector('#ilM').value;const c=m.querySelector('#ilL');if(c)L.lio=c.checked};
+    m.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{keep();L.categoria=b.dataset.cat;draw()});
+    m.querySelectorAll('[data-lat]').forEach(b=>b.onclick=()=>{keep();L.lat=b.dataset.lat;L.ojos=L.lat==='ambos_ojos'?['OD','OI']:L.lat==='sin_lado'?[]:['OD'];draw()});
+    m.querySelectorAll('[data-ojo]').forEach(b=>b.onclick=()=>{keep();L.ojos=b.dataset.ojo==='AO'?['OD','OI']:[b.dataset.ojo];draw()});
+    m.querySelectorAll('[data-ini]').forEach(b=>b.onclick=()=>{keep();L.ini=b.dataset.ini;draw()});
+    m.querySelector('#ilOk').onclick=()=>{keep();
+      if(!L.nombre.trim())return toast('Escribe el nombre del procedimiento',true);
+      if(!(num(L.monto)>0))return toast('Captura el monto',true);
+      if(L.lat==='por_ojo'&&L.ojos.length===2&&L.categoria==='cirugia'&&!L.ini)return toast('Indica con qué ojo se inicia',true);
+      const lioM=S.precios.find(x=>x.categoria==='lio'&&x.activo&&/monofocal/i.test(x.nombre)&&!/t[oó]rico|multi/i.test(x.nombre));
+      const it={precio_id:null,manual:true,categoria:L.categoria==='otro'?'cirugia':L.categoria,especialidad_id:null,nombre:L.nombre.trim(),lateralidad:L.lat,precio:num(L.monto),precio_bilateral:null,
+        requiere_lio:L.lio,paquete_id:null,incluye:'',es_paquete:false,componentes:[],permite_descuento:true,desc_max_pct:0,ojos:L.ojos,ojo_inicio:L.ojos.length===2?L.ini||null:null,lio:{},cantidad:1,vigente_hasta:null};
+      if(L.lio)L.ojos.forEach(o=>it.lio[o]={precio_id:lioM?.id||null,nombre:lioM?.nombre||'LIO monofocal',precio:0,poder:''});
+      Q.items.push(it);Q.autorizado=null;m.remove();Q.bus='';vCotizar();toast('Agregado: '+it.nombre)};
+  };draw();setTimeout(()=>m.querySelector('#ilN')?.focus(),50)}
 function addItemQ(pid,idx,ojoPre){
   const p=pById(pid),edit=idx!=null?Q.items[idx]:null;
   const it=edit?JSON.parse(JSON.stringify(edit)):nuevoIt(p);
@@ -2998,7 +3129,7 @@ function drawQItems(){
     <div style="margin-top:4px">${h(c.et)}</div>
     ${it.requiere_lio?it.ojos.map(o=>it.lio[o]?`<div class="muted">LIO ${o}: ${h(it.lio[o].nombre)}${it.lio[o].poder?' '+h(it.lio[o].poder)+' D':''} · ${money(it.lio[o].precio)}</div>`:'').join(''):''}
     ${incluyeTxt(it)?`<div class="muted">Incluye: ${h(incluyeTxt(it))}</div>`:''}${it.permite_descuento?'':'<div class="muted">Sin descuento</div>'}</div>
-    <div style="text-align:right;flex:0 0 auto"><b>${money(c.subtotal)}</b><div style="display:flex;gap:4px;margin-top:6px"><button class="btn sec sm" onclick="addItemQ('${it.precio_id}',${i})">Editar</button><button class="btn sec sm" onclick="Q.items.splice(${i},1);Q.autorizado=null;drawQItems();drawQRes()">✕</button></div></div></div>`}).join('')||'<div class="muted">Elige los conceptos arriba. Puedes combinar cirugía, láser y estudios en una sola cotización.</div>';
+    <div style="text-align:right;flex:0 0 auto"><b>${it.lateralidad==='por_ojo'&&it.ojos.length===2?[...new Set(costosOjo({items:[it],descuento:0},it).map(x=>money(x.monto)))].join(' / ')+' <small class="muted">por ojo</small>':money(c.subtotal)}</b>${it.manual?'<div class="muted">monto a mano</div>':''}<div style="display:flex;gap:4px;margin-top:6px">${it.manual?'':`<button class="btn sec sm" onclick="addItemQ('${it.precio_id}',${i})">Editar</button>`}<button class="btn sec sm" onclick="Q.items.splice(${i},1);Q.autorizado=null;drawQItems();drawQRes()">✕</button></div></div></div>`}).join('')||'<div class="muted">Elige los conceptos arriba. Puedes combinar cirugía, láser y estudios en una sola cotización.</div>';
 }
 const bilQ=c=>(c.items||[]).some(it=>it.lateralidad==='por_ojo'&&(it.ojos||[]).length===2);
 function porOjoQ(c,r){const it=(c.items||[]).find(it=>it.lateralidad==='por_ojo'&&(it.ojos||[]).length===2);const xs=costosOjo({items:c.items,descuento:c.descuento!=null?c.descuento:(r?.descuento||0)},it);return Math.max(...xs.map(x=>x.monto))}
@@ -3117,10 +3248,24 @@ async function hojaCot(c){
   printWin(inner,extra);
 }
 /* ---- segmentación de cotizaciones ---- */
-const TIPOS_CX=[['catarata','Catarata',/faco|catarat|\blio\b|cristalin/],['retina','Retina / vítreo',/vitre|retin|endol|silic|intravit|antiang|vegf|desprend/],['glaucoma','Glaucoma',/trabe|glauc|valvul|ahmed|ciclo/],
-  ['pterigion','Pterigión',/pteri|pterig/],['parpados','Párpados y vía lagrimal',/blefar|chala|ptosis|parpad|lagrim|dacrio|evisc|enucl|entrop|ectrop/],['cornea','Córnea',/querat|cornea|córnea|crosslink|cross-link|anillo|transplant|trasplant/],
-  ['laser','Láser',/laser|láser|yag|slt|panfoto|diodo|iridotom|capsulotom/],['estudios','Estudios',/\boct\b|campo|campimetr|topograf|biometr|paquimetr|ultrason|especular|fondo de ojo|estudio/],['orl','Otorrino',/septo|rino|amigdal|senos|adenoid|timpan/]];
-function tiposCot(c){const s=new Set();(c.items||[]).forEach(it=>{const n=normTxt(it.nombre);const t=TIPOS_CX.find(([,,re])=>re.test(n));s.add(t?t[0]:(it.categoria==='estudio'?'estudios':it.categoria==='laser'?'laser':'otra'))});return s}
+const TIPOS_CX=[['facovit','Catarata + vitrectomía'],['catarata','Catarata (Faco + LIO)'],['retina','Retina / vítreo'],['glaucoma','Glaucoma'],['pterigion','Pterigión'],['refractiva','Refractiva (LASIK, PRK, ICL)'],['cornea','Córnea'],['parpados','Párpados, vía lagrimal y anexos'],['estrabismo','Estrabismo y toxina'],['inyeccion','Inyección intravítrea'],['laser','Láser (YAG, diodo)'],['estudios','Estudios'],['otra','Otra'],['sin','Sin procedimiento']];
+function tipoItem(nombre){const n=normTxt(nombre).trim();
+  if(/(fac+o|facoem).*(vitr|victr)/.test(n))return 'facovit';
+  if(/^(oct|campo|topogra|biometr|paquim|ultrason|especular|fondo de ojo|estudio)/.test(n)||(/(oct de|oct |campos? visual|topograf)/.test(n)&&!/(faco|vitr|laser)/.test(n)))return 'estudios';
+  if(/(laser|lase |yag|diodo|capsulo|iridotom|panfoto|slt|hialoid)/.test(n)&&!/(lasik|femto|fento|prk)/.test(n))return 'laser';
+  if(/(fac+o|catarat|extracapsular|lente intraocular|recambio de lente|reacomodo|\blio\b)/.test(n))return 'catarata';
+  if(/(antiangio|anti-vegf|intravitr|vegf)/.test(n))return 'inyeccion';
+  if(/(vitr|victr|retina|endolaser|silic|cerclaje|agujero macular|limitorrex)/.test(n))return 'retina';
+  if(/(trabe|glauc|valvul|ahmed|dicision|needling)/.test(n))return 'glaucoma';
+  if(/pteri/.test(n))return 'pterigion';
+  if(/(lasik|femto|fento|prk|icl)/.test(n))return 'refractiva';
+  if(/(cross|querat|cornea|hidrops)/.test(n))return 'cornea';
+  if(/(blefar|chala|ptosis|parpad|palpebr|lagrim|dacri|\bdcr\b|evisc|enucl|entrop|ectrop|tarsal|torsal|quiste|lipoma|granulom|conjunt|lesion|neurolis|moll)/.test(n))return 'parpados';
+  if(/(estrabism|botox|toxina)/.test(n))return 'estrabismo';
+  return 'otra'}
+/* tipo principal de la cotización: el de mayor jerarquía entre sus procedimientos (cada cotización cuenta una sola vez) */
+function tipoCot(c){if(c._tipo)return c._tipo;const its=(c.items||[]);if(!its.length)return c._tipo='sin';const ord=TIPOS_CX.map(x=>x[0]);return c._tipo=its.map(i=>tipoItem(i.nombre)).sort((a,b)=>ord.indexOf(a)-ord.indexOf(b))[0]}
+function tiposCot(c){return new Set([tipoCot(c)])}
 const T_CAP=[['7','Últimos 7 días',0,7],['30','8 a 30 días',8,30],['90','31 a 90 días',31,90],['mas','Más de 90 días',91,1e5]];
 function capCot(c){const d=-diasHasta(String(c.created_at).slice(0,10));return (T_CAP.find(([,,a,b])=>d>=a&&d<=b)||T_CAP[3])[0]}
 function pagadoCot(c){return (c.cirugia_ids||[]).reduce((a,id)=>a+(S.cotEv||[]).filter(e=>e.cirugia_id===id&&['anticipo','abono','liquidacion'].includes(e.tipo)).reduce((x,e)=>x+num(e.monto),0),0)}
@@ -3142,14 +3287,14 @@ async function cargarCotLista(){
   const nSeg=(k,v)=>base.filter(c=>segOk(c,{...sg,[k]:v},k)&&(k==='t'?capCot(c)===v:k==='a'?antCot(c)===v:tiposCot(c).has(v))).length;
   const chip=(k,v,t)=>{const n=nSeg(k,v);return `<button class="${sg[k]===v?'on':''}" ${n||sg[k]===v?'':'disabled style="opacity:.45"'} onclick="S.sub.cotSeg.${k}=S.sub.cotSeg.${k}==='${v}'?'':'${v}';cargarCotLista()">${t} <b>${n}</b></button>`};
   const activos=[sg.t&&T_CAP.find(x=>x[0]===sg.t)[1],sg.a&&{sin:'Sin anticipo',ant:'Con anticipo',liq:'Liquidadas'}[sg.a],sg.c&&(TIPOS_CX.find(x=>x[0]===sg.c)||[0,'Otra'])[1]].filter(Boolean);
-  const segHTML=`<div class="row" style="margin:8px 0;align-items:center;gap:8px"><button class="btn sec sm" style="flex:0 0 auto" onclick="S.sub.cotSeg.open=!S.sub.cotSeg.open;cargarCotLista()">${sg.open?'▴':'▾'} Segmentar</button>
+  const segHTML=`<div class="row" style="margin:8px 0;align-items:center;gap:8px"><button class="btn sec sm" style="flex:0 0 auto" onclick="S.sub.cotSeg.open=!S.sub.cotSeg.open;if(S.sub.cotSeg.open&&(S.sub.cotF||'vigente')==='vigente')S.sub.cotF='todas';cargarCotLista()">${sg.open?'▴':'▾'} Segmentar</button>
     <div class="muted" style="flex:3">${activos.length?'Filtrando: <b>'+activos.join(' · ')+'</b> · '+l.length+' de '+base.length:l.length+' cotizaciones'}</div>
     ${activos.length?`<button class="btn sec sm" style="flex:0 0 auto" onclick="S.sub.cotSeg={t:'',a:'',c:'',open:S.sub.cotSeg.open};cargarCotLista()">Quitar filtros</button>`:''}
     ${l.length?`<button class="btn sec sm" style="flex:0 0 auto" onclick="exportSegCot()">Exportar lista</button>`:''}</div>
    ${sg.open?`<div class="card" style="display:grid;gap:10px">
      <div><div class="sec-t" style="margin-top:0">Tiempo desde la captura</div><div class="tabs">${T_CAP.map(([v,t])=>chip('t',v,t)).join('')}</div></div>
      <div><div class="sec-t" style="margin-top:0">Anticipo</div><div class="tabs">${chip('a','sin','Sin anticipo')}${chip('a','ant','Con anticipo')}${chip('a','liq','Liquidadas')}</div></div>
-     <div><div class="sec-t" style="margin-top:0">Tipo de cirugía</div><div class="tabs">${[...TIPOS_CX.map(([v,t])=>[v,t]),['otra','Otra']].map(([v,t])=>chip('c',v,t)).join('')}</div></div>
+     <div><div class="sec-t" style="margin-top:0">Tipo de cirugía (procedimiento principal)</div><div class="tabs">${TIPOS_CX.map(([v,t])=>chip('c',v,t)).join('')}</div><div class="muted" style="margin-top:4px">Cada cotización cuenta en un solo grupo; los grupos suman ${base.filter(c=>segOk(c,sg,'c')).length}. Contando: <b>${f==='todas'?'todos los estados':({vigente:'solo vigentes',vencida:'solo vencidas',programada:'solo programadas',realizada:'solo realizadas',cancelada:'solo canceladas'})[f]}</b> de ${h(vs==='todas'?'ambas sedes':sedeById(vs)?.nombre||'')}.</div></div>
    </div>`:''}`;
   const n=k=>S.cots.filter(c=>estadoCot(c)===k).length;
   el.innerHTML=`<div class="row" style="margin-bottom:10px"><input id="cotQ" placeholder="Buscar paciente, folio o teléfono" value="${h(S.sub.cotQ||'')}" onchange="S.sub.cotQ=this.value;cargarCotLista()"></div>

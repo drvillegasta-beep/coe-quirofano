@@ -1118,3 +1118,8 @@ do $$ declare t text; begin
   end loop;
 end $$;
 -- v3.6 · Importación del historial de cotizaciones (COE Cirugías) a qx_cotizaciones: aplicada como migración qx_importar_cotizaciones_anteriores (idempotente por origen,origen_id)
+-- v3.11 · Almacén de Administración: qx_ubicaciones.area ('administracion'|'quirofano'), qx_movimientos.envio (folio de envío) · migración qx_almacen_administracion
+alter table qx_ubicaciones add column if not exists area text not null default 'quirofano';
+insert into qx_ubicaciones(sede_id,nombre,tipo,orden,area) select s.id,'Almacén de Administración','almacen',-1,'administracion' from qx_sedes s where s.nombre like 'Tac%' and not exists (select 1 from qx_ubicaciones u where u.sede_id=s.id and u.area='administracion');
+alter table qx_movimientos add column if not exists envio text;
+alter table qx_cotizaciones add column if not exists anestesia text;
