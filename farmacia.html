@@ -519,6 +519,10 @@ body.locked .shell{visibility:hidden}
 .dias-otro{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:999px;padding:2px 4px 2px 12px;font-size:14px;font-weight:600}
 .dias-otro input{width:64px!important;padding:4px 6px!important;border-radius:999px!important;text-align:center}
 .dias-otro.on{border-color:var(--accent);background:var(--accent-soft)}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.opt .o-chk+.o-main{flex:1;text-align:left}
+.o-chk{flex:none;width:24px;height:24px;border-radius:6px;border:2px solid var(--line);display:grid;place-items:center;font-weight:800;color:#fff}
+.opt.sel .o-chk{background:var(--accent);border-color:var(--accent)}
 body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 </style>
 
@@ -863,7 +867,7 @@ function posTxt(m){if(isOft(m))return `${m.dose} gota${m.dose>1?'s':''} ${FREQ[m
 function durTxt(m){if(!isOft(m)&&+m.f===0)return 'Dosis única';if(m.prn)return m.d?`Máximo ${m.d} días`:'Solo cuando haga falta';return m.d?`Durante ${m.d} días`:'No suspender hasta nueva indicación'}
 const FREQ={1:'una vez al día',2:'cada 12 horas',3:'cada 8 horas',4:'cada 6 horas',6:'cada 4 horas'};
 const HOURS={0:['una sola vez'],1:['8 am'],2:['8 am','8 pm'],3:['6 am','2 pm','10 pm'],4:['8 am','2 pm','8 pm','2 am'],6:['7 am','11 am','3 pm','7 pm','11 pm','3 am']};
-const SYMS=['★','●','▲','■','♥','◆'];
+const SYMS=['★','●','▲','■','♥','◆','✚','▼'];
 const M_=(clave,ojo,gotas,veces,dias,reduccion,fases,x)=>({clave,ojo,gotas,veces,dias,reduccion:!!reduccion,...(reduccion?{fases:fases||defFases(gotas||1)}:{}),...(x&&x.via&&x.via!=='oft'?{via:x.via,unidad:x.uni,prn:!!x.prn}:{})});
 function defFases(g){return [[6],[4],[3],[2]].map(([f],k)=>({n:'Semana '+(k+1),d:7,g:g||1,f}))}
 const fasesOf=m=>(m.fases&&m.fases.length?m.fases:defFases(m.dose||m.gotas||1));
@@ -1049,15 +1053,15 @@ function vModal(){
  const cur=MODAL.add?null:PROD.find(x=>x.id===RX.meds[MODAL.i].pid);
  const A=cur?alts(cur):[],q=(MODAL.q||'').toLowerCase();
  const all=PROD.filter(RXABLE).filter(x=>!cur||x.id!==cur.id).filter(x=>!q||(x.nm+' '+x.pa+' '+GRUPOS[x.g]).toLowerCase().includes(q)).sort((a,b)=>a.nm.localeCompare(b.nm));
- const row=(x,reason,rec)=>{const fl=firstLot(x);return `<button class="opt${rec?' rec':''}" data-pick="${x.id}"><span class="o-main"><b>${esc(x.nm)}${rec?' <span class="chip c-info">Recomendado</span>':''}</b><small>${esc(x.pa&&x.pa!=='—'?x.pa+' · ':'')}${esc(GRUPOS[x.g])}</small>${reason?`<em>${reason}</em>`:''}</span><span class="o-side">${chip(stockState(x))}${fl?chip(cadState(fl.cad)):''}</span></button>`};
+ const SEL=MODAL.sel||[],row=(x,reason,rec)=>{const fl=firstLot(x),on=MODAL.add&&SEL.includes(x.id);return `<button class="opt${rec?' rec':''}${on?' sel':''}" data-pick="${x.id}" aria-pressed="${on}">${MODAL.add?`<span class="o-chk">${on?'✓':''}</span>`:''}<span class="o-main"><b>${esc(x.nm)}${rec?' <span class="chip c-info">Recomendado</span>':''}</b><small>${esc(x.pa&&x.pa!=='—'?x.pa+' · ':'')}${esc(GRUPOS[x.g])}</small>${reason?`<em>${reason}</em>`:''}</span><span class="o-side">${chip(stockState(x))}${fl?chip(cadState(fl.cad)):''}</span></button>`};
  return `<div class="ovl" id="ovl"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT">
-  <div class="dlg-h"><div><h3 id="dlgT">${MODAL.add?'Agregar medicamento':'Cambiar medicamento '+(MODAL.i+1)}</h3>${cur?`<div class="cur">Actual: <b>${esc(cur.nm)}</b> ${chip(stockState(cur))} ${firstLot(cur)?chip(cadState(firstLot(cur).cad)):''}</div>`:''}</div><button class="icon-btn" id="dlgX" aria-label="Cerrar">✕</button></div>
+  <div class="dlg-h"><div><h3 id="dlgT">${MODAL.add?'Agregar medicamentos':'Cambiar medicamento '+(MODAL.i+1)}</h3>${MODAL.add?'<div class="cur">Toque todos los que quiera agregar y pulse «Agregar».</div>':''}${cur?`<div class="cur">Actual: <b>${esc(cur.nm)}</b> ${chip(stockState(cur))} ${firstLot(cur)?chip(cadState(firstLot(cur).cad)):''}</div>`:''}</div><button class="icon-btn" id="dlgX" aria-label="Cerrar">✕</button></div>
   <div class="dlg-b">
   ${cur?(A.length?`<div class="sec">Mismo mecanismo de acción · primero el que caduca antes</div>${A.map((a,j)=>row(a.x,`${a.same?'Mismo principio activo':'Mismo grupo'} · ${stock(a.x)} en farmacia · lote ${a.fl.l} vence ${fmtD(a.fl.cad)}`,j===0)).join('')}`:`<div class="sec">Mismo mecanismo de acción</div><p class="note">No hay equivalentes con existencia.</p><button class="btn" data-pedp="${cur.id}">Pedir ${esc(cur.nm)} a Finanzas</button>`):''}
   <div class="sec" style="margin-top:14px;display:flex;justify-content:space-between;align-items:center">Todo el catálogo <button type="button" class="btn sm" id="npRx">+ Medicamento que no está</button></div>
   <input type="search" id="dlgQ" placeholder="Buscar por nombre, principio activo o grupo" value="${esc(MODAL.q||'')}">
   <div class="optlist">${all.map(x=>row(x,'',0)).join('')||'<p class="note">Sin resultados.</p>'}</div>
-  </div></div></div>`;
+  </div>${MODAL.add?`<div class="pop-f"><span class="note" style="margin-right:auto">${SEL.length?SEL.length+' seleccionado'+(SEL.length>1?'s':'')+': '+SEL.map(id=>esc(PROD.find(p=>p.id===id).nm)).join(', '):'Ninguno seleccionado'}</span><button class="btn pri" id="addSel" ${SEL.length?'':'disabled'}>Agregar ${SEL.length||''}</button></div>`:''}</div></div>`;
 }
 const DOCS={vil:{n:'Dr. José Antonio Villegas Ávila',c:'Céd. Prof. 7256707 · Céd. Esp. 9457035'},riv:{n:'Dra. Mónica Araceli Rivera Bustos',c:'Céd. Prof. ________ · Céd. Esp. ________'}};
 const SEDES={tac:'Av. Luis Donaldo Colosio 151, Col. La Purísima, Tacámbaro, Michoacán',mor:'Hospital Victoria, Consultorio 1206, Piso 12 · Av. Acueducto 2800, Morelia, Mich.'};
@@ -1198,11 +1202,12 @@ function bind(){
  const sv=$('#saveRx');if(sv)sv.onclick=saveRx;
  M.querySelectorAll('[data-print]').forEach(b=>b.onclick=()=>printRx(b.dataset.print));
  const cr=$('#copyRx');if(cr)cr.onclick=copyRx;
- const am=$('#addMed');if(am)am.onclick=()=>{if(RX.meds.length>=4){toast('Máximo 4 medicamentos para que la receta quepa en una hoja.');return}MODAL={add:1,q:''};render()};
+ const am=$('#addMed');if(am)am.onclick=()=>{if(RX.meds.length>=8){toast('Máximo 8 medicamentos por receta.');return}MODAL={add:1,q:'',sel:[]};render()};
  M.querySelectorAll('[data-chg]').forEach(b=>b.onclick=()=>{MODAL={i:+b.dataset.chg,q:''};render()});
  const np=$('#npRx');if(np)np.onclick=()=>{const add=MODAL&&MODAL.add,idx=MODAL&&MODAL.i;MODAL=null;render();newProdDlg(p=>{if(add)RX.meds.push(newMed(p));else if(idx!=null)RX.meds[idx]=newMed(p);render()})};
- M.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{const pid=+b.dataset.pick,nm=PROD.find(x=>x.id===pid).nm;if(MODAL.add){RX.meds.push(newMed(PROD.find(x=>x.id===pid)));toast(nm+' agregado.')}else{const o=RX.meds[MODAL.i],nv=PROD.find(x=>x.id===pid),dv=viaDef(nv);if((o.via||'oft')!==dv.via)RX.meds[MODAL.i]={...newMed(nv),d:o.d};else RX.meds[MODAL.i].pid=pid;toast('Cambiado a '+nm+'. Queda registrado con su usuario.')}MODAL=null;render()});
+ M.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{const pid=+b.dataset.pick,nm=PROD.find(x=>x.id===pid).nm;if(MODAL.add){const S=MODAL.sel=MODAL.sel||[];const k=S.indexOf(pid);if(k>=0)S.splice(k,1);else{if(RX.meds.length+S.length>=8){toast('Máximo 8 medicamentos por receta.');return}S.push(pid)}const sc=document.querySelector('#ovl .dlg-b')?.scrollTop;render();const db=document.querySelector('#ovl .dlg-b');if(db&&sc!=null)db.scrollTop=sc;return}else{const o=RX.meds[MODAL.i],nv=PROD.find(x=>x.id===pid),dv=viaDef(nv);if((o.via||'oft')!==dv.via)RX.meds[MODAL.i]={...newMed(nv),d:o.d};else RX.meds[MODAL.i].pid=pid;toast('Cambiado a '+nm+'. Queda registrado con su usuario.')}MODAL=null;render()});
  const dx=$('#dlgX');if(dx)dx.onclick=()=>{MODAL=null;render()};
+ const asl=$('#addSel');if(asl)asl.onclick=()=>{const S=MODAL.sel||[];S.forEach(id=>RX.meds.push(newMed(PROD.find(x=>x.id===id))));toast(S.length>1?S.length+' medicamentos agregados.':'Medicamento agregado.');MODAL=null;render()};
  const ov=$('#ovl');if(ov){ov.onclick=e=>{if(e.target===ov){MODAL=null;render()}};const dq=$('#dlgQ');dq.oninput=()=>{MODAL.q=dq.value;const p=dq.selectionStart;render();const n=$('#dlgQ');n.focus();n.setSelectionRange(p,p)}}
  M.querySelectorAll('[data-firm]').forEach(b=>b.onclick=()=>{RX.med=b.dataset.firm;render()});
  M.querySelectorAll('[data-sede]').forEach(b=>b.onclick=()=>{RX.sede=b.dataset.sede;render()});
@@ -1894,7 +1899,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610201647';
+const APP_VER='202610211024';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
