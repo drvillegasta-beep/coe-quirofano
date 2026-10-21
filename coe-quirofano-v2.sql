@@ -1123,3 +1123,4 @@ alter table qx_ubicaciones add column if not exists area text not null default '
 insert into qx_ubicaciones(sede_id,nombre,tipo,orden,area) select s.id,'Almacén de Administración','almacen',-1,'administracion' from qx_sedes s where s.nombre like 'Tac%' and not exists (select 1 from qx_ubicaciones u where u.sede_id=s.id and u.area='administracion');
 alter table qx_movimientos add column if not exists envio text;
 alter table qx_cotizaciones add column if not exists anestesia text;
+-- v3.13 · Sincronización automática: triggers qx_sync_cot_t (cotizaciones) y qx_sync_cot_s2 (cotizaciones_s2) copian cada alta o cambio de la app anterior a qx_cotizaciones y qx_pacientes · migración qx_sync_cotizaciones_anteriores
