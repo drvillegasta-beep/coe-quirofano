@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>COE Quirófano</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" onerror="var s=document.createElement('script');s.src='https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';document.head.appendChild(s)"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap">
 <style>
 :root{--ink:#E6EDF3;--gris:#8B949E;--fondo:#0D1117;--card:#161B22;--card2:#1C2128;--card3:#21262D;--linea:#30363D;--linea2:#484F58;
@@ -335,7 +335,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.17';
+const VERSION='3.18';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -661,16 +661,19 @@ async function checarVersion(){try{if(location.protocol==='file:'||document.getE
     d.innerHTML=`Hay una versión nueva (v${v}) <button style="border:0;border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer" onclick="location.replace(location.pathname+'?v='+Date.now())">Actualizar</button>`;document.body.appendChild(d)}}catch(e){}}
 setTimeout(checarVersion,4000);setInterval(checarVersion,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checarVersion()});document.addEventListener('visibilitychange',()=>{if(!document.hidden)vigilaCierre()});
 let rtChan=null;
+function avisoSinBase(){clearTimeout(window._rtyB);window._rtyB=setTimeout(()=>{if($('#sinBase'))iniciar()},20000);
+  return `<div class="login" id="sinBase"><div class="card">${logoTag()}<h3 style="text-align:center">La base de datos no responde</h3><p class="muted" style="text-align:center">No es tu computadora ni tu internet: el servidor de COE está tardando en contestar. Se reintenta solo cada 20 segundos.</p><button class="btn" style="width:100%" onclick="iniciar()">Reintentar ahora</button><p class="muted" style="text-align:center;margin-top:10px">Si sigue así varios minutos, avisa a Dirección.</p></div></div>`}
 async function iniciar(){
   if(!safeLS('qx_login_at'))safeLS('qx_login_at',new Date().toISOString());
   {const c=cierrePendiente();if(c)return salir('Sesión cerrada automáticamente a las '+c+'. Vuelve a entrar.')}
   $('#app').innerHTML='<div class="empty">Cargando…</div>';
+  const lento=setTimeout(()=>{const a=$('#app');if(a&&/Cargando/.test(a.textContent))a.innerHTML=avisoSinBase()},12000);
   try{const r=await sb.from('qx_usuarios').select('id,nombre,rol,activo,debe_cambiar,modulos,permisos').eq('id',S.user.id).maybeSingle();
     if(r.data&&(!r.data.activo)){return salir()}
     if(r.data){S.user.nombre=r.data.nombre;S.user.rol=r.data.rol;S.user.modulos=r.data.modulos||null;S.user.permisos=r.data.permisos||null;safeLS('qx_user',JSON.stringify(S.user));if(r.data.debe_cambiar)return cambiarCredenciales(true)}
     else if(!r.error)return salir();
   }catch(e){}
-  try{await loadAll()}catch(e){$('#app').innerHTML=`<div class="login"><div class="card"><h3>No se pudo cargar</h3><p class="muted">${h(e.message||e)}</p><p class="muted">Si es la primera vez, verifica que el SQL de COE Quirófano v2 se haya ejecutado en Supabase.</p><button class="btn" onclick="location.reload()">Reintentar</button></div></div>`;return}
+  try{await loadAll();clearTimeout(lento)}catch(e){clearTimeout(lento);if(/fetch|network|timeout|522|504|503|Failed/i.test(String(e?.message||e)+String(e?.code||''))){$('#app').innerHTML=avisoSinBase();return}$('#app').innerHTML=`<div class="login"><div class="card"><h3>No se pudo cargar</h3><p class="muted">${h(e.message||e)}</p><p class="muted">Si es la primera vez, verifica que el SQL de COE Quirófano v2 se haya ejecutado en Supabase.</p><button class="btn" onclick="location.reload()">Reintentar</button></div></div>`;return}
   if(!modsOf(S.user).includes(S.tab))S.tab=modsOf(S.user).includes('cotizar')&&!modsOf(S.user).includes('inicio')?'cotizar':(modsOf(S.user)[0]||'mas');
   if(!rtChan){
     rtChan=sb.channel('qx-rt');
@@ -2498,7 +2501,7 @@ async function imagenComprobante(file){
 }
 const MES_N={ene:1,feb:2,mar:3,abr:4,may:5,jun:6,jul:7,ago:8,sep:9,set:9,oct:10,nov:11,dic:12};
 function analizarTexto(t){
-  const txt=String(t||'').replace(/[Oo](?=\d)|(?<=\d)[Oo]/g,'0').replace(/(?<=\d)[lI](?=\d)/g,'1');
+  const txt=String(t||'').replace(/[Oo](?=\d)/g,'0').replace(/(\d)[Oo]/g,'$10').replace(/(\d)[lI](?=\d)/g,'$11');
   const cand=[];const clave=/(importe|monto|total|cantidad|pagado|pago|abono|anticipo|transferido|cargo|neto)/i;
   const re=/(\$|mxn|m\.n\.)?\s*(\d{1,3}(?:[,\s]\d{3})+(?:\.\d{1,2})?|\d{1,3}(?:\.\d{3})+(?:,\d{2})|\d+[.,]\d{2}\b|\d{3,7}\b)/gi;let m;
   while((m=re.exec(txt))){let s=m[2].replace(/\s/g,'');
@@ -3084,7 +3087,8 @@ function vCotizar(){
     <div><label for="qM">Médico</label><input id="qM" list="dlMed" value="${h(Q.medico)}" oninput="Q.medico=this.value"><datalist id="dlMed">${meds.map(m=>`<option value="${h(m)}">`).join('')}</datalist></div>
     <div><label>Anestesia</label><div class="seg" id="qAn">${['No lleva','Sí lleva'].map(o=>`<button type="button" class="${(o==='No lleva'?Q.anestesia==='No':(Q.anestesia&&Q.anestesia!=='No'))?'on':''}" onclick="Q.anestesia=${o==='No lleva'?"'No'":"(Q.anestesia&&Q.anestesia!=='No'?Q.anestesia:'Sí')"};vCotizar()">${o}</button>`).join('')}</div>
     ${Q.anestesia&&Q.anestesia!=='No'?`<select style="margin-top:6px" onchange="Q.anestesia=this.value||'Sí'">${[['Sí','Tipo por definir'],...ANEST_TIPOS.map(t=>[t,t])].map(([v,t])=>`<option value="${v}" ${Q.anestesia===v?'selected':''}>${t}</option>`).join('')}</select>`:''}</div>
-    <div style="grid-column:1/-1"><label for="qMo">Diagnóstico / motivo</label><input id="qMo" placeholder="Ej. Catarata OD" value="${h(Q.motivo)}" oninput="Q.motivo=this.value"></div></div>
+    <div style="grid-column:1/-1"><label for="qMo">Diagnóstico / motivo</label><input id="qMo" placeholder="Ej. Catarata OD" value="${h(Q.motivo)}" oninput="Q.motivo=this.value"></div>
+    <div style="grid-column:1/-1"><label for="qNt">Notas de la cotización <span class="muted">(internas, no se imprimen)</span></label><textarea id="qNt" rows="2" placeholder="Ej. paciente prefiere operarse en diciembre; tiene seguro; llamar por la tarde" oninput="Q.notas=this.value">${h(Q.notas||'')}</textarea></div></div>
    </div>
    <div class="card"><h3>Agregar concepto</h3>
     <input id="qBus" placeholder="🔎 Escribe: catarata, YAG, OCT, pterigión, amígdalas…" value="${h(Q.bus||'')}" oninput="Q.bus=this.value;drawBus()" autocomplete="off"><div id="qBusR"></div><button type="button" class="lnk" style="margin:4px 0 8px" onclick="itemLibreQ()">＋ Procedimiento que no está en el sistema (monto abierto)</button>
@@ -3321,6 +3325,7 @@ async function hojaCot(c){
   const extra=`<a class="btn sec" target="_blank" href="https://wa.me/${waNum(c.telefono1)}?text=${encodeURIComponent('Hola '+c.paciente_nombre+', le compartimos su cotización '+c.folio+' del Centro Ocular Especializado, vigente hasta el '+fFecha(c.vigencia_hasta)+'. Puede consultarla aquí: '+linkCot(c))}">Enviar por WhatsApp</a>
    ${est==='vigente'&&(c.items||[]).some(i=>i.categoria==='cirugia')&&can.programar()?`<button class="btn sec" onclick="programarDesdeCot('${c.id}')">Programar cirugía</button>`:''}
    ${est==='vencida'?`<button class="btn sec" onclick="renovarCot('${c.id}')">Renovar con precios actuales</button>`:''}
+   <button class="btn sec" onclick="notasCot('${c.id}')">Notas${c.notas?' ('+String(c.notas).split('\n').filter(Boolean).length+')':''}</button>
    ${tiene('editar_cot')?`<button class="btn sec" onclick="editarCot('${c.id}')">Editar</button><button class="btn sec" onclick="rehabilitarCot('${c.id}')">Rehabilitar / cambiar estado</button>`:''}
    ${(c.items||[]).some(i=>i.categoria==='cirugia'||i.categoria==='laser')?`<button class="btn sec" onclick="consentimientoCot('${c.id}')">Consentimiento informado</button>`:''}
     ${campActiva()&&est!=='vencida'&&(c.items||[]).some(i=>i.categoria==='cirugia')&&(can.cotizar()||can.programar())?`<button class="btn" onclick="enviarCampana('${c.id}')">Enviar a campaña</button>`:''}`;
@@ -3392,6 +3397,20 @@ function editarCot(id){
   document.querySelectorAll('.modal').forEach(m=>m.remove());S.tab='cotizar';S.sub.cot='nueva';render();
   toast('Edita y guarda: se pedirá tu PIN')}
 /* rehabilitar / cambiar estado y vigencia, firmado con PIN */
+function notasCot(id){
+  const c=(S.cots||[]).find(x=>x.id===id);if(!c)return;
+  const lineas=String(c.notas||'').split('\n').filter(Boolean);
+  const m=modal(`${mhead('Notas · '+h(c.folio))}<div class="muted">${h(c.paciente_nombre)} · solo personal del COE, no aparecen en la hoja del paciente</div>
+   <div style="max-height:260px;overflow:auto;margin:10px 0">${lineas.length?lineas.map(l=>`<div style="padding:6px 0;border-bottom:1px solid var(--line,#eee)">${h(l)}</div>`).join(''):'<div class="muted">Sin notas todavía.</div>'}</div>
+   <label for="ntT">Agregar nota</label><textarea id="ntT" rows="3" placeholder="Escribe la nota"></textarea>
+   <div class="acts"><button class="btn" id="ok">Agregar nota</button></div>`,'sm');
+  m.querySelector('#ntT').focus();
+  m.querySelector('#ok').onclick=async()=>{const t=m.querySelector('#ntT').value.trim();if(!t)return toast('Escribe la nota',true);
+    const d=new Date(),hh=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+    const nota=`[${fCorta(hoyISO())} ${hh}] ${S.user.nombre}: ${t.replace(/\s*\n\s*/g,' ')}`;
+    try{const r=(await q(sb.from('qx_cotizaciones').update({notas:[c.notas,nota].filter(Boolean).join('\n'),updated_at:new Date().toISOString()}).eq('id',c.id).select(),'Agregar nota'))[0];
+      Object.assign(c,r);m.remove();toast('Nota agregada');document.querySelectorAll('.modal').forEach(x=>x.remove());hojaCot(c)}catch(err){}};
+}
 function rehabilitarCot(id){
   const c=(S.cots||[]).find(x=>x.id===id);if(!c)return;if(!tiene('editar_cot'))return toast('No tienes permiso',true);
   const e=estadoCot(c);
