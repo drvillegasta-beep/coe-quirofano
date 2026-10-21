@@ -523,6 +523,7 @@ body.locked .shell{visibility:hidden}
 .opt .o-chk+.o-main{flex:1;text-align:left}
 .o-chk{flex:none;width:24px;height:24px;border-radius:6px;border:2px solid var(--line);display:grid;place-items:center;font-weight:800;color:#fff}
 .opt.sel .o-chk{background:var(--accent);border-color:var(--accent)}
+.fx-in{font-size:14px!important;padding:8px 12px!important;border-radius:999px!important}.fx-in.on{border-color:var(--accent)!important;background:var(--accent-soft)!important}
 body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 </style>
 
@@ -862,9 +863,13 @@ const uniTxt=(u,n)=>(+n>1&&UNI_PL[u])?UNI_PL[u]:u;
 const defUni=v=>v==='oral'||v==='sl'?'tableta':['im','iv','sc'].includes(v)?'ampolleta':v==='top'?'aplicación':'gota';
 function viaDef(p){if(p&&p.via&&p.via!=='oft')return{via:p.via,uni:p.uni||defUni(p.via)};if(p&&['oral','analgesico'].includes(p.g))return{via:'oral',uni:/CAPS/i.test(p.d||'')?'cápsula':'tableta'};if(p&&p.g==='inyectable')return{via:'im',uni:'ampolleta'};return{via:'oft',uni:'gota'}}
 function newMed(p){const v=viaDef(p);return v.via==='oft'?{pid:p.id,eye:'AO',dose:1,f:2,d:7,taper:0,via:'oft'}:{pid:p.id,eye:'AO',dose:1,f:3,d:5,taper:0,via:v.via,uni:v.uni,prn:false}}
-function posTxt(m){if(isOft(m))return `${m.dose} gota${m.dose>1?'s':''} ${FREQ[m.f]}`;
- return `${VERBO[m.via]||'Usar'} ${fmtN(m.dose)} ${uniTxt(m.uni||'tableta',m.dose)} ${+m.f===0?'en una sola dosis':FREQ[m.f]}${m.prn?' solo si hay dolor':''}`}
-function durTxt(m){if(!isOft(m)&&+m.f===0)return 'Dosis única';if(m.prn)return m.d?`Máximo ${m.d} días`:'Solo cuando haga falta';return m.d?`Durante ${m.d} días`:'No suspender hasta nueva indicación'}
+function fqTxt(m){if(m.fx&&m.fx.trim())return m.fx.trim();if(m.fh){const h=+m.fh;return h===24?'una vez al día':h>24&&h%24===0?`cada ${h/24} días`:`cada ${h} hora${h>1?'s':''}`}return FREQ[m.f]||''}
+function hrsOf(m){if(m.fx&&m.fx.trim())return null;if(m.fh){const h=+m.fh;if(h>=4&&h<=24&&24%h===0){const o=[];for(let t=0;t<24;t+=h){const x=(8+t)%24;o.push(x===0?'12 am':x===12?'12 pm':x<12?x+' am':(x-12)+' pm')}return o}return null}return HOURS[m.f]||null}
+function slotsOf(m){if(m.fx&&m.fx.trim())return[];if(m.fh){const h=+m.fh;if(h>24)return['man'];const n=Math.round(24/h);return SLOTS[n]||(n>6?SLOTS[6]:['man'])}return SLOTS[+m.f]||['man']}
+const fqLbl=m=>m.fx&&m.fx.trim()?m.fx.trim().toUpperCase():(m.fh&&(+m.fh>24||+m.fh<4))?fqTxt(m).toUpperCase():'';
+function posTxt(m){if(isOft(m))return `${m.dose} gota${m.dose>1?'s':''} ${fqTxt(m)}`;
+ return `${VERBO[m.via]||'Usar'} ${fmtN(m.dose)} ${uniTxt(m.uni||'tableta',m.dose)} ${+m.f===0&&!m.fh&&!m.fx?'en una sola dosis':fqTxt(m)}${m.prn?' solo si hay dolor':''}`}
+function durTxt(m){if(!isOft(m)&&+m.f===0&&!m.fh&&!m.fx)return 'Dosis única';if(m.prn)return m.d?`Máximo ${m.d} días`:'Solo cuando haga falta';return m.d?`Durante ${m.d} días`:'No suspender hasta nueva indicación'}
 const FREQ={1:'una vez al día',2:'cada 12 horas',3:'cada 8 horas',4:'cada 6 horas',6:'cada 4 horas'};
 const HOURS={0:['una sola vez'],1:['8 am'],2:['8 am','8 pm'],3:['6 am','2 pm','10 pm'],4:['8 am','2 pm','8 pm','2 am'],6:['7 am','11 am','3 pm','7 pm','11 pm','3 am']};
 const SYMS=['★','●','▲','■','♥','◆','✚','▼'];
@@ -882,10 +887,10 @@ let TPLS=[
 ];
 const EMOJIS=['👁️','🦠','🎯','💧','🩹','💊','🔥','🤧','🌸','⚡','🩸','🧪','🔬','🛡️','❄️','🌿','☀️','🌙','🧒','👴','⭐','🔴','🟢','🔵'];
 let TPL_EDIT=false,TPL_DB=false;
-const rxHash=()=>JSON.stringify([RX.pac,RX.edad,RX.dx,RX.med,RX.sede,RX.cita,RX.hora,RX.cal,RX.tel,RX.motivo,RX.promos,RX.meds.map(m=>[m.pid,m.eye,m.dose,m.f,m.d,m.taper,m.via,m.uni,m.prn,m.taper?fasesOf(m):0])]);
+const rxHash=()=>JSON.stringify([RX.pac,RX.edad,RX.dx,RX.med,RX.sede,RX.cita,RX.hora,RX.cal,RX.tel,RX.motivo,RX.promos,RX.meds.map(m=>[m.pid,m.eye,m.dose,m.f,m.fh,m.fx,m.d,m.taper,m.via,m.uni,m.prn,m.taper?fasesOf(m):0])]);
 const rxFolio=()=>RX.folio&&RX.saved===rxHash()?RX.folio:'SIN GUARDAR';
 let RX={hora:null,cal:null,tel:'',motivo:'Subsecuente',promos:false,folio:null,saved:null,pac:'',edad:'',dx:'',med:'vil',sede:'tac',cita:'',meds:[],view:'std'};
-function tplMeds(t){const miss=[];const meds=t.meds.map(m=>{const p=PROD.find(x=>x.cl===m.clave);if(!p){miss.push(m.clave);return null}return{pid:p.id,eye:m.ojo||'AO',dose:m.gotas,f:m.veces??2,d:m.dias||0,taper:m.reduccion?1:0,via:m.via||'oft',uni:m.unidad||(m.via&&m.via!=='oft'?defUni(m.via):'gota'),prn:!!m.prn,...(m.reduccion?{fases:JSON.parse(JSON.stringify(m.fases||defFases(m.gotas)))}:{})}}).filter(Boolean);return{meds,miss}}
+function tplMeds(t){const miss=[];const meds=t.meds.map(m=>{const p=PROD.find(x=>x.cl===m.clave);if(!p){miss.push(m.clave);return null}return{pid:p.id,eye:m.ojo||'AO',dose:m.gotas,f:m.veces??2,d:m.dias||0,taper:m.reduccion?1:0,via:m.via||'oft',uni:m.unidad||(m.via&&m.via!=='oft'?defUni(m.via):'gota'),prn:!!m.prn,...(m.cada_horas?{fh:m.cada_horas}:{}),fx:m.frecuencia_libre||'',...(m.reduccion?{fases:JSON.parse(JSON.stringify(m.fases||defFases(m.gotas)))}:{})}}).filter(Boolean);return{meds,miss}}
 function loadTpl(id,quiet){const t=TPLS.find(x=>String(x.id)===String(id));if(!t)return;const{meds,miss}=tplMeds(t);RX.dx=t.dx||RX.dx;RX.meds=meds;if(!quiet){toast(miss.length?`Plantilla cargada. ${miss.length} medicamento(s) ya no están en el catálogo.`:`Plantilla «${t.nombre}» cargada.`);render()}}
 loadTpl('l1',true);
 
@@ -940,7 +945,8 @@ function vRx(){
     ${m.taper?`<div class="esq"><div class="esq-h">📉 Esquema decreciente <span class="note">· ${fasesDias(m)} días en total</span></div>
      <div class="esq-t"><div class="esq-r esq-hd"><span>Fase</span><span>Duración</span><span>Posología</span><span></span></div>
      ${fasesOf(m).map((ph,k)=>`<div class="esq-r"><input type="text" id="fn${i}_${k}" data-fx="${i}:${k}:n" value="${esc(ph.n)}" aria-label="Fase ${k+1}"><span class="esq-d"><input type="number" id="fd${i}_${k}" data-fx="${i}:${k}:d" value="${ph.d}" min="1" max="90" aria-label="Días fase ${k+1}"><small>días</small></span><select id="fp${i}_${k}" data-fx="${i}:${k}:p" aria-label="Posología fase ${k+1}">${[1,2].flatMap(g=>FASE_FQ.map(([f,t])=>`<option value="${g}:${f}" ${ph.g==g&&ph.f==f?'selected':''}>${g} gota${g>1?'s':''} ${t}</option>`)).join('')}</select><button type="button" class="icon-btn" data-fdel="${i}:${k}" aria-label="Quitar fase ${k+1}">✕</button></div>`).join('')}</div>
-     <button type="button" class="lnk sm" data-fadd="${i}">+ Agregar fase</button></div>`:`<div class="mc-row"><span class="lbl">${m.prn?'No antes de':'Cada'}</span><div class="chips">${[[1,'24 h'],[2,'12 h'],[3,'8 h'],[4,'6 h'],[6,'4 h'],...(isOft(m)?[]:[[0,'Dosis única']])].map(([k,t])=>`<button data-fq="${i}:${k}" aria-pressed="${m.f==k}">${t}</button>`).join('')}</div></div>
+     <button type="button" class="lnk sm" data-fadd="${i}">+ Agregar fase</button></div>`:`<div class="mc-row"><span class="lbl">${m.prn?'No antes de':'Cada'}</span><div class="chips">${[[1,'24 h'],[2,'12 h'],[3,'8 h'],[4,'6 h'],[6,'4 h'],...(isOft(m)?[]:[[0,'Dosis única']])].map(([k,t])=>`<button data-fq="${i}:${k}" aria-pressed="${m.f==k&&!m.fh&&!(m.fx||'').trim()}">${t}</button>`).join('')}<label class="dias-otro ${m.fh&&!(m.fx||'').trim()?'on':''}">Cada <input type="number" min="1" max="168" inputmode="numeric" data-fhx="${i}" value="${m.fh||''}" placeholder="__" aria-label="Cada cuántas horas"> h</label></div></div>
+    <div class="mc-row"><span class="lbl"></span><input type="text" class="fx-in ${(m.fx||'').trim()?'on':''}" data-fxx="${i}" value="${esc(m.fx||'')}" placeholder="Otra indicación (ej. al acostarse, lunes-miércoles-viernes)" maxlength="80"></div>
     ${!isOft(m)&&+m.f===0?'':`<div class="mc-row"><span class="lbl">Días</span><div class="chips">${(isOft(m)?[[5,'5'],[7,'7'],[14,'14'],[21,'21'],[28,'28'],[0,'Continuo']]:[[1,'1'],[3,'3'],[5,'5'],[7,'7'],[10,'10'],[14,'14'],[30,'30'],[0,'Continuo']]).map(([k,t])=>`<button data-du="${i}:${k}" aria-pressed="${m.d==k}">${t}</button>`).join('')}<label class="dias-otro ${[[[5,'5'],[7,'7'],[14,'14'],[21,'21'],[28,'28'],[0,'Continuo']],[[1,'1'],[3,'3'],[5,'5'],[7,'7'],[10,'10'],[14,'14'],[30,'30'],[0,'Continuo']]].flat().some(([k])=>k==m.d)?'':'on'}">Otro <input type="number" min="1" max="365" inputmode="numeric" data-dux="${i}" value="${[[[5,'5'],[7,'7'],[14,'14'],[21,'21'],[28,'28'],[0,'Continuo']],[[1,'1'],[3,'3'],[5,'5'],[7,'7'],[10,'10'],[14,'14'],[30,'30'],[0,'Continuo']]].flat().some(([k])=>k==m.d)?'':m.d}" placeholder="días" aria-label="Número de días"></label></div></div>`}`}
     ${h?`<div class="hint ${h.k}"><span>${h.t}</span>${h.btn?`<button class="btn sm pri" data-chg="${i}">${h.btn}</button>`:''}${h.ped?`<button class="btn sm" data-pedp="${p.id}">Pedir a Finanzas</button>`:''}</div>`:''}
    </div>`}).join('')}
@@ -954,7 +960,7 @@ function vRx(){
    <div class="paperwrap">${RX.view==='std'?paperStd():paperIl()}</div>
   </section></div>${vModal()}`;
 }
-function curMedsAsTpl(){return RX.meds.map(m=>{const p=PROD.find(x=>x.id===m.pid);return M_(p.cl,m.eye,m.dose,m.f,m.d,m.taper,m.taper?JSON.parse(JSON.stringify(fasesOf(m))):null,{via:m.via,uni:m.uni,prn:m.prn})})}
+function curMedsAsTpl(){return RX.meds.map(m=>{const p=PROD.find(x=>x.id===m.pid);return {...M_(p.cl,m.eye,m.dose,m.f,m.d,m.taper,m.taper?JSON.parse(JSON.stringify(fasesOf(m))):null,{via:m.via,uni:m.uni,prn:m.prn}),...(m.fh?{cada_horas:m.fh}:{}),...(m.fx?{frecuencia_libre:m.fx}:{})}})}
 let TED=null;
 const VECES=[[1,'24 h'],[2,'12 h'],[3,'8 h'],[4,'6 h'],[6,'4 h']],DIAS=[[5,'5 días'],[7,'7 días'],[10,'10 días'],[14,'14 días'],[21,'21 días'],[28,'28 días'],[0,'Continuo']];
 function tplDlg(id,fromRx){const t=id?TPLS.find(x=>String(x.id)===String(id)):null;
@@ -1089,8 +1095,8 @@ function paperStd(){
   ${RX.meds.map((m,i)=>{const p=PROD.find(x=>x.id===m.pid);
    const oft=isOft(m),dur=m.taper?'':oft?(m.d?`Durante <b>${m.d} días</b>`:'<b>No suspender</b> hasta nueva indicación'):`<b>${durTxt(m)}</b>`;
    return `<div class="p-med"><div class="n">${i+1}</div><div class="nm">${esc(p.nm)} ${p.pa&&p.pa!=='—'?`<small>(${esc(p.pa)})</small>`:''}</div>
-    <div class="how"><span class="p-eye">${oft?EYE[m.eye]:VIA_LBL[m.via]}</span>${m.taper?'<b>Esquema decreciente</b>':oft?`<b>${m.dose} gota${m.dose>1?'s':''}</b> <b>${FREQ[m.f]}</b>`:`<b>${posTxt(m)}</b>`}</div>
-    ${m.taper?`<table class="p-esq">${fasesOf(m).map(ph=>`<tr><td>${esc(ph.n)}</td><td>${ph.d} días</td><td><b>${fasePos(ph)}</b></td></tr>`).join('')}</table><div class="how" style="font-size:16px">Después suspender. Total ${fasesDias(m)} días.</div>`:`<div class="how">${oft||(!m.prn&&+m.f)?`Horario: ${HOURS[m.f].join(' · ')}. `:''}${dur}.</div>`}</div>`}).join('')}
+    <div class="how"><span class="p-eye">${oft?EYE[m.eye]:VIA_LBL[m.via]}</span>${m.taper?'<b>Esquema decreciente</b>':oft?`<b>${m.dose} gota${m.dose>1?'s':''}</b> <b>${esc(fqTxt(m))}</b>`:`<b>${esc(posTxt(m))}</b>`}</div>
+    ${m.taper?`<table class="p-esq">${fasesOf(m).map(ph=>`<tr><td>${esc(ph.n)}</td><td>${ph.d} días</td><td><b>${fasePos(ph)}</b></td></tr>`).join('')}</table><div class="how" style="font-size:16px">Después suspender. Total ${fasesDias(m)} días.</div>`:`<div class="how">${(oft||(!m.prn&&(+m.f||m.fh)))&&hrsOf(m)?`Horario: ${hrsOf(m).join(' · ')}. `:''}${dur}.</div>`}</div>`}).join('')}
   <div class="p-gen"><b>INDICACIONES:</b> ${genTxt()}</div>
   <div class="p-foot"><div class="p-next"><span class="p-lab">Próxima cita</span><span class="p-val">${citaTxt()}</span></div><div class="p-sign"><b>${esc(DOCS[RX.med].n)}</b><br>${DOCS[RX.med].c}</div>${qr()}</div>
   <div class="p-addr">${esc(SEDES[RX.sede])}</div></div>`;
@@ -1123,12 +1129,12 @@ function paperIl(){
  return `<div class="paper">${head()}
   ${contactBlock()}
   <div class="il-intro">Para el familiar: cada dibujo grande corresponde a la etiqueta pegada en la caja o el frasco. ${RX.meds.some(isOft)?'La cara muestra en qué ojo va la gota (círculo rojo); las gotas azules dicen cuántas. ':''}${RX.meds.some(m=>!isOft(m))?'La boca indica que se toma; las pastillas dicen cuántas. ':''}El dibujo de arriba dice a qué hora del día.</div>
-  ${RX.meds.map((m,i)=>{const f=+m.f,oft=isOft(m),sl=SLOTS[f]||['man'];const dropsN=n=>Array.from({length:n},()=>drop).join('');
+  ${RX.meds.map((m,i)=>{const f=+m.f,oft=isOft(m),sl=slotsOf(m),lb=fqLbl(m);const dropsN=n=>Array.from({length:n},()=>drop).join('');
    return `<div class="il-card"><div class="il-stk">${SYMS[i]}</div><div class="il-face">${oft?face(m.eye):viaPic(m)}</div>
     ${m.taper?`<div class="il-phs">${fasesOf(m).map(ph=>`<div class="il-ph"><span class="il-phn">${esc(ph.n)}<small>${ph.d} días</small></span><div class="il-times sm">${SLOTS[ph.f].map(k=>`<div class="il-t">${ICON[k]}<div class="il-drops">${dropsN(ph.g)}</div></div>`).join('')}</div></div>`).join('')}</div>`
-     :`<div class="il-times">${m.prn?'<div class="il-prn">SOLO SI HAY DOLOR</div>':''}${sl.map(k=>`<div class="il-t">${ICON[k]}<div class="il-drops">${oft?dropsN(m.dose):doseIcons(m)}</div></div>`).join('')}</div>`}
-    <div class="il-cal">${cal(m.taper?fasesDias(m):(!oft&&f===0)?1:+m.d)}</div>
-    <div class="il-fam">${esc(PROD.find(x=>x.id===m.pid).nm)} · ${oft?EYE[m.eye].toLowerCase():VIA_LBL[m.via].toLowerCase()} · ${!oft?posTxt(m)+' · '+durTxt(m).toLowerCase():m.taper?'esquema decreciente: '+fasesOf(m).map(ph=>`${ph.n} ${fasePos(ph)}`).join('; '):`${m.dose} gota${m.dose>1?'s':''} ${FREQ[f]}${f===6?' (también a medianoche y madrugada)':''} · ${m.taper?fasesDias(m)+' días':(+m.d?m.d+' días':'no suspender')}`}</div></div>`}).join('')}
+     :`<div class="il-times">${m.prn?'<div class="il-prn">SOLO SI HAY DOLOR</div>':''}${lb?`<div class="il-prn">${esc(lb)}</div>`:''}${sl.map(k=>`<div class="il-t">${ICON[k]}<div class="il-drops">${oft?dropsN(m.dose):doseIcons(m)}</div></div>`).join('')}</div>`}
+    <div class="il-cal">${cal(m.taper?fasesDias(m):(!oft&&f===0&&!m.fh&&!m.fx)?1:+m.d)}</div>
+    <div class="il-fam">${esc(PROD.find(x=>x.id===m.pid).nm)} · ${oft?EYE[m.eye].toLowerCase():VIA_LBL[m.via].toLowerCase()} · ${!oft?posTxt(m)+' · '+durTxt(m).toLowerCase():m.taper?'esquema decreciente: '+fasesOf(m).map(ph=>`${ph.n} ${fasePos(ph)}`).join('; '):`${m.dose} gota${m.dose>1?'s':''} ${esc(fqTxt(m))}${f===6&&!m.fh&&!m.fx?' (también a medianoche y madrugada)':''} · ${m.taper?fasesDias(m)+' días':(+m.d?m.d+' días':'no suspender')}`}</div></div>`}).join('')}
   <div class="p-foot" style="grid-template-columns:1fr auto"><div class="p-next"><span class="p-lab">Próxima cita</span><span class="p-val">${citaTxt()}</span></div>${qr()}</div>
   <div class="p-addr">${esc(SEDES[RX.sede])}</div></div>`;
 }
@@ -1230,7 +1236,9 @@ function bind(){
  M.querySelectorAll('[data-via]').forEach(b=>b.onclick=()=>{const[i,v]=b.dataset.via.split(':');const m=RX.meds[+i];if((m.via||'oft')===v)return;m.via=v;if(v==='oft'){m.uni='gota';m.dose=Math.min(3,Math.max(1,Math.round(m.dose)));if(m.f===0)m.f=2;m.prn=false}else{m.taper=0;if(!m.uni||m.uni==='gota')m.uni=defUni(v)}render()});
  M.querySelectorAll('[data-uni]').forEach(s=>s.onchange=()=>{const m=RX.meds[+s.dataset.uni];m.uni=s.value;if(m.uni!=='tableta')m.dose=Math.max(1,Math.round(m.dose));render()});
  M.querySelectorAll('[data-prn]').forEach(c=>c.onchange=()=>{const m=RX.meds[+c.dataset.prn];m.prn=c.checked;if(m.prn&&m.f===0)m.f=3;render()});
- M.querySelectorAll('[data-fq]').forEach(b=>b.onclick=()=>{const[i,v]=b.dataset.fq.split(':');RX.meds[+i].f=+v;render()});
+ M.querySelectorAll('[data-fq]').forEach(b=>b.onclick=()=>{const[i,v]=b.dataset.fq.split(':');const m=RX.meds[+i];m.f=+v;delete m.fh;m.fx='';render()});
+ M.querySelectorAll('[data-fhx]').forEach(c=>c.onchange=()=>{const m=RX.meds[+c.dataset.fhx],v=parseInt(c.value);if(v>0){m.fh=Math.min(168,v);m.fx='';m.f=Math.max(1,Math.min(6,Math.round(24/m.fh)))}else delete m.fh;setTimeout(render,0)});
+ M.querySelectorAll('[data-fxx]').forEach(c=>c.onchange=()=>{RX.meds[+c.dataset.fxx].fx=c.value.trim();setTimeout(render,0)});
  M.querySelectorAll('[data-dux]').forEach(c=>c.onchange=()=>{const v=parseInt(c.value);if(v>0){RX.meds[+c.dataset.dux].d=Math.min(365,v);setTimeout(render,0)}});
  M.querySelectorAll('[data-du]').forEach(b=>b.onclick=()=>{const[i,v]=b.dataset.du.split(':');RX.meds[+i].d=+v;render()});
 }
@@ -1739,9 +1747,9 @@ function rxText(){const d=DOCS[RX.med];const L=[];
  L.push('CENTRO OCULAR ESPECIALIZADO · Oftalmología');L.push(`${d.n} · ${d.c}`);L.push('');
  L.push(`Paciente: ${RX.pac}${RX.edad?` (${RX.edad} años)`:''}`);L.push(`Fecha: ${fmtD(ISO(TODAY))} · Folio: ${rxFolio()}`);L.push(`Diagnóstico: ${RX.dx||'—'}`);L.push('');L.push('Rp.');
  RX.meds.forEach((m,i)=>{const p=PROD.find(x=>x.id===m.pid);const nm=`${i+1}. ${p.nm}${p.pa&&p.pa!=='—'?` (${p.pa})`:''} — ${isOft(m)?EYE[m.eye]:VIA_LBL[m.via]}`;
-  if(!isOft(m)){L.push(`${nm}: ${posTxt(m)}${!m.prn&&+m.f?` (${HOURS[m.f].join(' · ')})`:''}. ${durTxt(m)}.`);return}
+  if(!isOft(m)){L.push(`${nm}: ${posTxt(m)}${!m.prn&&hrsOf(m)&&(+m.f||m.fh)?` (${hrsOf(m).join(' · ')})`:''}. ${durTxt(m)}.`);return}
   if(m.taper){L.push(nm+', esquema decreciente:');fasesOf(m).forEach(ph=>L.push(`   • ${ph.n} (${ph.d} días): ${fasePos(ph)}`));L.push(`   Después suspender. Total ${fasesDias(m)} días.`)}
-  else L.push(`${nm}: ${m.dose} gota${m.dose>1?'s':''} ${FREQ[m.f]} (${HOURS[m.f].join(' · ')}), ${m.d?`durante ${m.d} días`:'no suspender hasta nueva indicación'}.`)});
+  else L.push(`${nm}: ${m.dose} gota${m.dose>1?'s':''} ${fqTxt(m)}${hrsOf(m)?` (${hrsOf(m).join(' · ')})`:''}, ${m.d?`durante ${m.d} días`:'no suspender hasta nueva indicación'}.`)});
  L.push('');L.push('Indicaciones: '+genTxt());
  L.push(`Próxima cita: ${citaTxt()}`);L.push('');L.push('Citas e informes: (459) 100 0431 · WhatsApp: (459) 134 55 29');return L.join('\n')}
 async function copyRx(){const t=rxText();try{await navigator.clipboard.writeText(t);toast('Receta copiada. Péguela en WhatsApp, correo o el expediente.')}
@@ -1768,7 +1776,7 @@ async function saveRx(){
  if(!RX.pac.trim()){toast('Falta el nombre del paciente.');return}
  if(!RX.meds.length){toast('Agregue al menos un medicamento.');return}
  if(!sb){RX.folio='DEMO-'+String(Date.now()).slice(-5);RX.saved=rxHash();toast('Modo demostración: la receta no se guardó en la base de datos.');render();return}
- const meds=RX.meds.map(m=>{const p=PROD.find(x=>x.id===m.pid);return{clave:p.cl,producto:p.nm,principio:p.pa,via:m.via||'oft',unidad:isOft(m)?'gota':m.uni,prn:!!m.prn,dosis:m.dose,ojo:isOft(m)?m.eye:null,gotas:m.dose,veces_dia:m.taper?null:m.f,dias:m.taper?fasesDias(m):m.d,reduccion:!!m.taper,...(m.taper?{fases:fasesOf(m)}:{})}});
+ const meds=RX.meds.map(m=>{const p=PROD.find(x=>x.id===m.pid);return{clave:p.cl,producto:p.nm,principio:p.pa,via:m.via||'oft',unidad:isOft(m)?'gota':m.uni,prn:!!m.prn,dosis:m.dose,cada_horas:m.fh||null,frecuencia:fqTxt(m),ojo:isOft(m)?m.eye:null,gotas:m.dose,veces_dia:m.taper?null:m.f,dias:m.taper?fasesDias(m):m.d,reduccion:!!m.taper,...(m.taper?{fases:fasesOf(m)}:{})}});
  const d=await db(sb.from('rec_recetas').insert({paciente:RX.pac,edad:+RX.edad||null,diagnostico:RX.dx,medico:DOCS[RX.med].n,sede:RX.sede==='tac'?'Tacámbaro':'Morelia',proxima_cita:RX.cita||null,telefono:RX.tel||null,motivo_cita:RX.motivo||null,cita_inicio:RX.hora!=null?slotDate(RX.cita,RX.hora).toISOString():null,cita_calendario:(CALS.find(c=>String(c.id)===String(RX.cal))||{}).nombre||null,acepta_promos:!!RX.promos,medicamentos:meds,creada_por:ME?ME.nombre:PERFILES[eff()]}).select().single(),'Receta');
  if(!d)return;RX.folio=d.folio;RX.saved=rxHash();RXHOY.unshift(d);logDb('receta_emitida',{folio:d.folio});toast(`Receta ${d.folio} guardada.`);render();
 }
@@ -1899,7 +1907,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610211024';
+const APP_VER='202610211402';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
