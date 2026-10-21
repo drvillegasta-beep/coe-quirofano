@@ -335,7 +335,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.12';
+const VERSION='3.13';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -1843,8 +1843,8 @@ async function abrirConteo(cid){
     const vacias=filas.filter(r=>{const a=r.querySelector('.qty');return a?a.value==='':(r.querySelector('.qc').value===''&&r.querySelector('.qs').value==='')});
     if(vacias.length&&!await confirmar(`Hay ${vacias.length} partidas sin capturar; se tomarán como 0. ¿Terminar?`))return;
     const sinFoto=secs.filter(s=>!fotos.some(f=>f.seccion===s));
-    if(cfg('conteo_foto','1')==='1'&&!fotos.length)return toast('Toma al menos una foto de gaveta como evidencia antes de terminar',true);
-    if(sinFoto.length&&cfg('conteo_foto','1')==='1'&&!await confirmar(`Faltan fotos de: ${sinFoto.map(h).join(', ')}. ¿Terminar así?`))return;
+    if(cfg('conteo_foto','0')==='1'&&!fotos.length)return toast('Toma al menos una foto de gaveta como evidencia antes de terminar',true);
+    if(sinFoto.length&&cfg('conteo_foto','0')==='1'&&!await confirmar(`Faltan fotos de: ${sinFoto.map(h).join(', ')}. ¿Terminar así?`))return;
     if(!await pedirPIN('Terminar conteo'))return;
     for(const r of vacias)await sb.from('qx_conteo_items').update({contado:0}).eq('id',r.dataset.id);
     for(const i of m.querySelectorAll('input[data-lio]'))await sb.from('qx_conteo_items').update({contado:i.checked?1:0}).eq('id',i.dataset.lio);
@@ -3580,7 +3580,7 @@ function vConfig(out){
     <div class="card"><h3>Precios, paquetes y descuentos máximos</h3><div class="acts" style="justify-content:flex-start"><button class="btn sec" onclick="S.sub.mas='precios';render()">Ir a Precios y vigencias</button></div></div>`);
   if(sec==='inv')out(`<div class="card"><h3>Inventario de quirófano</h3><div class="grid3">
     ${fI('freq_criticos','Conteo de críticos cada (días)',7,'number')}${fI('freq_completo','Inventario completo cada (días)',15,'number')}${fI('inv_base','Fecha ancla del programa','2026-10-05','date')}
-    ${fI('dias_proyeccion','Días de proyección (por agotarse)',14,'number')}${fS('conteo_foto','Foto de gaveta obligatoria al cerrar conteo','1',[['1','Sí'],['0','No']])}</div>
+    ${fI('dias_proyeccion','Días de proyección (por agotarse)',14,'number')}${fS('conteo_foto','Foto de gaveta obligatoria al cerrar conteo','0',[['1','Sí'],['0','No']])}</div>
     <div class="muted" style="margin-top:6px">Si un conteo no se hace en su fecha, al día siguiente se avisa a COE Finanzas.</div>${btnG}</div>
     <div class="card"><h3>Catálogo y paquetes</h3><div class="acts" style="justify-content:flex-start"><button class="btn sec" onclick="S.sub.mas='catalogo';render()">Catálogo de materiales</button><button class="btn sec" onclick="S.sub.mas='paquetes';render()">Paquetes quirúrgicos</button></div></div>`);
   if(sec==='carro')out(`<div class="card"><h3>Carro rojo</h3><div class="grid2">${fI('carro_aviso_dias','Cambio preventivo: días antes de caducar',180,'number')}${fI('carro_rev_dias','Revisión de sello y equipo cada (días)',7,'number')}</div>
