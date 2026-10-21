@@ -1124,3 +1124,4 @@ insert into qx_ubicaciones(sede_id,nombre,tipo,orden,area) select s.id,'Almacén
 alter table qx_movimientos add column if not exists envio text;
 alter table qx_cotizaciones add column if not exists anestesia text;
 -- v3.13 · Sincronización automática: triggers qx_sync_cot_t (cotizaciones) y qx_sync_cot_s2 (cotizaciones_s2) copian cada alta o cambio de la app anterior a qx_cotizaciones y qx_pacientes · migración qx_sync_cotizaciones_anteriores
+-- v3.14/3.15 · qx_lotes.consignacion/proveedor, qx_movimientos.consignacion/documento_url (llegadas con documento y consigna); qx_cirugias.consigna jsonb (material en consigna por cirugía y documentos)

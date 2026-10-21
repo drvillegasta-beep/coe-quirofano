@@ -335,7 +335,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.13';
+const VERSION='3.15';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -560,8 +560,9 @@ async function ingresar(mid,uid,lote,cad,cant,meta){
   lote=(lote||'').trim()||null;
   let l=S.lotes.find(x=>x.material_id===mid&&x.ubicacion_id===uid&&(x.lote||null)===lote&&(x.caducidad||null)===(cad||null));
   if(l){await q(sb.from('qx_lotes').update({cantidad:num(l.cantidad)+num(cant),updated_at:new Date().toISOString()}).eq('id',l.id));l.cantidad=num(l.cantidad)+num(cant)}
-  else{l=(await q(sb.from('qx_lotes').insert({material_id:mid,ubicacion_id:uid,lote,caducidad:cad||null,cantidad:num(cant)}).select()))[0];S.lotes.push(l)}
-  await q(sb.from('qx_movimientos').insert({tipo:meta.tipo||'entrada',material_id:mid,lote_id:l.id,ubicacion_id:uid,cantidad:num(cant),conteo_id:meta.conteo_id||null,usuario_id:S.user.id,usuario_nombre:S.user.nombre,nota:meta.nota||null}));
+  else{l=(await q(sb.from('qx_lotes').insert({material_id:mid,ubicacion_id:uid,lote,caducidad:cad||null,cantidad:num(cant),...(meta.consig!=null?{consignacion:!!meta.consig}:{}),...(meta.proveedor?{proveedor:meta.proveedor}:{})}).select()))[0];S.lotes.push(l)}
+  if(l&&meta.consig&&!l.consignacion){await sb.from('qx_lotes').update({consignacion:true,proveedor:meta.proveedor||l.proveedor||null}).eq('id',l.id);l.consignacion=true}
+  await q(sb.from('qx_movimientos').insert({tipo:meta.tipo||'entrada',material_id:mid,lote_id:l.id,ubicacion_id:uid,cantidad:num(cant),conteo_id:meta.conteo_id||null,usuario_id:S.user.id,usuario_nombre:S.user.nombre,nota:meta.nota||null,...(meta.doc?{documento_url:meta.doc}:{}),...(meta.consig!=null?{consignacion:!!meta.consig}:{})}));
   return l
 }
 async function logA(accion,tabla,id,detalle){try{await sb.from('qx_log').insert({usuario_id:S.user.id,usuario_nombre:S.user.nombre,accion,tabla,registro_id:id?String(id):null,detalle:detalle||null})}catch(e){}}
@@ -1057,6 +1058,7 @@ function cxCard(c){
   const urge=c.fecha<=addDays(hoyISO(),1)?'p-rojo':'p-amar';
   if(c.lio_requerido&&!c.lio_unidad_id&&c.estado!=='cancelada'&&!c.consumo_cerrado)pills.push(`<span class="pill ${urge}">LIO sin asignar</span>`);
   if(lio)pills.push(`<span class="pill p-azul">LIO ${h(lio.modelo)} ${fmtN(lio.dioptria)}D${lio.propiedad==='consignacion'?' · consig.':''}</span>`);
+  {const cs=(c.consigna||[]).filter(x=>x.tipo!=='doc');if(cs.length)pills.push(`<span class="pill p-amar" title="${h(cs.map(x=>x.nombre+' ×'+x.piezas+(x.lote?' lote '+x.lote:'')).join(' · '))}">Consigna: ${cs.length}</span>`)}
   if(faltan.length&&!c.consumo_cerrado&&c.estado!=='cancelada')pills.push(`<span class="pill k-crit">Falta material (${faltan.length})</span>`);
   if(c.consumo_cerrado)pills.push('<span class="pill p-verde">Consumo cerrado</span>');
   if(c.estado!=='cancelada'){const rd=readiness(c);pills.unshift(`<span class="pill ${rd.f.cls}">${h(rd.f.est)}</span>`);
@@ -1076,7 +1078,7 @@ function faltantesCx(c){
 let F=null; // borrador
 function formCirugia(id){
   const c=id?S.cx.find(x=>x.id===id):null;
-  F={id:c?.id||null,origen:c?.cotizacion_id||!id?'cot':'manual',cot:null,
+  F={id:c?.id||null,origen:c?.cotizacion_id||!id?'cot':'manual',cot:null,consigna:JSON.parse(JSON.stringify((c?.consigna||[]).filter(x=>x.tipo!=='doc'))),consigna_docs:(c?.consigna||[]).filter(x=>x.tipo==='doc'),consFiles:[],
     paciente_nombre:c?.paciente_nombre||'',expediente:c?.expediente||'',telefono:c?.telefono||'',
     especialidad_id:c?.especialidad_id||(S.esp.find(e=>e.nombre==='Oftalmología')||S.esp[0]||{}).id,
     procedimiento:c?.procedimiento||'',ojo:c?.ojo||'',cirujano:c?.cirujano||'',anestesia:c?.anestesia||'',
@@ -1101,8 +1103,8 @@ function renderForm(){
     const a=toMin(F.hora),b=a+num(F.duracion_min),x=toMin(hhmm(c.hora)),y=x+num(c.duracion_min||60);return a<y&&x<b});
   const lioSel=F.lio_unidad_id?S.lios.find(l=>l.id===F.lio_unidad_id):null;
   box.innerHTML=`${mhead(F.id?'Editar cirugía':'Programar cirugía')}
-  ${F.id?'':`<div class="tabs"><button class="${F.origen==='cot'?'on':''}" onclick="F.origen='cot';renderForm()">1 · Llamar la cotización</button>${tiene('aprobar')?`<button class="${F.origen==='manual'?'on':''}" onclick="F.origen='manual';renderForm()">Urgencia sin cotización</button>`:''}</div>`}
-  ${!F.id&&F.origen==='manual'?'<div class="banner amar">Solo para urgencias: pedirá motivo y tu PIN, y quedará en la bitácora. Lo normal es programar desde la cotización.</div>':''}
+  ${F.id?'':`<div class="tabs"><button class="${F.origen==='cot'?'on':''}" onclick="F.origen='cot';renderForm()">1 · Llamar la cotización</button>${tiene('aprobar')?`<button class="${F.origen==='manual'?'on':''}" onclick="F.origen='manual';renderForm()">Cirugía abierta (sin cotización)</button>`:''}</div>`}
+  ${!F.id&&F.origen==='manual'?'<div class="banner amar">Cirugía abierta: el procedimiento puede no estar en el catálogo. Pedirá motivo y tu PIN, y quedará en la bitácora. Lo normal es programar desde la cotización.</div>':''}
   ${!F.id&&F.origen==='cot'&&!F.cotizacion_id?'<div class="muted" style="margin:6px 0 2px">Para programar es obligatorio llamar la cotización del paciente. Escribe su nombre o el folio.</div>':''}
   ${F.origen==='cot'&&!F.id?`<div class="card" style="background:var(--fondo)"><label>Buscar paciente en Cotizaciones (${h(tablaCot())})</label><input id="cotq" placeholder="Nombre o expediente" oninput="buscarCot(this.value)"><div id="cotres"></div>${F.cotizacion_id?`<div class="pill p-verde" style="margin-top:8px">Vinculada a cotización ${h(F.cotizacion_id)}</div>`:''}</div>`:''}
   <div class="sec-t">Paciente</div>
@@ -1116,7 +1118,7 @@ function renderForm(){
   <div class="sw"><input type="checkbox" id="fGL" ${F.gl?'checked':''} onchange="F.gl=this.checked"><label for="fGL" style="margin:0;text-transform:none;font-size:15px;color:var(--ink)">Glaucoma</label></div><div class="muted" style="flex:3">Marca para priorizar el control posoperatorio a largo plazo.</div></div>
   <div class="sec-t">Procedimiento</div>
   <div class="grid3"><div><label>Especialidad</label><select onchange="F.especialidad_id=this.value;renderForm()">${espOpt}</select></div>
-  <div><label>Procedimiento</label><input value="${h(F.procedimiento)}" oninput="F.procedimiento=this.value"></div>
+  <div><label>Procedimiento</label><input value="${h(F.procedimiento)}" list="dlProcQX" placeholder="Del catálogo o escrito libre" oninput="F.procedimiento=this.value"><datalist id="dlProcQX">${[...new Set([...S.precios.filter(x=>x.activo&&(x.categoria==='cirugia'||x.categoria==='laser')).map(x=>x.nombre),...S.paq.filter(x=>x.activo).map(x=>x.procedimiento||x.nombre)].filter(Boolean))].map(x=>`<option value="${h(x)}">`).join('')}</datalist></div>
   <div><label>Ojo / lado</label><select onchange="F.ojo=this.value">${['','OD','OI','AO','Derecho','Izquierdo','Bilateral','N/A'].map(o=>`<option ${o===F.ojo?'selected':''}>${o}</option>`).join('')}</select></div>
   <div><label>Cirujano</label><input value="${h(F.cirujano)}" oninput="F.cirujano=this.value"></div>
   <div><label>Anestesia</label><select onchange="F.anestesia=this.value">${['','Tópica','Local','Retrobulbar','Peribulbar','Sedación','General'].map(o=>`<option ${o===F.anestesia?'selected':''}>${o}</option>`).join('')}</select></div></div>
@@ -1129,7 +1131,12 @@ function renderForm(){
   <div class="sec-t">Paquete quirúrgico</div>
   <div class="row"><select onchange="cargarPaquete(this.value)"><option value="">— Desde cero —</option>${paqOpt}</select></div>
   <div id="itemsF">${renderItemsF()}</div>
-  <div class="row" style="margin-top:8px"><select id="addMat"><option value="">＋ Agregar material…</option>${matsQX().map(m=>`<option value="${m.id}">${h(m.nombre)} (${fmtN(stockMat(m.id,ubicIdsSede()))} ${h(m.unidad)})</option>`).join('')}</select><button class="btn sec" style="flex:0 0 auto" onclick="addItemF(true)">Agregar extra</button></div>
+  <div class="row" style="margin-top:8px"><input id="addMat" list="dlMatF" placeholder="＋ Agregar material del inventario de quirófano (escribe para buscar)"><datalist id="dlMatF">${matsQX().map(m=>`<option value="${h(m.nombre)}${m.codigo?' · '+h(m.codigo):''}">${fmtN(stockMat(m.id,ubicIdsSede()))} ${h(m.unidad)} en quirófano</option>`).join('')}</datalist><button class="btn sec" style="flex:0 0 auto" onclick="addItemF(true)">Agregar</button></div>
+  <div class="sec-t">Material en consigna para esta cirugía</div>
+  <div class="muted">Lo que trae el proveedor solo para este caso (kit de vitrectomía, lente especial, etc.). Captura lote, caducidad y piezas, y sube la foto de la remisión o de las etiquetas.</div>
+  <div id="consF">${renderConsF()}</div>
+  <div class="row" style="margin-top:6px;gap:8px;flex-wrap:wrap"><button class="btn sec sm" style="flex:0 0 auto" onclick="F.consigna.push({nombre:'',lote:'',caducidad:'',piezas:1,proveedor:''});$('#consF').innerHTML=renderConsF()">＋ Material en consigna</button>
+   <label class="btn sec sm" style="flex:0 0 auto;cursor:pointer">📷 Foto / archivo de la consigna<input type="file" accept="image/*,application/pdf" multiple style="display:none" onchange="F.consFiles.push(...this.files);this.value='';$('#consF').innerHTML=renderConsF()"></label></div>
   <div class="sec-t">Lente intraocular</div>
   <div class="sw"><input type="checkbox" id="rl" ${F.requiere_lio?'checked':''} onchange="F.requiere_lio=this.checked;if(F.requiere_lio&&!F.lio.tipo)F.lio.tipo='Monofocal';renderForm()"><label for="rl" style="margin:0;text-transform:none;font-size:15px;color:var(--ink)">Requiere LIO</label></div>
   ${F.requiere_lio?`<div class="grid3">
@@ -1169,7 +1176,13 @@ function renderItemsF(){
   return `<div class="tblwrap"><table><tr><th>Material</th><th>Cant.</th><th>Existencia</th><th></th></tr>${F.items.map((it,i)=>{const m=matById(it.material_id);const st=stockMat(it.material_id,sedeU),dem=demandaMat(it.material_id,60,F.id);const disp=st-dem;
   return `<tr><td>${h(m?.nombre||'?')} ${it.extra?'<span class="pill p-amar">extra</span>':''}</td><td><input class="qty" type="number" step="any" value="${it.cantidad}" onchange="F.items[${i}].cantidad=num(this.value);$('#itemsF').innerHTML=renderItemsF()"></td><td><span class="pill ${disp-it.cantidad<0?'p-rojo':disp-it.cantidad<=num(m?.stock_minimo)?'p-amar':'p-verde'}">${fmtN(st)} (${fmtN(disp)} libre)</span></td><td><button class="btn sec sm" onclick="F.items.splice(${i},1);$('#itemsF').innerHTML=renderItemsF()">✕</button></td></tr>`}).join('')}</table></div><div class="muted">"Libre" descuenta lo ya apartado por otras cirugías programadas.</div>`
 }
-function addItemF(extra){const v=$('#addMat').value;if(!v)return;const ex=F.items.find(i=>i.material_id===v);if(ex)ex.cantidad+=1;else F.items.push({material_id:v,cantidad:1,extra:!!extra&&!!F.paquete_id});$('#itemsF').innerHTML=renderItemsF();$('#addMat').value=''}
+function renderConsF(){
+  const rows=(F.consigna||[]).map((x,i)=>`<div class="card" style="padding:8px;margin-top:6px"><div class="row" style="gap:6px;align-items:flex-end"><div style="flex:3;min-width:0"><label>Material</label><input value="${h(x.nombre)}" list="dlMatF" oninput="F.consigna[${i}].nombre=this.value"></div><button class="btn sec sm" style="flex:0 0 auto" onclick="F.consigna.splice(${i},1);$('#consF').innerHTML=renderConsF()">✕</button></div>
+   <div class="grid3" style="margin-top:4px"><div><label>Piezas</label><input type="number" min="0" step="any" value="${h(x.piezas)}" oninput="F.consigna[${i}].piezas=num(this.value)"></div><div><label>Lote</label><input value="${h(x.lote)}" oninput="F.consigna[${i}].lote=this.value"></div><div><label>Caducidad</label><input type="date" value="${h(x.caducidad)}" onchange="F.consigna[${i}].caducidad=this.value"></div></div>
+   <label>Proveedor</label><input value="${h(x.proveedor)}" oninput="F.consigna[${i}].proveedor=this.value"></div>`).join('');
+  const docs=[...(F.consigna_docs||[]),...(F.consFiles||[]).map(f=>({nombre:f.name,nuevo:true}))];
+  return (rows||'<div class="muted" style="margin-top:4px">Sin material en consigna.</div>')+(docs.length?`<div style="margin-top:6px">${docs.map((d,i)=>d.url?`<a class="pill" target="_blank" href="${h(d.url)}">📄 ${h(d.nombre||'documento')}</a>`:`<span class="pill">📄 ${h(d.nombre||'archivo')} (se sube al guardar)</span>`).join(' ')}</div>`:'')}
+function addItemF(extra){const raw=$('#addMat').value.trim();if(!raw)return;const mt=matsQX().find(m=>raw===m.nombre+(m.codigo?' · '+m.codigo:''))||matsQX().find(m=>m.codigo&&raw.toUpperCase()===m.codigo.toUpperCase())||matsQX().find(m=>normTxt(m.nombre)===normTxt(raw));if(!mt)return toast('Elige el material de la lista del inventario',true);const v=mt.id;const ex=F.items.find(i=>i.material_id===v);if(ex)ex.cantidad+=1;else F.items.push({material_id:v,cantidad:1,extra:!!extra&&!!F.paquete_id});$('#itemsF').innerHTML=renderItemsF();$('#addMat').value=''}
 function cargarPaquete(pid){
   F.paquete_id=pid;const p=S.paq.find(x=>x.id===pid);F.paquete_nombre=p?.nombre||'';
   const extras=F.items.filter(i=>i.extra);
@@ -1227,7 +1240,7 @@ async function guardarCirugia(){
   let override=null,sinCot=null;
   if(!F.id&&!F.cotizacion_id){
     if(F.origen!=='manual'||!tiene('aprobar'))return toast('Primero llama la cotización del paciente: no se puede programar sin cotización.',true);
-    sinCot=await pedirTexto('Programar sin cotización (urgencia)','Motivo de la urgencia');if(!sinCot)return;
+    sinCot=await pedirTexto('Cirugía abierta (sin cotización)','Motivo: urgencia, procedimiento fuera de catálogo, cortesía…');if(!sinCot)return;
   }
   if(!F.id){
     const min=anticipoMin(F.costo_total),okPago=num(F.pago.monto)>0&&num(F.pago.monto)>=min&&(F.pago.file||F.pago.url);
@@ -1243,9 +1256,10 @@ async function guardarCirugia(){
   if(!await pedirPIN((override?'AUTORIZO programar sin anticipo · ':'Programar cirugía de ')+F.paciente_nombre))return;
   let urlPago=F.pago.url;
   if(!F.id&&F.pago.file){try{toast('Subiendo comprobante…');urlPago=await subirArchivo(F.pago.file,'evidencias/pagos')}catch(e){return dbErr(e,'Subir comprobante')}}
+  if(F.consFiles?.length){try{toast('Subiendo archivos de la consigna…');for(const f of F.consFiles){const u=await subirArchivo(f,'consigna');F.consigna_docs.push({tipo:'doc',nombre:f.name,url:u})}F.consFiles=[]}catch(e){return toast('No se pudo subir el archivo de la consigna',true)}}
   const row={sede_id:S.sede,sala_id:F.sala_id,fecha:F.fecha,hora:F.hora,duracion_min:num(F.duracion_min)||60,especialidad_id:F.especialidad_id||null,procedimiento:F.procedimiento,ojo:F.ojo,cirujano:F.cirujano,anestesia:F.anestesia,
     paciente_nombre:F.paciente_nombre.trim(),expediente:F.expediente,telefono:F.telefono,cotizacion_id:F.cotizacion_id,cotizacion_tabla:F.cotizacion_tabla,paquete_id:F.paquete_id||null,paquete_nombre:F.paquete_nombre||null,
-    lio_unidad_id:F.requiere_lio?F.lio_unidad_id:null,lio_requerido:F.requiere_lio?F.lio:null,notas:F.notas,updated_at:new Date().toISOString(),
+    lio_unidad_id:F.requiere_lio?F.lio_unidad_id:null,lio_requerido:F.requiere_lio?F.lio:null,notas:F.notas,consigna:[...(F.consigna||[]).filter(x=>x.nombre&&num(x.piezas)>0),...(F.consigna_docs||[])],updated_at:new Date().toISOString(),
     lio_respaldo_id:F.requiere_lio&&F.lio_unidad_id?F.lio_respaldo_id:null,riesgo_diabetes:!!F.dm,riesgo_glaucoma:!!F.gl,
     costo_total:num(F.costo_total),fecha_nacimiento:F.fnac||null,alergias:F.alergias||null,anticoagulantes:F.anticoag||null};
   if(F.id&&(row.lio_unidad_id!==F.origLio.u||JSON.stringify(row.lio_requerido)!==F.origLio.r)){row.lio_verificado_por=null;row.lio_verificado_nombre=null;row.lio_verificado_at=null}
@@ -1682,26 +1696,79 @@ function vAlmacenAdm(){
    ${fal.filter(m=>stockAdm(m.id)>0).length?`<div class="card"><h3>Para enviar a quirófano</h3><div class="muted">Están bajo mínimo en quirófano y hay existencia en Administración.</div>${fal.filter(m=>stockAdm(m.id)>0).map(m=>`<div class="list-item"><div class="grow"><b>${h(m.nombre)}</b> ${critPill(m)}<div class="muted">Quirófano ${fmtN(semaforo(m).st)} de ${fmtN(m.stock_minimo)} mín. · Administración ${fmtN(stockAdm(m.id))}</div></div><span class="pill p-azul">enviar ${fmtN(sugeridoEnvio(m))}</span></div>`).join('')}${puede?`<button class="btn sec" style="margin-top:8px" onclick="formEnvio(true)">Preparar envío con lo sugerido</button>`:''}</div>`:''}
    <input placeholder="Buscar material" value="${h(S.sub.admQ||'')}" oninput="S.sub.admQ=this.value;clearTimeout(window._aq);window._aq=setTimeout(()=>{render();const i=document.querySelector('#main input[placeholder=\\'Buscar material\\']');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}},350)" style="margin:6px 0">
    <div class="tblwrap"><table><tr><th>Material</th><th>Lote</th><th>Caducidad</th><th style="text-align:right">Cantidad</th><th style="text-align:right">En quirófano</th></tr>
-   ${mats.filter(m=>!fq||m.nombre.toLowerCase().includes(fq)||(m.codigo||'').toLowerCase().includes(fq)).map(m=>lotes.filter(l=>l.material_id===m.id).sort((x,y)=>(x.caducidad||'9')<(y.caducidad||'9')?-1:1).map((l,i)=>{const d=l.caducidad?diasHasta(l.caducidad):null;return `<tr><td>${i?'':`<b>${h(m.nombre)}</b><div class="muted">${h(m.codigo||'')} · ${h(m.unidad)}</div>`}</td><td>${h(l.lote||'—')}</td><td><span class="pill ${d==null?'':d<0?'k-crit':d<=90?'k-warn':''}">${l.caducidad?fCorta(l.caducidad):'sin fecha'}</span></td><td style="text-align:right"><b>${fmtN(l.cantidad)}</b></td><td style="text-align:right">${i?'':fmtN(semaforo(m).st)}</td></tr>`}).join('')).join('')||'<tr><td colspan="5" class="muted">Sin existencias en Administración. Registra la primera llegada.</td></tr>'}</table></div>`;
+   ${mats.filter(m=>!fq||m.nombre.toLowerCase().includes(fq)||(m.codigo||'').toLowerCase().includes(fq)).map(m=>lotes.filter(l=>l.material_id===m.id).sort((x,y)=>(x.caducidad||'9')<(y.caducidad||'9')?-1:1).map((l,i)=>{const d=l.caducidad?diasHasta(l.caducidad):null;return `<tr><td>${i?'':`<b>${h(m.nombre)}</b><div class="muted">${h(m.codigo||'')} · ${h(m.unidad)}</div>`}</td><td>${h(l.lote||'—')}${l.consignacion?' <span class="pill p-azul">consigna</span>':''}${l.proveedor?`<div class="muted">${h(l.proveedor)}</div>`:''}</td><td><span class="pill ${d==null?'':d<0?'k-crit':d<=90?'k-warn':''}">${l.caducidad?fCorta(l.caducidad):'sin fecha'}</span></td><td style="text-align:right"><b>${fmtN(l.cantidad)}</b></td><td style="text-align:right">${i?'':fmtN(semaforo(m).st)}</td></tr>`}).join('')).join('')||'<tr><td colspan="5" class="muted">Sin existencias en Administración. Registra la primera llegada.</td></tr>'}</table></div>`;
 }
+/* ---- llegada: documento (foto/PDF), lectura automática y captura manual ---- */
+const matEtq=m=>m.nombre+(m.codigo?' · '+m.codigo:'');
+function matDeEtq(v){v=String(v||'').trim();if(!v)return null;const l=matsQX();return l.find(m=>matEtq(m)===v)||l.find(m=>m.codigo&&m.codigo.toUpperCase()===v.toUpperCase())||l.find(m=>normTxt(m.nombre)===normTxt(v))||null}
+function matPorTexto(linea){const t=normTxt(linea).replace(/,/g,'.');const tnums=new Set((t.match(/\d+(?:\.\d+)?/g)||[]));let best=null,bs=0;
+  for(const m of matsQX()){if(m.codigo&&new RegExp('\\b'+normTxt(m.codigo)+'\\b').test(t))return m;
+    const n=normTxt(m.nombre).replace(/,/g,'.');const nnums=(n.match(/\d+(?:\.\d+)?/g)||[]);
+    if(nnums.length&&!nnums.every(x=>tnums.has(x)))continue;
+    const ws=n.split(/[^a-z0-9]+/).filter(w=>w.length>=4&&!/^\d/.test(w)&&!['para','con','sin','esteril','esteriles'].includes(w));if(!ws.length)continue;
+    const uni=nnums.filter(x=>{const u=(n.split(x)[1]||'').trim().split(/[^a-z]+/)[0];return u&&new RegExp('(^|[^0-9.])'+x.replace('.','\\.')+'\\s*'+u).test(t)}).length;
+    const s=ws.filter(w=>t.includes(w)).length/ws.length+(nnums.length?0.2:0)+uni*0.3;if(s>bs){bs=s;best=m}}
+  return bs>=0.6?best:null}
+function analizarRemision(txt){
+  const out=[];const lineas=String(txt||'').split(/\n+/).map(x=>x.trim()).filter(x=>x.length>3);
+  lineas.forEach((ln,i)=>{const m=matPorTexto(ln);if(!m)return;const ctx=/(lote|lot|cad|exp|20\d\d|\d{1,2}[\/\-.]\d{2,4})/i.test(ln)?ln:ln+' '+(lineas[i+1]||'');
+    const lote=(ctx.match(/\b(?:lote|lot|l\.)\s*[:#.]?\s*([A-Z0-9][A-Z0-9\-\/]{2,})/i)||[])[1]||'';
+    let cad='';const f1=ctx.match(/\b(20\d\d)[\/\-.](\d{1,2})(?:[\/\-.](\d{1,2}))?/),f2=ctx.match(/\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](20\d\d|\d\d)\b/),f3=ctx.match(/\b(?:cad|exp|caducidad|vence)[^0-9]{0,6}(\d{1,2})[\/\-.](\d{2,4})\b/i);
+    const fin=(y,mm)=>{y=+y;if(y<100)y+=2000;mm=+mm;if(!(mm>=1&&mm<=12))return '';const d=new Date(y,mm,0).getDate();return `${y}-${pad(mm)}-${pad(d)}`};
+    if(f3)cad=fin(f3[2],f3[1]);else if(f1)cad=f1[3]?`${f1[1]}-${pad(+f1[2])}-${pad(+f1[3])}`:fin(f1[1],f1[2]);else if(f2)cad=fin(f2[3],f2[2]);
+    const nums=(ln.match(/\b\d{1,4}\b/g)||[]).map(Number).filter(n=>n>0&&n<5000);const cant=(ln.match(/^\s*(\d{1,4})\b/)||[])[1]||(ln.match(/(?:cant|cantidad|pzas?|piezas|unid)[^0-9]{0,4}(\d{1,4})/i)||[])[1]||(nums.length===1?nums[0]:'');
+    if(!out.some(o=>o.m.id===m.id&&o.lote===lote))out.push({m,c:cant,lote,cad})});
+  return out}
 function formLlegada(mid){
-  const a=ubicAdm();const rows=[];
-  const m=modal(`${mhead('Llegada al Almacén de Administración')}<div class="muted">Captura cada material con su lote y caducidad. Puedes agregar varios renglones de la misma factura.</div>
-  <label>Pedido de Finanzas (opcional)</label><select id="lP"><option value="">—</option>${S.pedidos.filter(p=>!p.recibido_at).map(p=>`<option value="${p.id}">${h(p.folio)} · ${h((p.descripcion||'').slice(0,50))}</option>`).join('')}</select>
-  <label>Proveedor / factura / nota</label><input id="lN">
+  const a=ubicAdm();const docs=[];
+  const m=modal(`${mhead('Llegada al Almacén de Administración')}<div class="muted">Sube la foto o el PDF de la remisión o factura y revisa lo que se lee, o captura a mano. Cada renglón: material, piezas, lote, caducidad y si viene en consigna.</div>
+  <datalist id="dlMatQX">${matsQX().map(x=>`<option value="${h(matEtq(x))}">`).join('')}</datalist>
+  <div class="card" style="margin-top:8px;padding:10px;display:grid;gap:6px"><b>Documento de la llegada</b>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><label class="btn sec" style="flex:1;text-align:center;cursor:pointer">📷 Foto de la remisión<input type="file" id="lF1" accept="image/*" capture="environment" style="display:none"></label><label class="btn sec" style="flex:1;text-align:center;cursor:pointer">📎 Subir archivo (foto o PDF)<input type="file" id="lF2" accept="image/*,application/pdf" multiple style="display:none"></label></div>
+    <div id="lDocs" class="muted">Sin documento.</div><div id="lOcr"></div></div>
+  <div class="grid2"><div><label>Proveedor</label><input id="lPv" list="dlProv" placeholder="Nombre del proveedor"><datalist id="dlProv">${[...new Set(S.lotes.map(l=>l.proveedor).filter(Boolean))].map(x=>`<option value="${h(x)}">`).join('')}</datalist></div>
+  <div><label>Pedido de Finanzas (opcional)</label><select id="lP"><option value="">—</option>${S.pedidos.filter(p=>!p.recibido_at).map(p=>`<option value="${p.id}">${h(p.folio)} · ${h((p.descripcion||'').slice(0,40))}</option>`).join('')}</select></div></div>
+  <label>Factura / remisión / nota</label><input id="lN">
+  <label class="chk" style="margin-top:8px"><input type="checkbox" id="lCAll"> Todo lo de esta llegada viene <b>en consigna</b></label>
   <div id="lRows"></div><button class="btn sec sm" id="lAdd" style="margin-top:6px">＋ Otro material</button>
   <div class="acts"><button class="btn" id="ok">Registrar llegada con PIN</button></div>`);
-  const add=v=>{const d=document.createElement('div');d.className='card';d.style.cssText='margin-top:8px;padding:10px';d.innerHTML=`${selMat('x',v).replace('id="x"','class="lM"')}<div class="grid3" style="margin-top:6px"><div><label>Cantidad</label><input class="lC" type="number" step="any" inputmode="decimal"></div><div><label>Lote</label><input class="lL"></div><div><label>Caducidad</label><input class="lD" type="date"></div></div>`;m.querySelector('#lRows').appendChild(d)};
-  add(mid);m.querySelector('#lAdd').onclick=()=>add();
+  const add=(v={})=>{const d=document.createElement('div');d.className='card lrow';d.style.cssText='margin-top:8px;padding:10px';
+    d.innerHTML=`<div class="row" style="gap:6px;align-items:flex-end"><div style="flex:3;min-width:0"><label>Material</label><input class="lM" list="dlMatQX" placeholder="Escribe para buscar en el inventario de quirófano" value="${h(v.m?matEtq(v.m):'')}"></div><button type="button" class="btn sec sm lX" style="flex:0 0 auto">✕</button></div>
+     <div class="grid3" style="margin-top:6px"><div><label>Piezas</label><input class="lC" type="number" step="any" inputmode="decimal" value="${h(v.c||'')}"></div><div><label>Lote</label><input class="lL" value="${h(v.lote||'')}"></div><div><label>Caducidad</label><input class="lD" type="date" value="${h(v.cad||'')}"></div></div>
+     <label class="chk" style="margin-top:6px"><input type="checkbox" class="lCo" ${m.querySelector('#lCAll').checked?'checked':''}> En consigna</label>${v.ocr?'<div class="muted" style="margin-top:4px">Leído del documento: revisa antes de guardar.</div>':''}<div class="muted lInfo"></div>`;
+    const inp=d.querySelector('.lM'),info=d.querySelector('.lInfo');const chk=()=>{const mt=matDeEtq(inp.value);info.textContent=inp.value&&!mt?'No está en el catálogo de quirófano: elígelo de la lista.':mt?`${mt.unidad}${num(mt.pzas_presentacion)>1?' · caja de '+mt.pzas_presentacion:''} · en quirófano ${fmtN(semaforo(mt).st)}`:'';info.style.color=inp.value&&!mt?'var(--rojo)':''};
+    inp.onchange=chk;inp.oninput=chk;chk();d.querySelector('.lX').onclick=()=>d.remove();m.querySelector('#lRows').appendChild(d)};
+  if(mid)add({m:matById(mid)});else add();
+  m.querySelector('#lAdd').onclick=()=>add();
+  m.querySelector('#lCAll').onchange=e=>m.querySelectorAll('.lCo').forEach(c=>c.checked=e.target.checked);
+  const pintaDocs=()=>{m.querySelector('#lDocs').innerHTML=docs.length?docs.map((f,i)=>`<span class="pill">${/pdf/i.test(f.type)?'PDF':'Foto'} ${h(f.name||'documento')} <a style="cursor:pointer" data-q="${i}">✕</a></span>`).join(' ')+` <button type="button" class="btn sm" id="lLeer">Leer y sugerir materiales</button>`:'Sin documento.';
+    m.querySelectorAll('[data-q]').forEach(x=>x.onclick=()=>{docs.splice(+x.dataset.q,1);pintaDocs()});
+    const lb=m.querySelector('#lLeer');if(lb)lb.onclick=leer};
+  const leer=async()=>{const st=m.querySelector('#lOcr');st.innerHTML='<div class="lect"><span class="spin"></span> Leyendo el documento… (puede tardar unos segundos)</div>';
+    try{let txt='';for(const f of docs){const w=await ocrWorker(),img=await imagenComprobante(f);const {data}=await w.recognize(img);txt+='\n'+data.text}
+      const sug=analizarRemision(txt);
+      if(!sug.length){st.innerHTML='<div class="lect warn">No reconocí materiales del catálogo en el documento. Captúralos a mano abajo; el documento queda guardado como evidencia.</div>';return}
+      [...m.querySelectorAll('.lrow')].forEach(r=>{if(!r.querySelector('.lM').value)r.remove()});
+      sug.forEach(s=>add({...s,ocr:true}));
+      const pv=(txt.match(/(?:proveedor|raz[oó]n social|emisor)\s*[:.]?\s*([^\n]{4,60})/i)||[])[1];if(pv&&!m.querySelector('#lPv').value)m.querySelector('#lPv').value=pv.trim();
+      st.innerHTML=`<div class="lect ok">Se sugirieron ${sug.length} renglón(es). Revisa piezas, lote y caducidad contra el documento antes de guardar.</div>`}
+    catch(e){st.innerHTML=`<div class="lect warn">No se pudo leer automáticamente (${h(e.message||'sin conexión')}). Captura a mano; el documento sí se guarda.</div>`}};
+  ['#lF1','#lF2'].forEach(s=>m.querySelector(s).onchange=e=>{docs.push(...e.target.files);e.target.value='';pintaDocs()});
   m.querySelector('#ok').onclick=async()=>{
-    const its=[...m.querySelectorAll('#lRows .card')].map(d=>({mid:d.querySelector('.lM').value,c:num(d.querySelector('.lC').value),lote:d.querySelector('.lL').value.trim(),cad:d.querySelector('.lD').value})).filter(x=>x.mid&&x.c>0);
-    if(!its.length)return toast('Captura al menos un material con cantidad',true);
-    for(const x of its){const mt=matById(x.mid);if(mt.controla_caducidad&&!x.cad&&!await confirmar(`${h(mt.nombre)} controla caducidad y no tiene fecha. ¿Continuar?`))return}
-    if(!await pedirPIN('Llegada de '+its.length+' material(es) a Administración'))return;
-    try{const ped=m.querySelector('#lP').value,nota=[m.querySelector('#lN').value,ped?'Pedido '+(S.pedidos.find(p=>p.id===ped)?.folio):''].filter(Boolean).join(' · ');
-      for(const x of its)await ingresar(x.mid,a.id,x.lote,x.cad,x.c,{nota:'Llegada a Administración'+(nota?' · '+nota:'')});
+    const filas=[...m.querySelectorAll('.lrow')].map(d=>({mt:matDeEtq(d.querySelector('.lM').value),txt:d.querySelector('.lM').value.trim(),c:num(d.querySelector('.lC').value),lote:d.querySelector('.lL').value.trim(),cad:d.querySelector('.lD').value,co:d.querySelector('.lCo').checked})).filter(x=>x.txt||x.c);
+    const malos=filas.filter(x=>!x.mt);if(malos.length)return toast('Elige de la lista el material: '+malos[0].txt,true);
+    const its=filas.filter(x=>x.c>0);if(!its.length)return toast('Captura al menos un material con piezas',true);
+    if(its.length!==filas.length)return toast('Hay renglones sin número de piezas',true);
+    const sinLote=its.filter(x=>x.mt.controla_caducidad&&(!x.cad||!x.lote));
+    if(sinLote.length&&!await confirmar(`Falta lote o caducidad en: ${sinLote.map(x=>h(x.mt.nombre)).join(', ')}. ¿Guardar así?`))return;
+    if(!docs.length&&!await confirmar('No subiste foto ni PDF de la remisión o factura. ¿Registrar sin documento?'))return;
+    if(!await pedirPIN('Llegada de '+its.length+' material(es) a Administración'+(its.some(x=>x.co)?' (con consigna)':'')))return;
+    try{toast('Guardando…');const urls=[];for(const f of docs)urls.push(await subirArchivo(f,'llegadas'));
+      const ped=m.querySelector('#lP').value,pv=m.querySelector('#lPv').value.trim();
+      const nota=[m.querySelector('#lN').value,pv?'Proveedor '+pv:'',ped?'Pedido '+(S.pedidos.find(p=>p.id===ped)?.folio):''].filter(Boolean).join(' · ');
+      for(const x of its)await ingresar(x.mt.id,a.id,x.lote,x.cad,x.c,{nota:'Llegada a Administración'+(x.co?' · EN CONSIGNA':'')+(nota?' · '+nota:''),doc:urls[0]||null,consig:x.co,proveedor:pv||null});
       if(ped)await sb.from('fin_pedidos').update({recibido_at:new Date().toISOString(),notas:(S.pedidos.find(p=>p.id===ped)?.notas||'')+'\nRecibido en Administración por '+S.user.nombre}).eq('id',ped);
-      await logA('llegada_admin','qx_lotes',null,{items:its.length});m.remove();toast('Llegada registrada');await loadAll();S.sub.inv='adm';render()}catch(e){}
+      await logA('llegada_admin','qx_lotes',null,{items:its.length,documentos:urls,consigna:its.filter(x=>x.co).length});m.remove();toast('Llegada registrada');await loadAll();S.sub.inv='adm';render()}catch(e){}
   };
 }
 function firmaRecibe(titulo){
@@ -1731,7 +1798,7 @@ function formEnvio(sugerido){
         for(const l of ls){if(resto<=0)break;const t=Math.min(resto,num(l.cantidad));
           await q(sb.from('qx_lotes').update({cantidad:num(l.cantidad)-t,updated_at:new Date().toISOString()}).eq('id',l.id));l.cantidad=num(l.cantidad)-t;
           await q(sb.from('qx_movimientos').insert({tipo:'traspaso_sal',material_id:x.mid,lote_id:l.id,ubicacion_id:a.id,cantidad:-t,usuario_id:S.user.id,usuario_nombre:S.user.nombre,envio:fol,nota:fol+' · a '+ubicById(d).nombre+' · recibe '+rec.nombre}));
-          const nl=await ingresar(x.mid,d,l.lote,l.caducidad,t,{tipo:'traspaso_ent',nota:fol+' · de Administración · entrega '+S.user.nombre+' · recibe '+rec.nombre});
+          const nl=await ingresar(x.mid,d,l.lote,l.caducidad,t,{consig:!!l.consignacion,proveedor:l.proveedor||null,tipo:'traspaso_ent',nota:fol+' · de Administración · entrega '+S.user.nombre+' · recibe '+rec.nombre});
           det.push({m:matById(x.mid),lote:l.lote,cad:l.caducidad,c:t});resto-=t}}
       await logA('envio_quirofano','qx_movimientos',fol,{destino:ubicById(d).nombre,recibe:rec.nombre,partidas:det.length});
       m.remove();toast('Envío '+fol+' registrado');await loadAll();render();valeEnvio(fol,d,rec,det)}catch(e){}
