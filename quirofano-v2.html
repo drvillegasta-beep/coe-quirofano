@@ -335,7 +335,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.15';
+const VERSION='3.16';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -372,11 +372,11 @@ const S={user:null,sede:null,tab:'inicio',calMes:hoyISO().slice(0,7),escal:[],su
   sedes:[],ubic:[],esp:[],mat:[],lotes:[],lios:[],paq:[],paqItems:[],cx:[],cxItems:[],tanques:[],lect:[],conteos:[],evid:[],msj:[],precios:[],cots:[],config:{},prov:[],pedidos:[],usuarios:[],carroRev:[]};
 const ROLES={director:'Dirección General',direccion:'Dirección',enfermeria:'Enfermería quirófano',contabilidad:'Contabilidad / Administración',consultorio:'Consultorio (asistentes y médicos)'};
 const MODULOS=[['inicio','Inicio (tablero)'],['agenda','Agenda quirúrgica'],['cotizar','Cotizar'],['campana','Campaña (cuando hay una activa)'],['inventario','Inventario de quirófano'],['carro','Carro rojo'],['lio','Stock de LIO'],['alertas','Alertas y pedidos'],['tanques','Tanques'],['mas','Reportes, catálogo y paquetes']];
-const PERMISOS=[['cotizar','Elaborar cotizaciones'],['programar','Programar cirugías y capturar pagos'],['validar','Validar pagos (Contabilidad)'],['inventario','Entradas, salidas y conteos'],['aprobar','Aprobar conteos y autorizar excepciones'],['descuento','Autorizar descuentos mayores al máximo'],['precios','Precios y vigencias'],['catalogo','Catálogo de materiales y paquetes'],['pedir','Pedidos a COE Finanzas'],['almacen','Almacén de Administración: llegadas y envíos a quirófano'],['usuarios','Usuarios y accesos'],['config','Configuración']];
+const PERMISOS=[['cotizar','Elaborar cotizaciones'],['programar','Programar cirugías y capturar pagos'],['validar','Validar pagos (Contabilidad)'],['inventario','Entradas, salidas y conteos'],['aprobar','Aprobar conteos y autorizar excepciones'],['descuento','Autorizar descuentos mayores al máximo'],['precios','Precios y vigencias'],['catalogo','Catálogo de materiales y paquetes'],['pedir','Pedidos a COE Finanzas'],['almacen','Almacén de Administración: llegadas y envíos a quirófano'],['editar_cot','Editar y rehabilitar cotizaciones (con PIN)'],['usuarios','Usuarios y accesos'],['config','Configuración']];
 const TODOS_MOD=MODULOS.map(x=>x[0]);
 const ROL_DEF={
   director:{m:TODOS_MOD,p:PERMISOS.map(x=>x[0])},
-  direccion:{m:TODOS_MOD,p:['cotizar','programar','inventario','aprobar','descuento','precios','catalogo','pedir','almacen']},
+  direccion:{m:TODOS_MOD,p:['cotizar','programar','inventario','aprobar','descuento','precios','catalogo','pedir','almacen','editar_cot']},
   enfermeria:{m:TODOS_MOD,p:['cotizar','programar','inventario','pedir']},
   contabilidad:{m:TODOS_MOD.filter(k=>k!=='carro'),p:['validar','pedir','almacen']},
   consultorio:{m:['agenda','cotizar','campana','mas'],p:['cotizar']}};
@@ -3074,7 +3074,7 @@ function vCotizar(){
   if(!Q)Q=nuevaQ();
   if(!catTabs().some(t=>t[0]===Q.cat))Q.cat=(catTabs()[0]||['estudio'])[0];
   const meds=String(cfg('medicos','Dr. José Antonio Villegas Ávila,Dra. Mónica Rivera Bustos')).split(',').map(x=>x.trim()).filter(Boolean);
-  $('#main').innerHTML=st.html+`<div class="cotgrid">
+  $('#main').innerHTML=st.html+`${Q.editId?`<div class="banner amar" style="display:flex;gap:10px;align-items:center"><div style="flex:1">Editando la cotización <b>${h(Q.editFolio)}</b>. Al guardar se actualiza la misma cotización (mismo folio) y pide tu PIN.</div><button class="btn sec sm" onclick="Q=nuevaQ();vCotizar()">Cancelar edición</button></div>`:''}<div class="cotgrid">
   <div>
    <div class="card"><h3>Paciente</h3>
     <div class="grid2"><div style="grid-column:1/-1"><label for="qN">Nombre completo</label><input id="qN" value="${h(Q.paciente_nombre)}" autocomplete="off" oninput="Q.paciente_nombre=this.value;sugPac(this.value)" placeholder="Escribe para buscar pacientes anteriores"><div id="qSug"></div></div>
@@ -3257,9 +3257,18 @@ async function guardarCot(){
   if(!Q.motivo.trim())return toast('Escribe el motivo del estudio o diagnóstico',true);
   if(Q.items.some(i=>i.categoria==='cirugia')&&!Q.anestesia)return toast('Indica si lleva anestesia',true);
   if(!Q.items.length)return toast('Agrega al menos un concepto',true);
-  if(Q.vigencia&&Q.vigencia<hoyISO())return toast('La fecha de validez ya pasó',true);
+  if(Q.vigencia&&Q.vigencia<hoyISO())return toast('La fecha de validez ya pasó: pon una nueva fecha',true);
   if(r.descuento>0&&!Q.desc_motivo.trim())return toast('Escribe el motivo del descuento',true);
   let autor=null;
+  if(Q.editId){if(!tiene('editar_cot'))return toast('No tienes permiso para editar cotizaciones',true);
+    if(!await pedirPIN('Guardar cambios a '+Q.editFolio+' · '+Q.paciente_nombre))return;
+    const upd={paciente_nombre:Q.paciente_nombre.trim(),expediente:Q.expediente||null,telefono1:t1,telefono2:t2||null,motivo:Q.motivo.trim(),anestesia:Q.anestesia||null,medico:Q.medico||null,
+      items:Q.items,subtotal:r.subtotal,descuento:r.descuento,descuento_motivo:r.descuento?Q.desc_motivo:null,descuento_autorizado_por:r.descuento?S.user.nombre:null,total:r.total,anticipo:Q.anticipo!=null?num(Q.anticipo):r.anticipo,
+      vigencia_hasta:Q.vigencia||r.vigencia,estado:Q.editEstado==='cancelada'||Q.editEstado==='realizada'?Q.editEstado:Q.editEstado||'vigente',notas:Q.notas||null,updated_at:new Date().toISOString()};
+    try{const c=(await q(sb.from('qx_cotizaciones').update(upd).eq('id',Q.editId).select(),'Guardar cambios'))[0];
+      await logA('editar_cotizacion','qx_cotizaciones',Q.editId,{folio:Q.editFolio,total_antes:Q.editTotal,total:r.total,por:S.user.nombre});
+      Q=nuevaQ();toast('Cotización '+c.folio+' actualizada');hojaCot(c)}catch(e){}
+    return}
   if(!await pedirPIN((r.descuento?'Descuento '+money(r.descuento)+' · ':'')+'Guardar cotización de '+Q.paciente_nombre))return;
   if(r.descuento>0&&!autor)autor=S.user.nombre;
   const row={folio:'COT-'+folio('').slice(1),token:randTok(),sede_id:S.sede,paciente_nombre:Q.paciente_nombre.trim(),expediente:Q.expediente||null,telefono1:t1,telefono2:t2||null,motivo:Q.motivo.trim(),anestesia:Q.anestesia||null,medico:Q.medico||null,
@@ -3310,6 +3319,7 @@ async function hojaCot(c){
   const extra=`<a class="btn sec" target="_blank" href="https://wa.me/${waNum(c.telefono1)}?text=${encodeURIComponent('Hola '+c.paciente_nombre+', le compartimos su cotización '+c.folio+' del Centro Ocular Especializado, vigente hasta el '+fFecha(c.vigencia_hasta)+'. Puede consultarla aquí: '+linkCot(c))}">Enviar por WhatsApp</a>
    ${est==='vigente'&&(c.items||[]).some(i=>i.categoria==='cirugia')&&can.programar()?`<button class="btn sec" onclick="programarDesdeCot('${c.id}')">Programar cirugía</button>`:''}
    ${est==='vencida'?`<button class="btn sec" onclick="renovarCot('${c.id}')">Renovar con precios actuales</button>`:''}
+   ${tiene('editar_cot')?`<button class="btn sec" onclick="editarCot('${c.id}')">Editar</button><button class="btn sec" onclick="rehabilitarCot('${c.id}')">Rehabilitar / cambiar estado</button>`:''}
    ${(c.items||[]).some(i=>i.categoria==='cirugia'||i.categoria==='laser')?`<button class="btn sec" onclick="consentimientoCot('${c.id}')">Consentimiento informado</button>`:''}
     ${campActiva()&&est!=='vencida'&&(c.items||[]).some(i=>i.categoria==='cirugia')&&(can.cotizar()||can.programar())?`<button class="btn" onclick="enviarCampana('${c.id}')">Enviar a campaña</button>`:''}`;
   printWin(inner,extra);
@@ -3371,11 +3381,37 @@ async function cargarCotLista(){
    <div class="muted">${(c.items||[]).map(it=>h(it.nombre)+(it.lateralidad!=='sin_lado'?' '+ojosTxt(it):'')).join(' · ')}</div><div class="muted">${fCorta(c.created_at)} · ${h(c.elaboro||'')} · Tel. ${h(c.telefono1||'')}${c.telefono2?' / '+h(c.telefono2):''}${c.anestesia?' · '+h(anestTxt(c.anestesia)):''}${pagadoCot(c)?' · pagado '+money(pagadoCot(c)):''}</div></div>
    <div style="text-align:right;flex:0 0 auto"><b>${bilQ(c)?money(porOjoQ(c))+'</b> <span class="muted">por ojo</span><b>':money(c.total)}</b><div><span class="pill ${EST_COT[e][0]}">${EST_COT[e][1]}${e==='vigente'?' · '+d+' d':''}</span></div>${num(c.descuento)?`<div class="muted">desc. ${money(c.descuento)}</div>`:''}</div></div></div>`}).join('')||'<div class="card empty">Sin cotizaciones en esta vista</div>'}`;
 }
+/* editar una cotización existente (mismo folio) */
+function editarCot(id){
+  const c=(S.cots||[]).find(x=>x.id===id);if(!c)return;if(!tiene('editar_cot'))return toast('No tienes permiso para editar cotizaciones',true);
+  Q=nuevaQ();Object.assign(Q,{editId:c.id,editFolio:c.folio,editTotal:num(c.total),editEstado:c.estado,paciente_nombre:c.paciente_nombre||'',expediente:c.expediente||'',telefono1:c.telefono1||'',telefono2:c.telefono2||'',motivo:c.motivo||'',
+    medico:c.medico||'',anestesia:c.anestesia||'',notas:c.notas||'',anticipo:num(c.anticipo)||null,vigencia:c.vigencia_hasta>=hoyISO()?c.vigencia_hasta:addDays(hoyISO(),num(cfg('vig_cirugia',30))),
+    items:JSON.parse(JSON.stringify(c.items||[])).map(it=>it.precio_id?it:{...it,manual:true}),desc_tipo:num(c.descuento)?'monto':'pct',desc_val:num(c.descuento)?String(num(c.descuento)):'',desc_motivo:c.descuento_motivo||''});
+  document.querySelectorAll('.modal').forEach(m=>m.remove());S.tab='cotizar';S.sub.cot='nueva';render();
+  toast('Edita y guarda: se pedirá tu PIN')}
+/* rehabilitar / cambiar estado y vigencia, firmado con PIN */
+function rehabilitarCot(id){
+  const c=(S.cots||[]).find(x=>x.id===id);if(!c)return;if(!tiene('editar_cot'))return toast('No tienes permiso',true);
+  const e=estadoCot(c);
+  const m=modal(`${mhead('Rehabilitar o cambiar estado · '+h(c.folio))}<div class="muted">${h(c.paciente_nombre)} · estado actual: <b>${EST_COT[e][1]}</b>${c.vigencia_hasta?' · válida hasta '+fCorta(c.vigencia_hasta):''}</div>
+   <label>Nuevo estado</label><select id="rcE">${[['vigente','Vigente (rehabilitar)'],['programada','Programada'],['realizada','Realizada'],['cancelada','Cancelada']].map(([k,t])=>`<option value="${k}" ${k===(e==='vencida'?'vigente':c.estado)?'selected':''}>${t}</option>`).join('')}</select>
+   <label>Válida hasta</label><input id="rcV" type="date" value="${c.vigencia_hasta&&c.vigencia_hasta>=hoyISO()?c.vigencia_hasta:addDays(hoyISO(),num(cfg('vig_cirugia',30)))}">
+   <label>Motivo del cambio</label><input id="rcM" placeholder="p. ej. el paciente regresó y se respeta el precio">
+   <div class="muted" style="margin-top:6px">Se respetan los precios de la cotización original. Para actualizar precios usa “Renovar con precios actuales” o “Editar”.</div>
+   <div class="acts"><button class="btn" id="ok">Guardar con PIN</button></div>`,'sm');
+  m.querySelector('#ok').onclick=async()=>{const es=m.querySelector('#rcE').value,vi=m.querySelector('#rcV').value,mo=m.querySelector('#rcM').value.trim();
+    if(!mo)return toast('Escribe el motivo',true);if(es==='vigente'&&(!vi||vi<hoyISO()))return toast('La nueva vigencia debe ser hoy o después',true);
+    if(!await pedirPIN(`${c.folio}: ${EST_COT[e][1]} → ${EST_COT[es][1]}`))return;
+    const nota=`[${fCorta(hoyISO())}] ${EST_COT[e][1]} → ${EST_COT[es][1]} por ${S.user.nombre}: ${mo}`;
+    try{const r=(await q(sb.from('qx_cotizaciones').update({estado:es,vigencia_hasta:vi||c.vigencia_hasta,notas:[c.notas,nota].filter(Boolean).join('\n'),updated_at:new Date().toISOString()}).eq('id',c.id).select(),'Rehabilitar'))[0];
+      await logA('rehabilitar_cotizacion','qx_cotizaciones',c.id,{folio:c.folio,de:e,a:es,vigencia:vi,motivo:mo});
+      Object.assign(c,r);m.remove();document.querySelectorAll('.modal').forEach(x=>x.remove());toast('Cotización '+c.folio+' actualizada');if($('#cotLista'))cargarCotLista();else render()}catch(err){}};
+}
 async function renovarCot(id){
   const c=S.cots.find(x=>x.id===id);
   Q=nuevaQ();Object.assign(Q,{paciente_nombre:c.paciente_nombre,expediente:c.expediente||'',telefono1:c.telefono1||'',telefono2:c.telefono2||'',motivo:c.motivo||'',medico:c.medico||''});
   const faltan=[];
-  Q.items=(c.items||[]).map(it=>{const p=pById(it.precio_id);if(!precioOk(p)){faltan.push(it.nombre);return null}
+  Q.items=(c.items||[]).map(it=>{if(!it.precio_id)return {...it,manual:true};const p=pById(it.precio_id);if(!precioOk(p)){faltan.push(it.nombre);return null}
     const n={...it,precio:num(p.precio),precio_bilateral:num(p.precio_bilateral)||null,permite_descuento:!!p.permite_descuento,desc_max_pct:num(p.desc_max_pct),incluye:p.incluye||'',vigente_hasta:p.vigente_hasta};
     (n.ojos||[]).forEach(o=>{if(n.lio?.[o]){const lp=pById(n.lio[o].precio_id);if(precioOk(lp))n.lio[o]={...n.lio[o],precio:num(lp.precio)}}});return n}).filter(Boolean);
   document.querySelectorAll('.modal').forEach(m=>m.remove());
