@@ -237,6 +237,7 @@ input.inl{width:72px;display:inline-block;padding:3px 6px;min-height:0;margin:0 
 .pq-3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.pq-3>div{border:1px solid #999;padding:6px;font-size:10.5px;line-height:1.5}.pq-3 h4{margin:0 0 4px}.pq-3 small{font-weight:400}
 .vit td,.vit th{height:18px;text-align:center;font-size:10px;padding:1px}.vit td:first-child{text-align:left;white-space:nowrap}
 .offbar{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:98;padding:10px 16px;font-size:14px;line-height:1.4;box-shadow:0 -2px 12px rgba(0,0,0,.12)}.offbar.off{background:#FEF3C7;color:#5c4400}.offbar.ok{background:#DCFCE7;color:#14532d}.offbar.err{background:#FEE2E2;color:#7f1d1d}.offbar details{display:inline}.offbar summary{cursor:pointer;text-decoration:underline;display:inline}.offbar button{border:0;border-radius:8px;padding:4px 10px;font-weight:700;cursor:pointer;margin-left:6px}@media print{.offbar{display:none}}
+.cptel{display:inline-block;margin-left:6px;font-weight:700;font-size:15px;color:var(--pr);text-decoration:none;white-space:nowrap}.cptel:hover{text-decoration:underline}
 .clas tr.clG td{background:var(--pr2);position:sticky;top:0;z-index:1;font-size:14px}.clas td,.clas th{padding:6px 6px;vertical-align:middle}.clas input[type=radio],.clas input[type=checkbox]{width:20px;height:20px;min-height:0}
 .pq-cons p{margin:3px 0;line-height:1.32;font-size:10.5px}.pq-cons .pq-fi{margin-top:14px}.pq-big{font-size:15px}.pq-big ul{line-height:1.6}
 nav .badge{background:var(--card3)!important;color:var(--ink);border:1px solid var(--linea)}
@@ -337,7 +338,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.22';
+const VERSION='3.23';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -528,6 +529,7 @@ async function loadAll(){
   S.cotsDash=(tiene('aprobar')||S.user?.rol==='director')?await sb.from('qx_cotizaciones').select('id,folio,paciente_nombre,telefono1,created_at,total,estado,vigencia_hasta,cirugia_ids,items,sede_id').gte('created_at',addDays(hoyISO(),-75)+'T00:00:00').order('created_at',{ascending:false}).limit(600).then(r=>r.data||[]):[];
   S.camps=await sb.from('qx_campanas').select('*').order('created_at',{ascending:false}).then(r=>r.data||[]);
   S.campPac=S.camps.some(c=>c.activa)?await sb.from('qx_campana_pacientes').select('*').in('campana_id',S.camps.map(c=>c.id)).order('created_at').then(r=>r.data||[]):[];
+  {const ids=[...new Set((S.campPac||[]).map(x=>x.cotizacion_id).filter(Boolean))];S.campTel={};if(ids.length)(await sb.from('qx_cotizaciones').select('id,telefono1,telefono2').in('id',ids).then(r=>r.data||[])).forEach(c=>S.campTel[c.id]=c)}
   S.carroRev=await sb.from('qx_carro_revisiones').select('*').order('created_at',{ascending:false}).limit(60).then(r=>r.data||[]);
   try{if(!OFF.on)await syncMensajes();await cargarMensajes()}catch(e){console.error('mensajes',e)}
   S.pedidos=await sb.from('fin_pedidos').select('id,folio,area,sede,descripcion,partidas,urgente,estado,solicitado_at,autorizado_at,enviado_at,recibido_at,notas,created_at').eq('area','Quirófano').order('created_at',{ascending:false}).limit(80).then(r=>r.data||[]);
@@ -2510,6 +2512,7 @@ function pagoCamp(p){const cs=(p.comprobantes||[]).filter(x=>!x.rechazado_por),p
   const liq=cs.some(x=>x.tipo==='liquidacion')||(tot>0&&pag>=tot-0.5);
   return {pag,tot,saldo:Math.max(0,tot-pag),liq,est:liq?'Liquidado':pag>0?'Anticipo':'Sin pago',cls:liq?'p-verde':pag>0?'p-amar':''}}
 const lioCamp=p=>[p.lio_tipo,p.lio_poder?fmtN(num(p.lio_poder))+' D':''].filter(Boolean).join(' ');
+function telsCamp(p){const c=(S.campTel||{})[p.cotizacion_id]||{};const out=[];[p.telefono,c.telefono1,c.telefono2].forEach(t=>{const d=String(t||'').replace(/\D/g,'');if(d.length>=7&&!out.some(x=>String(x).replace(/\D/g,'')===d))out.push(t)});return out}
 function vCampana(){
   const c=campActiva();
   if(!c){$('#main').innerHTML=`<div class="card empty">No hay campaña activa.${can.config()?' Actívala en Más → Campañas.':''}</div>`;return}
@@ -2529,8 +2532,8 @@ function vCampana(){
   const grupos=[...dias.map(d=>({k:d.fecha,t:fFecha(d.fecha),cupo:num(d.cupo)})),{k:'',t:'Sin día asignado',cupo:0}];
   html+=grupos.map(g=>{const l=pp.filter(x=>(x.p.dia||'')===g.k&&(!qq||(x.p.paciente_nombre||'').toLowerCase().includes(qq)));if(!l.length&&g.k==='')return '';
     return `<div class="card"><div class="ph3"><h3>${h(g.t)}</h3><span class="muted">${l.length}${g.cupo?' / '+g.cupo+' cupo':''} ojos · ${l.filter(x=>x.liq).length} liquidados</span></div>
-    ${l.map(({p,est,cls,pag,saldo,tot})=>`<div class="cprow"><div class="grow"><b>${h(p.paciente_nombre)}</b> <span class="pill p-azul">${h(p.ojo||'')}</span> <span class="pill ${cls}">${est}${!['Liquidado'].includes(est)&&tot?' · saldo '+money(saldo):''}</span>
-      <div class="muted">${h(p.procedimiento||'')}${lioCamp(p)?' · LIO <b style="color:var(--ink)">'+h(lioCamp(p))+'</b> '+(st[p.id]?'<span class="pill p-verde">en stock</span>':st[p.id]===null?'<span class="pill p-amar">por pedir</span>':''):''}${p.telefono?' · '+h(fmtTel(p.telefono)):''}</div>
+    ${l.map(({p,est,cls,pag,saldo,tot})=>`<div class="cprow"><div class="grow"><b>${h(p.paciente_nombre)}</b> <span class="pill p-azul">${h(p.ojo||'')}</span>${telsCamp(p).map(t=>` <a class="cptel" href="tel:${h(String(t).replace(/\D/g,''))}" onclick="event.stopPropagation()">📞 ${h(fmtTel(t))}</a>`).join('')} <span class="pill ${cls}">${est}${!['Liquidado'].includes(est)&&tot?' · saldo '+money(saldo):''}</span>
+      <div class="muted">${h(p.procedimiento||'')}${lioCamp(p)?' · LIO <b style="color:var(--ink)">'+h(lioCamp(p))+'</b> '+(st[p.id]?'<span class="pill p-verde">en stock</span>':st[p.id]===null?'<span class="pill p-amar">por pedir</span>':''):''}</div>
       ${(p.comprobantes||[]).length?`<div class="row" style="gap:6px;margin-top:4px;flex-wrap:wrap">${p.comprobantes.map(x=>`<a href="${h(x.url)}" target="_blank" class="pill">${x.tipo==='liquidacion'?'Liquidación':'Anticipo'} ${money(x.monto)}</a>${x.lectura?lectPill(x.lectura):''}`).join('')}</div>`:''}
       ${p.notas?`<div class="muted" style="margin-top:2px">📝 ${h(p.notas)}</div>`:''}</div>
       <div class="cpbtn">${p.telefono?`<a class="btn sm sec" target="_blank" href="https://wa.me/${waNum(p.telefono)}?text=${encodeURIComponent('Hola '+p.paciente_nombre+', le escribimos del Centro Ocular Especializado sobre su cirugía de la '+c.nombre+(p.dia?' programada el '+fFecha(p.dia):'')+'.')}">WhatsApp</a>`:''}
