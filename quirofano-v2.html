@@ -237,7 +237,7 @@ input.inl{width:72px;display:inline-block;padding:3px 6px;min-height:0;margin:0 
 .pq-3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.pq-3>div{border:1px solid #999;padding:6px;font-size:10.5px;line-height:1.5}.pq-3 h4{margin:0 0 4px}.pq-3 small{font-weight:400}
 .vit td,.vit th{height:18px;text-align:center;font-size:10px;padding:1px}.vit td:first-child{text-align:left;white-space:nowrap}
 .offbar{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:98;padding:10px 16px;font-size:14px;line-height:1.4;box-shadow:0 -2px 12px rgba(0,0,0,.12)}.offbar.off{background:#FEF3C7;color:#5c4400}.offbar.ok{background:#DCFCE7;color:#14532d}.offbar.err{background:#FEE2E2;color:#7f1d1d}.offbar details{display:inline}.offbar summary{cursor:pointer;text-decoration:underline;display:inline}.offbar button{border:0;border-radius:8px;padding:4px 10px;font-weight:700;cursor:pointer;margin-left:6px}@media print{.offbar{display:none}}
-.clas td,.clas th{padding:6px 6px;vertical-align:middle}.clas input[type=radio],.clas input[type=checkbox]{width:20px;height:20px;min-height:0}
+.clas tr.clG td{background:var(--pr2);position:sticky;top:0;z-index:1;font-size:14px}.clas td,.clas th{padding:6px 6px;vertical-align:middle}.clas input[type=radio],.clas input[type=checkbox]{width:20px;height:20px;min-height:0}
 .pq-cons p{margin:3px 0;line-height:1.32;font-size:10.5px}.pq-cons .pq-fi{margin-top:14px}.pq-big{font-size:15px}.pq-big ul{line-height:1.6}
 nav .badge{background:var(--card3)!important;color:var(--ink);border:1px solid var(--linea)}
 .cprow{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--linea)}.cprow:last-child{border-bottom:0}.cpbtn{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex:0 0 auto;max-width:46%}
@@ -337,7 +337,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.21';
+const VERSION='3.22';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -1716,7 +1716,8 @@ function vInventario(){
       <select onchange="S.sub.invU=this.value;render()"><option value="todas">Todas las ubicaciones</option>${ubs.map(u=>`<option value="${u.id}" ${fu===u.id?'selected':''}>${h(u.nombre)}</option>`).join('')}</select></div>
       ${can.inventario()?`<div class="row" style="margin-bottom:12px">${ubicAdm()?`<button class="btn" onclick="S.sub.inv='adm';render()">Llegadas: Almacén Administración</button>${tiene('aprobar')?'<button class="btn sec" onclick="formEntrada()">Entrada directa</button>':''}`:'<button class="btn" onclick="formEntrada()">＋ Entrada</button>'}<button class="btn sec" onclick="formTraspaso()">⇄ Traspaso</button><button class="btn sec" onclick="formMerma()">Merma / caducado</button></div>`:''}`;
     const uSet=fu==='todas'?ubicIdsSede():new Set([fu]);
-    const mats=matsQX().filter(m=>(!fq||m.nombre.toLowerCase().includes(fq)||(m.codigo||'').toLowerCase().includes(fq)||(m.categoria||'').toLowerCase().includes(fq)));
+    const famI=S.sub.invFam||'todas';const mats=matsQX().filter(m=>(famI==='todas'||famMat(m)===famI)&&(!fq||m.nombre.toLowerCase().includes(fq)||(m.codigo||'').toLowerCase().includes(fq)||(m.categoria||'').toLowerCase().includes(fq)));
+    {const c={};matsQX().forEach(x=>{const f=famMat(x);c[f]=(c[f]||0)+1});html+=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">${[['todas','Todas las familias',matsQX().length],...FAMILIAS.filter(([k])=>c[k]).map(([k,t])=>[k,t,c[k]])].map(([k,t,n])=>`<button class="btn sm ${famI===k?'':'sec'}" onclick="S.sub.invFam='${k}';render()">${t} <span style="opacity:.7">${n}</span></button>`).join('')}</div>`}
     html+=`<div class="tabs">${[['todos','Todos'],...CRIT_ORD.map(k=>[k,CRIT[k][0]])].map(([k,t])=>`<button class="${(S.sub.invC||'todos')===k?'on':''}" onclick="S.sub.invC='${k}';render()">${t} ${k==='todos'?'':mats.filter(m=>critOf(m)===k).length}</button>`).join('')}</div>`;
     html+=CRIT_ORD.filter(k=>(S.sub.invC||'todos')==='todos'||S.sub.invC===k).map(k=>{const mk=mats.filter(m=>critOf(m)===k);if(!mk.length)return '';const bajos=mk.filter(m=>semaforo(m).nivel!=='ok').length;
     return `<div class="critsec c-${k}"><div class="critsec-h"><b>${CRIT[k][0]}</b><span class="muted">${CRIT[k][2]} · ${mk.length} materiales</span>${bajos?`<span class="pill ${k==='no_critico'?'p-amar':CRIT[k][1]}">${bajos} bajo mínimo</span>`:'<span class="pill p-verde">Todo suficiente</span>'}</div>${invTablas(mk,uSet,ubs,fu)}</div>`}).join('')||'<div class="card empty">Sin materiales</div>';
@@ -3830,31 +3831,42 @@ function vCatalogo(out){
   out(`<div class="row" style="margin-bottom:10px"><h2 style="flex:3">Catálogo de materiales</h2>${can.catalogo()?`<button class="btn sec" style="flex:0 0 auto" onclick="importarMat()">Carga masiva</button><button class="btn" style="flex:0 0 auto" onclick="formMaterial()">＋ Material</button>`:''}</div>
   <div class="card" style="padding:4px 10px"><div class="tblwrap"><table><tr><th>Material</th><th>Categoría</th><th>Unidad</th><th>Mín</th><th>Crít</th><th>Máx</th><th>Costo</th><th>Proveedor</th></tr>${[...S.mat].sort((a,b)=>(esCarro(a)-esCarro(b))||(a.categoria||'').localeCompare(b.categoria||'')||a.nombre.localeCompare(b.nombre)).map(m=>`<tr ${can.catalogo()?`onclick="formMaterial('${m.id}')" style="cursor:pointer;${m.activo?'':'opacity:.5'}"`:''}><td>${h(m.nombre)} ${critPill(m)} ${esCarro(m)?'<span class="pill p-rojo">carro rojo</span>':''}<div class="muted">${h(m.codigo||'')}${m.gaveta?' · '+h(m.gaveta):''}</div></td><td>${h(m.categoria||'')}</td><td>${h(m.unidad)}</td><td>${fmtN(m.stock_minimo)}</td><td>${fmtN(m.stock_critico)}</td><td>${m.stock_maximo==null?'—':fmtN(m.stock_maximo)}</td><td>${money(m.costo)}</td><td class="muted">${h(S.prov.find(p=>p.id===m.proveedor_id)?.nombre||'')}</td></tr>`).join('')||'<tr><td colspan=8 class="empty">Sin materiales</td></tr>'}</table></div></div>`);
 }
+const FAMILIAS=[['carro','Carro rojo'],['bultos','Bultos, ropa y desechables'],['reest','Material reesterilizado'],['oftal','Insumos oftalmológicos'],['farm','Fármacos y colirios'],['frio','Red fría'],['sol','Soluciones'],['sut','Suturas'],['consum','Consumibles médicos'],['gral','Limpieza, esterilización y generales'],['otro','Otros']];
+function famMat(m){if(esCarro(m))return 'carro';const c=normTxt(m.categoria||''),n=normTxt(m.nombre||'');
+  if(/reesteril/.test(c)||/reesteril/.test(n))return 'reest';if(/desechable|bulto|ropa|campo/.test(c))return 'bultos';if(/oftalm/.test(c))return 'oftal';if(/farmaco|colirio|medicamento/.test(c))return 'farm';
+  if(/red fria|refriger/.test(c))return 'frio';if(/solucion/.test(c))return 'sol';if(/sutura/.test(c))return 'sut';if(/insumos medicos|consumible|gasa|jeringa/.test(c))return 'consum';if(/general|limpieza|esteriliz/.test(c))return 'gral';
+  if(/bata|campo|guante|gorro|cubrebocas|botas|sabana|funda/.test(n))return 'bultos';if(/sutura/.test(n))return 'sut';return 'otro'}
 function clasificarMat(){const m=modal('<div id="clBox"></div>');clasifUI(m.querySelector('#clBox'),()=>m.remove())}
 function vClasif(out){out('<div class="card" id="clBox"></div>');setTimeout(()=>{if($('#clBox'))clasifUI($('#clBox'))},0)}
 function clasifUI(root,done){
   const ms=S.mat.filter(m=>m.activo).sort((a,b)=>(a.categoria||'').localeCompare(b.categoria||'')||a.nombre.localeCompare(b.nombre));
-  const cam={};let fq='',fk='todos';
+  const cam={};let fq='',fk='todos',ff=S.sub.clFam||'todas';
   root.innerHTML=`${done?mhead('Criticidad y mínimos de material'):'<h3>Criticidad y mínimos de material</h3>'}<div class="muted">Marca la criticidad de cada material y ajusta su mínimo y nivel crítico. Solo se guardan los que cambies (con tu PIN).</div>
    <div class="muted" style="margin:6px 0">${CRIT_ORD.map(k=>`<b>${CRIT[k][0]}:</b> ${CRIT[k][2]}.`).join(' ')} <b>Mínimo:</b> al llegar ahí se pinta amarillo y se sugiere pedir. <b>Nivel crítico:</b> rojo, urgente.</div>
+   <div class="chips" id="clF" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0"></div>
    <div class="row" style="margin:8px 0"><input id="clQ" placeholder="Buscar material o categoría"><select id="clK" aria-label="Filtrar"><option value="todos">Todos (${ms.length})</option>${CRIT_ORD.map(k=>`<option value="${k}">${CRIT[k][0]}</option>`).join('')}<option value="sinmin">Sin mínimo capturado</option><option value="bajo">Bajo mínimo hoy</option><option value="re">Reesterilizables</option></select></div>
    <div id="clL" style="max-height:${done?'55vh':'65vh'};overflow:auto"></div>
    <div class="acts"><span class="muted" id="clN" style="align-self:center;margin-right:auto">Sin cambios</span><button class="btn" id="clOk">Guardar cambios con PIN</button></div>`;
   const val=(mm,k)=>cam[mm.id]&&k in cam[mm.id]?cam[mm.id][k]:k==='criticidad'?critOf(mm):mm[k];
   const cnt=()=>{const n=Object.keys(cam).length;root.querySelector('#clN').textContent=n?n+' material(es) con cambios':'Sin cambios'};
-  const draw=()=>{const t=normTxt(fq);const l=ms.filter(x=>(!t||normTxt(x.nombre+' '+(x.categoria||'')).includes(t))&&(fk==='todos'||(fk==='re'?val(x,'reesterilizable'):fk==='sinmin'?!num(val(x,'stock_minimo')):fk==='bajo'?semaforo(x).nivel!=='ok':val(x,'criticidad')===fk)));
-    root.querySelector('#clL').innerHTML=`<table class="tbl clas"><tr><th>Material</th>${CRIT_ORD.map(k=>`<th style="text-align:center">${CRIT[k][0].replace('Moderadamente','Mod.')}</th>`).join('')}<th>Existencia</th><th>Mínimo</th><th>Nivel crítico</th><th>Reesteriliza</th><th>Observación</th></tr>${l.map(x=>`<tr data-id="${x.id}"><td>${h(x.nombre)}<div class="muted">${h(x.categoria||'')} · ${h(x.unidad||'')}</div></td>
+  const famCnt=()=>{const c={};ms.forEach(x=>{const f=famMat(x);c[f]=(c[f]||0)+1});return c};
+  const drawF=()=>{const c=famCnt();root.querySelector('#clF').innerHTML=[['todas','Todas',ms.length],...FAMILIAS.filter(([k])=>c[k]).map(([k,t])=>[k,t,c[k]])].map(([k,t,n])=>`<button type="button" class="btn sm ${ff===k?'':'sec'}" data-f="${k}">${t} <span style="opacity:.7">${n}</span></button>`).join('');
+    root.querySelectorAll('#clF [data-f]').forEach(b=>b.onclick=()=>{ff=b.dataset.f;S.sub.clFam=ff;drawF();draw()})};
+  const draw=()=>{const t=normTxt(fq);const l=ms.filter(x=>(ff==='todas'||famMat(x)===ff)&&(!t||normTxt(x.nombre+' '+(x.categoria||'')).includes(t))&&(fk==='todos'||(fk==='re'?val(x,'reesterilizable'):fk==='sinmin'?!num(val(x,'stock_minimo')):fk==='bajo'?semaforo(x).nivel!=='ok':val(x,'criticidad')===fk)));
+    const grupos=[];FAMILIAS.forEach(([fk2,ft])=>{const g=l.filter(x=>famMat(x)===fk2);if(!g.length)return;
+      if(fk2==='carro'){const subs=[...new Set(g.map(x=>x.categoria||'Otros'))].sort();subs.forEach(s=>grupos.push([ft+' · '+s,g.filter(x=>(x.categoria||'Otros')===s)]))}else grupos.push([ft,g])});
+    root.querySelector('#clL').innerHTML=`<table class="tbl clas"><tr><th>Material</th>${CRIT_ORD.map(k=>`<th style="text-align:center">${CRIT[k][0].replace('Moderadamente','Mod.')}</th>`).join('')}<th>Existencia</th><th>Mínimo</th><th>Nivel crítico</th><th>Reesteriliza</th><th>Observación</th></tr>${grupos.map(([gt,gl])=>`<tr class="clG"><td colspan="9"><b>${h(gt)}</b> <span class="muted">${gl.length}</span></td></tr>`+gl.map(x=>`<tr data-id="${x.id}"><td>${h(x.nombre)}<div class="muted">${h(x.categoria||'')} · ${h(x.unidad||'')}</div></td>
       ${CRIT_ORD.map(k=>`<td style="text-align:center"><input type="radio" class="clC" name="cr_${x.id}" value="${k}" aria-label="${CRIT[k][0]}" ${val(x,'criticidad')===k?'checked':''}></td>`).join('')}
       <td><b>${fmtN(stockMat(x.id,ubicIdsSede()))}</b></td>
       <td><input class="clMin" type="number" min="0" step="any" style="width:70px" aria-label="Mínimo" value="${h(val(x,'stock_minimo')??0)}"></td>
       <td><input class="clCr" type="number" min="0" step="any" style="width:70px" aria-label="Nivel crítico" value="${h(val(x,'stock_critico')??0)}"></td>
       <td style="text-align:center"><input type="checkbox" class="clR" aria-label="Se reesteriliza" ${val(x,'reesterilizable')?'checked':''}></td>
-      <td><input class="clO" placeholder="Método, ciclos máximos…" value="${h(val(x,'reest_obs')||'')}"></td></tr>`).join('')||'<tr><td colspan="9" class="muted">Sin resultados</td></tr>'}</table>`;cnt()};
+      <td><input class="clO" placeholder="Método, ciclos máximos…" value="${h(val(x,'reest_obs')||'')}"></td></tr>`).join('')).join('')||'<tr><td colspan="9" class="muted">Sin resultados</td></tr>'}</table>`;cnt()};
   root.querySelector('#clQ').oninput=e=>{fq=e.target.value;draw()};root.querySelector('#clK').onchange=e=>{fk=e.target.value;draw()};
   root.querySelector('#clL').addEventListener('change',e=>{const tr=e.target.closest('tr[data-id]');if(!tr)return;const id=tr.dataset.id;cam[id]=cam[id]||{};const c=e.target.classList;
     if(c.contains('clC'))cam[id].criticidad=e.target.value;if(c.contains('clR'))cam[id].reesterilizable=e.target.checked;if(c.contains('clO'))cam[id].reest_obs=e.target.value.trim()||null;
     if(c.contains('clMin'))cam[id].stock_minimo=num(e.target.value);if(c.contains('clCr'))cam[id].stock_critico=num(e.target.value);cnt()});
-  draw();
+  drawF();draw();
   root.querySelector('#clOk').onclick=async()=>{const ids=Object.keys(cam);if(!ids.length)return toast('No hay cambios',true);
     const mal=ids.map(id=>matById(id)).filter(x=>x&&num(val(x,'stock_critico'))>num(val(x,'stock_minimo')));
     if(mal.length)return toast('El nivel crítico debe ser menor o igual al mínimo: '+mal.map(x=>x.nombre).slice(0,3).join(', '),true);
