@@ -236,6 +236,7 @@ input.inl{width:72px;display:inline-block;padding:3px 6px;min-height:0;margin:0 
 .pq-f{margin-top:12px;font-size:9px;color:#555;border-top:1px solid #ccc;padding-top:3px}
 .pq-3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.pq-3>div{border:1px solid #999;padding:6px;font-size:10.5px;line-height:1.5}.pq-3 h4{margin:0 0 4px}.pq-3 small{font-weight:400}
 .vit td,.vit th{height:18px;text-align:center;font-size:10px;padding:1px}.vit td:first-child{text-align:left;white-space:nowrap}
+.offbar{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:98;padding:10px 16px;font-size:14px;line-height:1.4;box-shadow:0 -2px 12px rgba(0,0,0,.12)}.offbar.off{background:#FEF3C7;color:#5c4400}.offbar.ok{background:#DCFCE7;color:#14532d}.offbar.err{background:#FEE2E2;color:#7f1d1d}.offbar details{display:inline}.offbar summary{cursor:pointer;text-decoration:underline;display:inline}.offbar button{border:0;border-radius:8px;padding:4px 10px;font-weight:700;cursor:pointer;margin-left:6px}@media print{.offbar{display:none}}
 .pq-cons p{margin:3px 0;line-height:1.32;font-size:10.5px}.pq-cons .pq-fi{margin-top:14px}.pq-big{font-size:15px}.pq-big ul{line-height:1.6}
 nav .badge{background:var(--card3)!important;color:var(--ink);border:1px solid var(--linea)}
 .cprow{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--linea)}.cprow:last-child{border-bottom:0}.cpbtn{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex:0 0 auto;max-width:46%}
@@ -335,10 +336,102 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.19';
+const VERSION='3.20';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
+
+/* ============================================================
+   MODO SIN CONEXIÓN
+   - Cada lectura exitosa se guarda en esta computadora (IndexedDB).
+   - Si el servidor no responde, las lecturas salen de esa copia y los
+     cambios se guardan en una cola local que se sube sola al reconectar.
+   ============================================================ */
+const OFF={on:false,real:null,cache:{},cola:[],falla:[],sync:false,listo:null,ok:0,desde:null};
+const _uuid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16)}));
+function _idb(){return new Promise((res,rej)=>{if(OFF._db)return res(OFF._db);if(!window.indexedDB)return rej('sin idb');const r=indexedDB.open('qx_offline',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>{OFF._db=r.result;res(r.result)};r.onerror=()=>rej(r.error)})}
+async function idbGet(k){try{const db=await _idb();return await new Promise(res=>{const t=db.transaction('kv').objectStore('kv').get(k);t.onsuccess=()=>res(t.result);t.onerror=()=>res(null)})}catch(e){return null}}
+async function idbSet(k,v){try{const db=await _idb();await new Promise(res=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=res;tx.onerror=res;tx.onabort=res})}catch(e){}}
+let _cacheT=null;const guardarCache=()=>{clearTimeout(_cacheT);_cacheT=setTimeout(()=>idbSet('cache',OFF.cache),2500)};
+const guardarCola=()=>Promise.all([idbSet('cola',OFF.cola),idbSet('falla',OFF.falla)]);
+function fetchTO(u,o={}){const ac=new AbortController();const ms=/\/storage\//.test(String(u))?120000:OFF.on?6000:12000;const t=setTimeout(()=>ac.abort(),ms);
+  if(o.signal){if(o.signal.aborted)ac.abort();else o.signal.addEventListener('abort',()=>ac.abort())}
+  return fetch(u,{...o,signal:ac.signal}).finally(()=>clearTimeout(t))}
+const esRed=r=>{if(!r)return true;const st=Number(r.status||0),m=String(r.error?.message||r.error||'')+' '+String(r.error?.details||'');
+  return !!r.error&&(st===0||[502,503,504].includes(st)||st>=520&&st<=530||/Failed to fetch|NetworkError|Load failed|network|timeout|timed out|abort/i.test(m))};
+const MUT=['insert','update','upsert','delete'];
+const keyOf=t=>t==='qx_config'?'clave':'id';
+function prepIds(tb,ch){if(!/^qx_/.test(tb)||tb==='qx_config')return ch;
+  return ch.map(([m,a])=>{if(m!=='insert'&&m!=='upsert')return [m,a];const f=r=>r&&typeof r==='object'&&!r.id?{...r,id:_uuid()}:r;return [m,[Array.isArray(a[0])?a[0].map(f):f(a[0]),...a.slice(1)]]})}
+async function replay(cli,tb,ch){let b=cli.from(tb);for(const [m,a] of ch)b=b[m](...a);return await b}
+const _cmp=(x,y)=>{if(x==null&&y==null)return 0;if(x==null)return -1;if(y==null)return 1;const nx=Number(x),ny=Number(y);if(x!==''&&y!==''&&!isNaN(nx)&&!isNaN(ny)&&typeof x!=='boolean')return nx-ny;return String(x)<String(y)?-1:String(x)>String(y)?1:0};
+function filtrar(rows,ch){let r=rows;const ords=[];let lim=null,rng=null;
+  for(const [m,a] of ch){const [c,v]=a;
+    if(m==='eq')r=r.filter(x=>String(x[c])===String(v));else if(m==='neq')r=r.filter(x=>String(x[c])!==String(v));
+    else if(m==='gt')r=r.filter(x=>_cmp(x[c],v)>0);else if(m==='gte')r=r.filter(x=>x[c]!=null&&_cmp(x[c],v)>=0);
+    else if(m==='lt')r=r.filter(x=>x[c]!=null&&_cmp(x[c],v)<0);else if(m==='lte')r=r.filter(x=>x[c]!=null&&_cmp(x[c],v)<=0);
+    else if(m==='in')r=r.filter(x=>(v||[]).map(String).includes(String(x[c])));else if(m==='is')r=r.filter(x=>(x[c]??null)===v);
+    else if(m==='like'||m==='ilike'){const re=new RegExp('^'+String(v).replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/%/g,'.*')+'$',m==='ilike'?'i':'');r=r.filter(x=>re.test(String(x[c]??'')))}
+    else if(m==='order')ords.push([c,a[1]&&a[1].ascending===false]);else if(m==='limit')lim=c;else if(m==='range')rng=[c,v]}
+  if(ords.length)r=r.slice().sort((x,y)=>{for(const [c,d] of ords){const k=_cmp(x[c],y[c]);if(k)return d?-k:k}return 0});
+  if(rng)r=r.slice(rng[0],rng[1]+1);if(lim!=null)r=r.slice(0,lim);return r}
+function resp(ch,rows,count){const one=ch.some(([m])=>m==='single'||m==='maybeSingle');const sel=ch.some(([m])=>m==='select');
+  return {data:sel||!ch.some(([m])=>MUT.includes(m))?(one?(rows[0]||null):rows):null,error:null,status:200,count:count??rows.length,offline:true}}
+function aplicarLocal(tb,ch){const k=keyOf(tb),T=OFF.cache[tb]=OFF.cache[tb]||[];const mut=ch.find(([m])=>MUT.includes(m));const [m,a]=mut;const now=new Date().toISOString();let out=[];
+  if(m==='insert'||m==='upsert'){const rs=(Array.isArray(a[0])?a[0]:[a[0]]).map(r=>({created_at:now,updated_at:now,...r}));
+    for(const r of rs){const i=r[k]!=null?T.findIndex(x=>String(x[k])===String(r[k])):-1;if(i>=0){if(!(m==='upsert'&&a[1]?.ignoreDuplicates))T[i]={...T[i],...r};out.push({...T[i]})}else{T.push({...r});out.push({...r})}}}
+  else if(m==='update'){const hit=filtrar(T,ch.filter(([x])=>!['order','limit','range'].includes(x)));hit.forEach(x=>Object.assign(x,a[0]));out=hit.map(x=>({...x}));
+    if(!hit.length){const e=ch.find(([x,y])=>x==='eq'&&y[0]===k);if(e)out=[{[k]:e[1][1],...a[0]}]}}
+  else if(m==='delete'){const hit=new Set(filtrar(T,ch));out=[...hit].map(x=>({...x}));OFF.cache[tb]=T.filter(x=>!hit.has(x))}
+  guardarCache();return out}
+function guardarLectura(tb,ch,data){if(data==null)return;const rows=Array.isArray(data)?data:[data];const k=keyOf(tb);
+  const filtros=ch.some(([m])=>!['select','order','single','maybeSingle'].includes(m));
+  if(!filtros&&Array.isArray(data)){OFF.cache[tb]=rows.map(r=>({...r}));guardarCache();return}
+  const T=OFF.cache[tb]=OFF.cache[tb]||[];const ix=new Map(T.map((x,i)=>[String(x[k]),i]));
+  for(const r of rows){if(!r||r[k]==null)continue;const i=ix.get(String(r[k]));if(i!=null)T[i]={...T[i],...r};else{ix.set(String(r[k]),T.length);T.push({...r})}}
+  guardarCache()}
+async function ejecQ(tb,ch){
+  await OFF.listo;ch=prepIds(tb,ch);const mut=ch.some(([m])=>MUT.includes(m));
+  if(!OFF.on){let r;try{r=await replay(OFF.real,tb,ch)}catch(e){r={error:e,status:0}}
+    if(!esRed(r)){if(!r.error){if(mut){const ret=r.data;aplicarLocal(tb,ch);if(ret)guardarLectura(tb,[['merge',[]]],ret)}else guardarLectura(tb,ch,r.data)}return r}
+    ponerOffline()}
+  if(mut){OFF.cola.push({id:_uuid(),tb,ch,at:new Date().toISOString(),por:S.user?.nombre||''});await guardarCola();const out=aplicarLocal(tb,ch);barraOffline();return resp(ch,out)}
+  const sel=ch.find(([m])=>m==='select');const rows=filtrar(OFF.cache[tb]||[],ch);
+  if(sel&&sel[1][1]?.head)return {data:null,error:null,status:200,count:rows.length,offline:true};
+  return resp(ch,rows.map(x=>({...x})))}
+function mkQ(tb,ch){const f=function(){};return new Proxy(f,{get(_,pr){if(typeof pr==='symbol')return undefined;
+  if(pr==='then')return (ok,ko)=>ejecQ(tb,ch).then(ok,ko);if(pr==='catch')return ko=>ejecQ(tb,ch).catch(ko);if(pr==='finally')return fn=>ejecQ(tb,ch).finally(fn);
+  return (...a)=>mkQ(tb,[...ch,[pr,a]])}})}
+function envolverSB(real){OFF.real=real;
+  OFF.listo=OFF.listo||Promise.all([idbGet('cache'),idbGet('cola'),idbGet('falla')]).then(([c,q1,f])=>{OFF.cache=c||{};OFF.cola=q1||[];OFF.falla=f||[];if(OFF.cola.length||OFF.falla.length)setTimeout(()=>{barraOffline();sincronizar()},1500)});
+  return new Proxy(real,{get(t,pr){if(pr==='from')return tb=>mkQ(tb,[]);const v=t[pr];return typeof v==='function'?v.bind(t):v}})}
+function ponerOffline(){if(OFF.on)return;OFF.on=true;OFF.desde=new Date();barraOffline();clearInterval(OFF._t);OFF._t=setInterval(sincronizar,15000)}
+async function sincronizar(){if(OFF.sync||!OFF.real)return;OFF.sync=true;
+  try{let r;try{r=await replay(OFF.real,'qx_config',[['select',['clave']],['limit',[1]]])}catch(e){r={error:e,status:0}}
+    if(esRed(r))return;
+    const total=OFF.cola.length;let ok=0;
+    while(OFF.cola.length){const it=OFF.cola[0];let x;try{x=await replay(OFF.real,it.tb,it.ch)}catch(e){x={error:e,status:0}}
+      if(esRed(x))return;
+      if(x.error&&!/23505|duplicate key/i.test(String(x.error.code)+' '+String(x.error.message)))OFF.falla.push({...it,err:x.error.message||String(x.error)});else ok++;
+      OFF.cola.shift();await guardarCola()}
+    const eraOff=OFF.on;OFF.on=false;clearInterval(OFF._t);OFF._t=null;
+    if(eraOff||total){OFF.ok=ok;barraOffline(total?'sync':'back');if(typeof scheduleReload==='function'&&S.user)scheduleReload()}
+  }finally{OFF.sync=false}}
+function barraOffline(modo){let d=document.getElementById('offBar');
+  if(!OFF.on&&!OFF.cola.length&&!OFF.falla.length&&!modo){d?.remove();return}
+  if(!d){d=document.createElement('div');d.id='offBar';d.setAttribute('role','status');document.body.appendChild(d)}
+  const pend=OFF.cola.length,fa=OFF.falla.length;clearTimeout(OFF._hide);
+  if(OFF.on){d.className='offbar off';d.innerHTML=`<b>Sin conexión con el servidor${OFF.desde?' desde las '+OFF.desde.toTimeString().slice(0,5):''}.</b> Puedes seguir trabajando: lo que captures se guarda en esta computadora y se sube solo al reconectar.${pend?` <b>${pend} cambio${pend>1?'s':''} por subir.</b>`:''} <details><summary>Funciones limitadas</summary>No se pueden subir fotos ni archivos; la liga y el QR de cotización para el paciente no abren hasta reconectar; no ves lo que capturen otras computadoras mientras dure la falla; los folios nuevos se confirman al sincronizar.</details>`}
+  else if(fa){d.className='offbar err';d.innerHTML=`<b>${fa} cambio${fa>1?'s':''} capturado${fa>1?'s':''} sin conexión no se pudo subir.</b> <button onclick="verFallasOffline()">Ver detalle</button>`}
+  else if(modo==='sync'||modo==='back'){d.className='offbar ok';d.innerHTML=`<b>✓ Conexión restablecida.</b> ${modo==='sync'?`Se sincronizaron ${OFF.ok} cambio${OFF.ok===1?'':'s'} capturado${OFF.ok===1?'':'s'} durante la falla.`:'Ya estás en línea.'}`;OFF._hide=setTimeout(()=>d.remove(),15000)}
+  else if(pend){d.className='offbar off';d.innerHTML=`<b>${pend} cambio${pend>1?'s':''} pendiente${pend>1?'s':''} de subir.</b> Se suben en cuanto haya conexión.`}
+}
+function verFallasOffline(){const m=modal(`${mhead('Cambios que no se pudieron subir')}<div class="muted">Se capturaron sin conexión y el servidor los rechazó al sincronizar (por ejemplo, porque otra computadora ya cambió el mismo registro). Revisa cada uno y captúralo de nuevo si hace falta.</div>
+  <div style="max-height:50vh;overflow:auto;margin:10px 0">${OFF.falla.map(f=>{const mt=f.ch.find(([x])=>MUT.includes(x));return `<div style="padding:8px 0;border-bottom:1px solid var(--linea)"><b>${h(f.tb.replace(/^qx_/,'').replace(/_/g,' '))}</b> · ${h(mt?mt[0]:'')} · ${fDT(f.at)} · ${h(f.por||'')}<div class="muted">${h(f.err)}</div><div class="muted" style="font-size:12px;word-break:break-all">${h(JSON.stringify(mt?mt[1][0]:'').slice(0,300))}</div></div>`}).join('')}</div>
+  <div class="acts"><button class="btn sec" id="cp">Copiar detalle</button><button class="btn" id="ok">Ya los revisé, borrar lista</button></div>`,'sm');
+  m.querySelector('#cp').onclick=()=>{try{navigator.clipboard.writeText(JSON.stringify(OFF.falla,null,1));toast('Copiado')}catch(e){}};
+  m.querySelector('#ok').onclick=async()=>{OFF.falla=[];await guardarCola();m.remove();barraOffline()}}
+window.addEventListener('online',()=>sincronizar());
 
 /* ---------- utilidades ---------- */
 const $=s=>document.querySelector(s);
@@ -435,10 +528,10 @@ async function loadAll(){
   S.camps=await sb.from('qx_campanas').select('*').order('created_at',{ascending:false}).then(r=>r.data||[]);
   S.campPac=S.camps.some(c=>c.activa)?await sb.from('qx_campana_pacientes').select('*').in('campana_id',S.camps.map(c=>c.id)).order('created_at').then(r=>r.data||[]):[];
   S.carroRev=await sb.from('qx_carro_revisiones').select('*').order('created_at',{ascending:false}).limit(60).then(r=>r.data||[]);
-  try{await syncMensajes();await cargarMensajes()}catch(e){console.error('mensajes',e)}
+  try{if(!OFF.on)await syncMensajes();await cargarMensajes()}catch(e){console.error('mensajes',e)}
   S.pedidos=await sb.from('fin_pedidos').select('id,folio,area,sede,descripcion,partidas,urgente,estado,solicitado_at,autorizado_at,enviado_at,recibido_at,notas,created_at').eq('area','Quirófano').order('created_at',{ascending:false}).limit(80).then(r=>r.data||[]);
   if(!S.sede||!sedeById(S.sede)){const pref=safeLS('qx_sede');S.sede=(sedeById(pref)?pref:null)||(S.sedes.find(s=>s.nombre.startsWith('Tac'))||S.sedes[0]||{}).id}
-  try{await escalarInventarios();await escalarExtra()}catch(e){console.error('escalar',e)}
+  try{if(!OFF.on){await escalarInventarios();await escalarExtra()}}catch(e){console.error('escalar',e)}
 }
 let reloadT=null;
 function scheduleReload(){clearTimeout(reloadT);reloadT=setTimeout(async()=>{try{await loadAll();if(!document.querySelector('.modal'))render();else renderBadge()}catch(e){}},800)}
@@ -526,6 +619,7 @@ function readiness(c){
   return {it,pend,listo:!pend.length,f}
 }
 async function subirArchivo(file,carpeta){
+  if(OFF.on)throw new Error('Sin conexión: las fotos y archivos se pueden subir cuando regrese la conexión');
   const img=(file.type||'').startsWith('image/');
   const blob=img?await comprimir(file):file;
   const ext=img?'jpg':((file.name||'').split('.').pop()||'pdf').toLowerCase();
@@ -667,13 +761,13 @@ async function iniciar(){
   if(!safeLS('qx_login_at'))safeLS('qx_login_at',new Date().toISOString());
   {const c=cierrePendiente();if(c)return salir('Sesión cerrada automáticamente a las '+c+'. Vuelve a entrar.')}
   $('#app').innerHTML='<div class="empty">Cargando…</div>';
-  const lento=setTimeout(()=>{const a=$('#app');if(a&&/Cargando/.test(a.textContent))a.innerHTML=avisoSinBase()},12000);
+  const lento=setTimeout(()=>{const a=$('#app');if(a&&/Cargando/.test(a.textContent)&&!Object.keys(OFF.cache).length)a.innerHTML=avisoSinBase()},30000);
   try{const r=await sb.from('qx_usuarios').select('id,nombre,rol,activo,debe_cambiar,modulos,permisos').eq('id',S.user.id).maybeSingle();
     if(r.data&&(!r.data.activo)){return salir()}
     if(r.data){S.user.nombre=r.data.nombre;S.user.rol=r.data.rol;S.user.modulos=r.data.modulos||null;S.user.permisos=r.data.permisos||null;safeLS('qx_user',JSON.stringify(S.user));if(r.data.debe_cambiar)return cambiarCredenciales(true)}
-    else if(!r.error)return salir();
+    else if(!r.error&&!r.offline)return salir();
   }catch(e){}
-  try{await loadAll();clearTimeout(lento)}catch(e){clearTimeout(lento);if(/fetch|network|timeout|522|504|503|Failed/i.test(String(e?.message||e)+String(e?.code||''))){$('#app').innerHTML=avisoSinBase();return}$('#app').innerHTML=`<div class="login"><div class="card"><h3>No se pudo cargar</h3><p class="muted">${h(e.message||e)}</p><p class="muted">Si es la primera vez, verifica que el SQL de COE Quirófano v2 se haya ejecutado en Supabase.</p><button class="btn" onclick="location.reload()">Reintentar</button></div></div>`;return}
+  try{await loadAll();clearTimeout(lento);if(OFF.on&&!(S.sedes||[]).length){$('#app').innerHTML=avisoSinBase();return}}catch(e){clearTimeout(lento);if(/fetch|network|timeout|522|504|503|Failed/i.test(String(e?.message||e)+String(e?.code||''))){$('#app').innerHTML=avisoSinBase();return}$('#app').innerHTML=`<div class="login"><div class="card"><h3>No se pudo cargar</h3><p class="muted">${h(e.message||e)}</p><p class="muted">Si es la primera vez, verifica que el SQL de COE Quirófano v2 se haya ejecutado en Supabase.</p><button class="btn" onclick="location.reload()">Reintentar</button></div></div>`;return}
   if(!modsOf(S.user).includes(S.tab))S.tab=modsOf(S.user).includes('cotizar')&&!modsOf(S.user).includes('inicio')?'cotizar':(modsOf(S.user)[0]||'mas');
   if(!rtChan){
     rtChan=sb.channel('qx-rt');
@@ -3834,8 +3928,9 @@ function vBitacora(out){out('<h2>Bitácora</h2><div class="card" id="bit"><div c
 async function cargarBitacora(){const r=await q(sb.from('qx_log').select('*').order('created_at',{ascending:false}).limit(150));const el=$('#bit');if(el)el.innerHTML=`<div class="tblwrap"><table><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr>${r.map(x=>`<tr><td>${fDT(x.created_at)}</td><td>${h(x.usuario_nombre||'')}</td><td>${h((x.accion||'').replace(/_/g,' '))}</td><td class="muted">${h(x.detalle?Object.entries(x.detalle).map(([k,v])=>k+': '+(typeof v==='object'?JSON.stringify(v):v)).join(' · '):'')}</td></tr>`).join('')}</table></div>`}
 
 /* ---------- arranque ---------- */
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw-quirofano.js').catch(()=>{});
 (function boot(){
-  let tries=0;const wait=()=>{if(window.supabase){sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);const seg=new URLSearchParams(location.search).get('seg');if(seg)return paginaPaciente(seg);const cotT=new URLSearchParams(location.search).get('cot');if(cotT)return paginaCotPublica(cotT);aplicarTema();const indT=new URLSearchParams(location.search).get('ind');if(indT)return paginaIndic(indT);const u=safeLS('qx_user');if(u){try{S.user=JSON.parse(u);iniciar()}catch(e){pantallaLogin()}}else pantallaLogin()}else if(tries++<50)setTimeout(wait,100);else document.getElementById('app').innerHTML='<div class="empty">No se pudo cargar la librería de Supabase. Revisa la conexión a internet.</div>'};wait();
+  let tries=0;const wait=()=>{if(window.supabase){sb=envolverSB(window.supabase.createClient(SUPA_URL,SUPA_KEY,{global:{fetch:fetchTO}}));const seg=new URLSearchParams(location.search).get('seg');if(seg)return paginaPaciente(seg);const cotT=new URLSearchParams(location.search).get('cot');if(cotT)return paginaCotPublica(cotT);aplicarTema();const indT=new URLSearchParams(location.search).get('ind');if(indT)return paginaIndic(indT);const u=safeLS('qx_user');if(u){try{S.user=JSON.parse(u);iniciar()}catch(e){pantallaLogin()}}else pantallaLogin()}else if(tries++<50)setTimeout(wait,100);else document.getElementById('app').innerHTML='<div class="empty">No se pudo cargar la librería de Supabase. Revisa la conexión a internet.</div>'};wait();
 })();
 </script>
 </body>
