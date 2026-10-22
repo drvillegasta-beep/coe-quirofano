@@ -237,6 +237,7 @@ input.inl{width:72px;display:inline-block;padding:3px 6px;min-height:0;margin:0 
 .pq-3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.pq-3>div{border:1px solid #999;padding:6px;font-size:10.5px;line-height:1.5}.pq-3 h4{margin:0 0 4px}.pq-3 small{font-weight:400}
 .vit td,.vit th{height:18px;text-align:center;font-size:10px;padding:1px}.vit td:first-child{text-align:left;white-space:nowrap}
 .offbar{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:98;padding:10px 16px;font-size:14px;line-height:1.4;box-shadow:0 -2px 12px rgba(0,0,0,.12)}.offbar.off{background:#FEF3C7;color:#5c4400}.offbar.ok{background:#DCFCE7;color:#14532d}.offbar.err{background:#FEE2E2;color:#7f1d1d}.offbar details{display:inline}.offbar summary{cursor:pointer;text-decoration:underline;display:inline}.offbar button{border:0;border-radius:8px;padding:4px 10px;font-weight:700;cursor:pointer;margin-left:6px}@media print{.offbar{display:none}}
+.clas td,.clas th{padding:6px 6px;vertical-align:middle}.clas input[type=radio],.clas input[type=checkbox]{width:20px;height:20px;min-height:0}
 .pq-cons p{margin:3px 0;line-height:1.32;font-size:10.5px}.pq-cons .pq-fi{margin-top:14px}.pq-big{font-size:15px}.pq-big ul{line-height:1.6}
 nav .badge{background:var(--card3)!important;color:var(--ink);border:1px solid var(--linea)}
 .cprow{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--linea)}.cprow:last-child{border-bottom:0}.cpbtn{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex:0 0 auto;max-width:46%}
@@ -336,7 +337,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.20';
+const VERSION='3.21';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -464,14 +465,14 @@ function csv(rows,name){const s=rows.map(r=>r.map(c=>'"'+String(c??'').replace(/
 const S={user:null,sede:null,tab:'inicio',calMes:hoyISO().slice(0,7),escal:[],sub:{},fecha:hoyISO(),
   sedes:[],ubic:[],esp:[],mat:[],lotes:[],lios:[],paq:[],paqItems:[],cx:[],cxItems:[],tanques:[],lect:[],conteos:[],evid:[],msj:[],precios:[],cots:[],config:{},prov:[],pedidos:[],usuarios:[],carroRev:[]};
 const ROLES={director:'Dirección General',direccion:'Dirección',enfermeria:'Enfermería quirófano',contabilidad:'Contabilidad / Administración',consultorio:'Consultorio (asistentes y médicos)'};
-const MODULOS=[['inicio','Inicio (tablero)'],['agenda','Agenda quirúrgica'],['cotizar','Cotizar'],['campana','Campaña (cuando hay una activa)'],['inventario','Inventario de quirófano'],['carro','Carro rojo'],['lio','Stock de LIO'],['alertas','Alertas y pedidos'],['tanques','Tanques'],['mas','Reportes, catálogo y paquetes']];
-const PERMISOS=[['cotizar','Elaborar cotizaciones'],['programar','Programar cirugías y capturar pagos'],['validar','Validar pagos (Contabilidad)'],['inventario','Entradas, salidas y conteos'],['aprobar','Aprobar conteos y autorizar excepciones'],['descuento','Autorizar descuentos mayores al máximo'],['precios','Precios y vigencias'],['catalogo','Catálogo de materiales y paquetes'],['pedir','Pedidos a COE Finanzas'],['almacen','Almacén de Administración: llegadas y envíos a quirófano'],['editar_cot','Editar y rehabilitar cotizaciones (con PIN)'],['usuarios','Usuarios y accesos'],['config','Configuración']];
+const MODULOS=[['inicio','Inicio (tablero)'],['agenda','Agenda quirúrgica'],['cotizar','Cotizar'],['campana','Campaña (cuando hay una activa)'],['pagos','Pagos y comprobantes'],['inventario','Inventario de quirófano'],['carro','Carro rojo'],['lio','Stock de LIO'],['alertas','Alertas y pedidos'],['tanques','Tanques'],['mas','Reportes, catálogo y paquetes']];
+const PERMISOS=[['cotizar','Elaborar cotizaciones'],['programar','Programar cirugías y capturar pagos'],['comprobantes','Subir comprobantes de pago (Recepción)'],['validar','Comprobar pagos (Contabilidad / Dirección)'],['inventario','Entradas, salidas y conteos'],['aprobar','Aprobar conteos y autorizar excepciones'],['descuento','Autorizar descuentos mayores al máximo'],['precios','Precios y vigencias'],['catalogo','Catálogo de materiales y paquetes'],['pedir','Pedidos a COE Finanzas'],['almacen','Almacén de Administración: llegadas y envíos a quirófano'],['editar_cot','Editar y rehabilitar cotizaciones (con PIN)'],['usuarios','Usuarios y accesos'],['config','Configuración']];
 const TODOS_MOD=MODULOS.map(x=>x[0]);
 const ROL_DEF={
   director:{m:TODOS_MOD,p:PERMISOS.map(x=>x[0])},
-  direccion:{m:TODOS_MOD,p:['cotizar','programar','inventario','aprobar','descuento','precios','catalogo','pedir','almacen','editar_cot']},
+  direccion:{m:TODOS_MOD,p:['cotizar','programar','comprobantes','inventario','aprobar','descuento','precios','catalogo','pedir','almacen','editar_cot']},
   enfermeria:{m:TODOS_MOD,p:['cotizar','programar','inventario','pedir']},
-  contabilidad:{m:TODOS_MOD.filter(k=>k!=='carro'),p:['validar','pedir','almacen']},
+  contabilidad:{m:TODOS_MOD.filter(k=>k!=='carro'),p:['validar','comprobantes','pedir','almacen']},
   consultorio:{m:['agenda','cotizar','campana','mas'],p:['cotizar']}};
 const modsOf=u=>Array.isArray(u?.modulos)&&u.modulos.length?u.modulos:(ROL_DEF[u?.rol]||{m:[]}).m;
 const permsOf=u=>u?.rol==='director'?PERMISOS.map(x=>x[0]):Array.isArray(u?.permisos)?u.permisos:(ROL_DEF[u?.rol]||{p:[]}).p;
@@ -575,7 +576,7 @@ function totalAlertas(){
 const anticipoMin=total=>Math.max(num(cfg('anticipo_minimo_monto',1000)),num(total)*num(cfg('anticipo_minimo_pct',0))/100);
 const evidCx=(id,tipo)=>S.evid.filter(e=>e.cirugia_id===id&&(!tipo||e.tipo===tipo));
 function finCx(c){
-  const ev=evidCx(c.id);
+  const ev=evidCx(c.id).filter(e=>!e.rechazado_por);
   const pag=ev.filter(e=>['anticipo','abono','liquidacion'].includes(e.tipo)).reduce((a,e)=>a+num(e.monto),0)-ev.filter(e=>e.tipo==='reembolso').reduce((a,e)=>a+num(e.monto),0);
   const total=num(c.costo_total),saldo=Math.max(0,total-pag),min=anticipoMin(total);
   let liq=total>0?saldo<=0.5:ev.some(e=>e.tipo==='liquidacion');let est,cls;
@@ -781,7 +782,7 @@ async function iniciar(){
 }
 
 /* ---------- estructura ---------- */
-const TABS=[['inicio','','Inicio'],['agenda','📅','Agenda'],['cotizar','🧾','Cotizar'],['campana','','Campaña'],['inventario','📦','Inventario'],['carro','','Carro rojo'],['lio','👁','Stock LIO'],['tanques','🫧','Tanques'],['alertas','⚠️','Alertas'],['mas','☰','Más']];
+const TABS=[['inicio','','Inicio'],['agenda','📅','Agenda'],['cotizar','🧾','Cotizar'],['campana','','Campaña'],['pagos','','Pagos'],['inventario','📦','Inventario'],['carro','','Carro rojo'],['lio','👁','Stock LIO'],['tanques','🫧','Tanques'],['alertas','⚠️','Alertas'],['mas','☰','Más']];
 function render(){
   aplicarTema();
   if(!S.user)return pantallaLogin();
@@ -793,7 +794,7 @@ function render(){
   <nav>${tabsRol.map(([k,i,t])=>`${k==='inventario'?'<i class="navsep"></i>':''}<button data-t="${k}" class="${S.tab===k?'on':''}"><b>${ico(k)}</b>${t}${k==='alertas'?'<span class="badge hidden" id="bdg"></span>':k==='carro'?'<span class="badge hidden" id="bdgC"></span>':k==='inventario'?'<span class="badge kb hidden" id="bdgI"></span>':k==='mensajes'?'<span class="badge hidden" id="bdgM"></span>':''}</button>`).join('')}</nav>`;
   $('#sedeSel').onchange=e=>{S.sede=e.target.value;safeLS('qx_sede',S.sede);render()};
   document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;render();window.scrollTo(0,0)});
-  try{({inicio:vInicio,agenda:vAgenda,cotizar:vCotizar,campana:vCampana,inventario:vInventario,carro:vCarro,lio:vLIO,mensajes:vMensajes,alertas:vAlertas,tanques:vTanques,mas:vMas})[S.tab]()}catch(e){console.error(e);$('#main').innerHTML=`<div class="card"><b>Error al mostrar esta sección</b><div class="muted">${h(e.message)}</div></div>`}
+  try{({inicio:vInicio,agenda:vAgenda,cotizar:vCotizar,campana:vCampana,pagos:vPagos,inventario:vInventario,carro:vCarro,lio:vLIO,mensajes:vMensajes,alertas:vAlertas,tanques:vTanques,mas:vMas})[S.tab]()}catch(e){console.error(e);$('#main').innerHTML=`<div class="card"><b>Error al mostrar esta sección</b><div class="muted">${h(e.message)}</div></div>`}
   renderBadge();
 }
 function renderBadge(){const bi=$('#bdgI');if(bi){const A=invAlertas();bi.textContent=A.urg>99?'99+':A.urg;bi.classList.toggle('hidden',!A.urg)}const bc=$('#bdgC');if(bc){const n=carroResumen().alerta;bc.textContent=n>99?'99+':n;bc.classList.toggle('hidden',!n)}const b=$('#bdg');if(!b)return;const n=totalAlertas();b.textContent=n;b.classList.toggle('hidden',!n);const bm=$('#bdgM');if(bm){const a=alarmasPend().length,d=msjPorEnviar().length;bm.textContent=a?'!'+a:d;bm.classList.toggle('hidden',!(a+d));bm.style.background=a?'var(--rojo)':'var(--amar)'}}
@@ -856,6 +857,7 @@ const ICON={
  tanques:'<rect x="8" y="6" width="8" height="15" rx="4"/><path d="M10 3h4v3h-4z"/>',
  campana:'<path d="M4 10v4h3l6 4V6L7 10H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>',
  carro:'<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M12 7.5v6M9 10.5h6"/><circle cx="7.5" cy="20" r="1.5"/><circle cx="16.5" cy="20" r="1.5"/>',
+ pagos:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
  mas:'<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>'
 };
 const ico=k=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]||''}</svg>`;
@@ -1499,7 +1501,7 @@ function formPago(id,tipoDef){
   const cuadre=()=>{const t=m.querySelector('#gT').value,mo=num(m.querySelector('#gM').value),sg=t==='reembolso'?-1:1,nuevo=f.pag+sg*mo,sal=f.total-nuevo;
     m.querySelector('#gRes').innerHTML=f.total?`<div class="cq"><span>Pagado</span><b>${money(f.pag)}</b></div><div class="cq"><span>${t==='reembolso'?'Devolución':'Este pago'}</span><b>${sg<0?'− ':'+ '}${money(mo)}</b></div><div class="cq tot"><span>Quedaría pagado</span><b>${money(nuevo)} de ${money(f.total)}</b></div><div class="cq ${Math.abs(sal)<=0.5?'ok':sal<0?'bad':''}"><span>${sal<-0.5?'Excede el total por':'Saldo'}</span><b>${money(Math.abs(sal))}</b></div>`:''};
   m.querySelector('#gM').addEventListener('input',cuadre);m.querySelector('#gT').addEventListener('change',()=>{if(m.querySelector('#gT').value==='liquidacion'&&!num(m.querySelector('#gM').value))m.querySelector('#gM').value=f.saldo;cuadre()});cuadre();
-  ligarComprobante(m,'#gA','#gM','#gF');
+  ligarComprobante(m,'#gA','#gM','#gF',c.paciente_nombre);
   m.querySelector('#ok').onclick=async()=>{
     const tipo=m.querySelector('#gT').value,monto=num(m.querySelector('#gM').value),file=m.querySelector('#gA').files[0];
     if(monto<=0&&!(tipo==='liquidacion'&&f.total===0))return toast('Captura el monto',true);
@@ -1513,7 +1515,7 @@ function formPago(id,tipoDef){
     try{const url=await subirArchivo(file,'evidencias/pagos');
       const t=tipo==='liquidacion'&&f.total>0&&f.pag+monto<f.total-0.5?'abono':tipo;
       await q(sb.from('qx_cirugia_evidencias').insert({cirugia_id:id,tipo:t,monto,metodo:m.querySelector('#gMe').value,folio:m.querySelector('#gF').value||null,url,lectura,usuario_id:S.user.id,usuario_nombre:S.user.nombre}),'Guardar pago');
-      await logA('pago_'+t,'qx_cirugias',id,{monto});toast('Pago registrado');refrescarDetalle(id)}catch(e){m.querySelector('#ok').disabled=false}
+      await logA('pago_'+t,'qx_cirugias',id,{monto});toast('Pago registrado: queda por comprobar');if(S.tab==='pagos'){m.remove();await loadAll();render()}else refrescarDetalle(id)}catch(e){m.querySelector('#ok').disabled=false}
   };
 }
 const EVID_NOM={consentimiento:'Consentimiento informado firmado',biometria:'Biometría / cálculo de LIO',valoracion:'Valoración preoperatoria / laboratorios',otro:'Documento'};
@@ -1718,7 +1720,7 @@ function vInventario(){
     html+=`<div class="tabs">${[['todos','Todos'],...CRIT_ORD.map(k=>[k,CRIT[k][0]])].map(([k,t])=>`<button class="${(S.sub.invC||'todos')===k?'on':''}" onclick="S.sub.invC='${k}';render()">${t} ${k==='todos'?'':mats.filter(m=>critOf(m)===k).length}</button>`).join('')}</div>`;
     html+=CRIT_ORD.filter(k=>(S.sub.invC||'todos')==='todos'||S.sub.invC===k).map(k=>{const mk=mats.filter(m=>critOf(m)===k);if(!mk.length)return '';const bajos=mk.filter(m=>semaforo(m).nivel!=='ok').length;
     return `<div class="critsec c-${k}"><div class="critsec-h"><b>${CRIT[k][0]}</b><span class="muted">${CRIT[k][2]} · ${mk.length} materiales</span>${bajos?`<span class="pill ${k==='no_critico'?'p-amar':CRIT[k][1]}">${bajos} bajo mínimo</span>`:'<span class="pill p-verde">Todo suficiente</span>'}</div>${invTablas(mk,uSet,ubs,fu)}</div>`}).join('')||'<div class="card empty">Sin materiales</div>';
-    html+=`<div class="row">${can.inventario()?'<button class="btn sec" onclick="clasificarMat()">Clasificar criticidad y reesterilización</button>':''}<button class="btn sec" onclick="exportExist()">⬇ Exportar existencias (Excel/CSV)</button></div>`;
+    html+=`<div class="row">${tiene('aprobar')||tiene('catalogo')?'<button class="btn sec" onclick="clasificarMat()">Criticidad y mínimos</button>':''}<button class="btn sec" onclick="exportExist()">⬇ Exportar existencias (Excel/CSV)</button></div>`;
   }else if(st.cur==='conteo')html+=vConteos();
   else if(st.cur==='criticos')html+=vCriticos();
   else if(st.cur==='cal')html+=vCalInv();
@@ -2338,7 +2340,8 @@ const DOCS_QX=[['frontal','Hoja frontal del expediente quirúrgico','COE-QX-01']
 function medInfo(nombre){const ls=String(cfg('medicos_cedulas','Dr. José Antonio Villegas Ávila|7256707|9457035')).split('\n').map(l=>l.split('|').map(x=>x.trim())).filter(l=>l[0]);
   const n=normTxt(nombre||'');const f=ls.find(l=>normTxt(l[0]).split(/\s+/).filter(w=>w.length>3&&!/^(dr|dra)\.?$/.test(w)).some(w=>n.includes(w)))||(!nombre?ls[0]:null);
   return f?{nombre:f[0],ced:f[1]||'',esp:f[2]||''}:{nombre:nombre||'',ced:'',esp:''}}
-function consentimientoCx(id){const c=S.cx.find(x=>x.id===id);imprimirPapeleria(c,c.checklist?.papeleria||{},['cons','consan'])}
+const docsCons=c=>/sin anestesia/i.test(c.anestesia||'')?['cons']:['cons','consan'];
+function consentimientoCx(id){const c=S.cx.find(x=>x.id===id);imprimirPapeleria(c,c.checklist?.papeleria||{},docsCons(c))}
 function consentimientoCot(id){
   const cot=(S.cots||[]).find(x=>x.id===id)||(S.cotsDash||[]).find(x=>x.id===id);if(!cot)return toast('No encontré la cotización',true);
   const its=(cot.items||[]).filter(i=>i.categoria==='cirugia'||i.categoria==='laser');
@@ -2346,7 +2349,7 @@ function consentimientoCot(id){
     const c={id:'cot-'+cot.id,paciente_nombre:cot.paciente_nombre,expediente:cot.expediente,telefono:[cot.telefono1,cot.telefono2].filter(Boolean).join(' / '),
       fecha:null,hora:null,sala_id:null,procedimiento:it.nombre,ojo:o,cirujano:cot.medico||'',anestesia:cot.anestesia==='No'?'Sin anestesia':cot.anestesia==='Sí'?'':(cot.anestesia||''),
       lio_requerido:l?{tipo:normTipo(l.nombre)||l.nombre||'',modelo:'',dioptria:(l.poder||'').toString(),cilindro:'',eje:'',adicion:''}:null,checklist:{}};
-    imprimirPapeleria(c,{},['cons','consan'])};
+    imprimirPapeleria(c,{},docsCons(c))};
   if(its.length<=1)return its[0]?imp(its[0]):toast('La cotización no tiene cirugía',true);
   const m=modal(`${mhead('¿Para qué procedimiento?')}${its.map((it,k)=>`<button class="btn sec" style="width:100%;margin-bottom:6px" data-k="${k}">${h(it.nombre)} · ${(it.ojos||[]).join(' y ')||'—'}</button>`).join('')}`,'sm');
   m.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{m.remove();imp(its[+b.dataset.k])})}
@@ -2387,6 +2390,13 @@ const CONS_PROC=[
  [/icl|f[aá]quico/i,null,'icl','Implante de lente fáquico (ICL): se coloca un lente dentro del ojo, por delante del cristalino natural, para corregir graduaciones altas.','Disminuir o eliminar la dependencia de lentes cuando el láser no es recomendable.','Lentes de armazón, lentes de contacto o cirugía con láser si es candidato.',['Halos y deslumbramiento','Aumento temporal de la presión del ojo','Graduación residual'],['Catarata','Glaucoma por cierre del ángulo','Pérdida de células de la córnea','Infección grave (endoftalmitis)','Necesidad de recambiar o retirar el lente'],'Se sigue usando lentes; no hay daño por no operarse.'],
  [/eviscera|enuclea/i,null,'evisc','Evisceración o enucleación: se retira el contenido o la totalidad del ojo, que no tiene visión útil o causa dolor o riesgo, y se coloca un implante para conservar volumen; después se adapta una prótesis.','Quitar el dolor, controlar una infección o un tumor y permitir el uso de una prótesis estética.','Tratamiento del dolor con medicamentos o inyecciones, u observación.',['Dolor e hinchazón los primeros días','Secreción'],['Infección','Exposición o salida del implante','Hundimiento del párpado o de la órbita','Necesidad de otra cirugía para la prótesis','Inflamación del otro ojo (oftalmía simpática), muy rara'],'Puede persistir el dolor, la infección o el riesgo según la causa.']
 ];
+const ANEST_INFO={
+ topica:{t:'Anestesia tópica',que:'Se aplican gotas o gel anestésico en el ojo; usted permanece despierto. Puede complementarse con anestesia dentro del ojo (intracamerular) o sedación ligera.',frec:['Ardor al aplicar las gotas','Sentir presión, luz o movimiento durante la cirugía','Molestia que obliga a reforzar la anestesia'],grav:['Reacción alérgica al anestésico','Daño a la superficie de la córnea','Necesidad de cambiar a otra técnica (bloqueo o sedación)']},
+ local:{t:'Anestesia local',que:'Se inyecta anestésico en la piel, el párpado o la conjuntiva de la zona a operar; usted permanece despierto.',frec:['Dolor o ardor al inyectar','Moretón o hinchazón en el sitio','Párpado caído o adormecido algunas horas'],grav:['Reacción alérgica al anestésico','Toxicidad por anestésico local (mareo, sabor metálico, convulsiones), muy rara','Infección en el sitio de punción']},
+ bloqueo:{t:'Bloqueo anestésico del ojo',que:'Se inyecta anestésico alrededor o detrás del ojo (retrobulbar, peribulbar o subtenoniano) para dormir el ojo y evitar que se mueva; usted permanece despierto, a veces con sedación.',frec:['Dolor o presión al inyectar','Moretón alrededor del ojo','Visión doble, párpado caído y ojo sin movimiento por algunas horas'],grav:['Hemorragia detrás del ojo (hematoma retrobulbar), que puede obligar a suspender la cirugía','Perforación del globo ocular','Daño al nervio óptico o a los músculos del ojo, con visión doble prolongada','Paso del anestésico a un vaso sanguíneo o al sistema nervioso: convulsiones, falta de respiración o paro cardiaco, excepcional','Reacción alérgica']},
+ sedacion:{t:'Sedación',que:'Se aplican medicamentos por la vena para que esté tranquilo y somnoliento, respirando por sí mismo, con vigilancia continua de oxígeno, presión y pulso. Se combina con anestesia del ojo (gotas o bloqueo).',frec:['Somnolencia, mareo o náusea al despertar','Dolor o moretón en el sitio de la vena','Recordar partes de la cirugía'],grav:['Disminución de la respiración o del oxígeno que requiera apoyo con mascarilla o intubación','Baja o alza de presión, alteraciones del ritmo del corazón','Reacción alérgica a los medicamentos','Movimiento o agitación que obligue a suspender o cambiar a anestesia general','Broncoaspiración si no se respetó el ayuno']},
+ general:{t:'Anestesia general',que:'Se le duerme por completo con medicamentos por la vena y/o gases, y se protege la vía aérea con un tubo o mascarilla laríngea mientras un aparato le ayuda a respirar.',frec:['Náusea y vómito','Dolor de garganta o ronquera','Somnolencia, frío o temblor al despertar','Dolor en el sitio de la vena'],grav:['Daño a dientes, labios o garganta al colocar el tubo','Broncoaspiración (paso de contenido del estómago a los pulmones)','Reacción alérgica grave','Alteraciones graves de la presión o del ritmo del corazón, infarto o evento vascular cerebral','Despertar prolongado o confusión, sobre todo en adultos mayores','Hipertermia maligna, muy rara','Muerte, excepcional']}};
+function anestKey(a){const n=normTxt(a||'');return /general/.test(n)?'general':/sedac/.test(n)?'sedacion':/retro|peri|sub ?ten|bloqueo/.test(n)?'bloqueo':/topic/.test(n)?'topica':/local/.test(n)?'local':null}
 function consProc(nombre){const n=String(nombre||'');const r=CONS_PROC.find(([a,b])=>a.test(n)&&(!b||b.test(n)));
   return r?{que:r[3],para:r[4],alt:r[5],frec:r[6],grav:r[7],sin:r[8]}:null}
 async function imprimirPapeleria(c,d,ks){
@@ -2472,12 +2482,15 @@ async function imprimirPapeleria(c,d,ks){
    ${firma('Nombre completo y firma del paciente','Nombre, firma y parentesco del familiar, tutor o representante legal (si aplica)')}${firma(firmaMed+'<br><small>Médico que informa y recaba el consentimiento</small>','Testigo 1 (nombre completo y firma)','Testigo 2 (nombre completo y firma)')}
    <p style="font-size:10px;margin-top:6px"><b>Revocación:</b> Revoco este consentimiento y libero al médico y al establecimiento de la responsabilidad derivada de no realizar el procedimiento. Fecha ________ Firma del paciente _______________ Testigo _______________</p>
    ${pie(cd,'apartados 4.2 y 10.1 · Reglamento de la LGS en materia de prestación de servicios de atención médica, arts. 80 a 83')}</div>`},
-  consan:(cd)=>`${head('CARTA DE CONSENTIMIENTO BAJO INFORMACIÓN PARA ANESTESIA',cd)}
+  consan:(cd)=>{const ak=anestKey(c.anestesia),A=ak?ANEST_INFO[ak]:null;const li=x=>`<ul style="margin:1px 0 3px 16px;padding:0;columns:2;column-gap:20px;font-size:10px;line-height:1.3">${x.map(y=>`<li>${h(y)}</li>`).join('')}</ul>`;
+   const comun=['Reacción alérgica a cualquier medicamento','Alteraciones de la presión o del ritmo del corazón'];
+   return `<div class="pq-cons">${head('CARTA DE CONSENTIMIENTO BAJO INFORMACIÓN PARA ANESTESIA',cd)}
    <p>Lugar: ${h((sedeById(c.sede_id)||sedeById(S.sede))?.nombre||'')}, Michoacán. Fecha: ____ / ____ / ______ Hora: ______. Establecimiento: <b>Centro Ocular Especializado</b>.</p>
-   <p>Yo <b>${h(c.paciente_nombre)}</b> autorizo al anestesiólogo <b>${h(d.anest||'______________________')}</b> a aplicarme anestesia de tipo: ${tec.map(t=>cb(normTxt(c.anestesia)===normTxt(t),t)).join(' ')}, para la cirugía <b>${h(c.procedimiento||'')}</b> del ojo ${h(OJO_L[c.ojo]||c.ojo||'')}.</p>
-   <p>Se me explicaron los riesgos: dolor o hematoma en el sitio de punción, náusea y vómito, reacciones alérgicas, alteraciones de la presión o del ritmo cardiaco, depresión respiratoria y, de forma excepcional, perforación del globo ocular por bloqueo, daño al nervio óptico o complicaciones graves que pongan en riesgo la vida. Autorizo cambiar la técnica si la seguridad lo requiere. Declaro haber respetado el ayuno indicado y haber informado mis enfermedades, alergias y medicamentos.</p>
-   <p>Pude hacer preguntas y me fueron contestadas. Sé que puedo revocar este consentimiento antes del procedimiento.</p>
-   ${firma('Nombre completo y firma del paciente','Familiar, tutor o representante legal (si aplica)')}${firma('Nombre, firma y cédula del anestesiólogo','Testigo 1 (nombre completo y firma)','Testigo 2 (nombre completo y firma)')}${pie(cd,'apartado 10.1 · NOM-006-SSA3-2011')}`,
+   <p>Yo <b>${h(c.paciente_nombre)}</b>${edad?', de '+edad+' años':''}, autorizo al anestesiólogo <b>${h(d.anest||'______________________')}</b> a aplicarme ${A?'<b>'+h(A.t.toLowerCase())+'</b>'+(ak==='bloqueo'&&c.anestesia?' ('+h(String(c.anestesia).toLowerCase())+')':''):'anestesia de tipo: '+tec.map(t=>cb(false,t)).join(' ')} para la cirugía <b>${h(c.procedimiento||'')}</b>${c.ojo?' del ojo '+h(OJO_L[c.ojo]||c.ojo):''}.</p>
+   ${A?`<p><b>En qué consiste:</b> ${h(A.que)}</p><p style="margin-bottom:0"><b>Molestias y riesgos frecuentes:</b></p>${li(A.frec)}<p style="margin-bottom:0"><b>Riesgos poco frecuentes pero graves:</b></p>${li(A.grav)}`:`<p><b>En qué consiste y riesgos de la técnica elegida:</b>${L(4)}</p><p style="margin-bottom:0"><b>Riesgos generales:</b></p>${li(comun)}`}
+   <p><b>Alternativas:</b> ${ak==='general'?'anestesia local o bloqueo con sedación, si mi condición y la cirugía lo permiten':ak==='topica'?'bloqueo anestésico, sedación o anestesia general':'otras técnicas (tópica, bloqueo, sedación o general) según mi condición y la cirugía'}. Riesgos particulares de mi caso:${L(1)}</p>
+   <p>Declaro haber respetado el ayuno indicado${ak==='topica'||ak==='local'?' (si me lo indicaron)':''} y haber informado mis enfermedades, alergias, medicamentos (incluidos anticoagulantes) y anestesias previas. Autorizo al anestesiólogo a cambiar la técnica o aplicar los medicamentos y maniobras necesarias si mi seguridad lo requiere, atendiendo al principio de libertad prescriptiva. Pude hacer preguntas y me fueron contestadas. Sé que puedo revocar este consentimiento antes del procedimiento.</p>
+   ${firma('Nombre completo y firma del paciente','Familiar, tutor o representante legal (si aplica)')}${firma('Nombre, firma y cédula del anestesiólogo<br><small>Médico que informa y recaba el consentimiento</small>','Testigo 1 (nombre completo y firma)','Testigo 2 (nombre completo y firma)')}${pie(cd,'apartado 10.1 · NOM-006-SSA3-2011')}</div>`},
   egreso:(cd)=>`${head('INDICACIONES DE EGRESO',cd)}<div class="pq-big"><ul>${listaInd(indicTxt(c,'post')).map(x=>`<li>${h(x)}</li>`).join('')}</ul>
    <p>Medicamentos:${L(4)}</p><p>Próxima cita: ______________________ · Dudas: <b>${telsProg().map(h).join(' / ')}</b></p></div>${firma('Recibí y entendí (paciente o familiar)',firmaMed)}${pie(cd)}`,
   consumo:(cd)=>`${head('HOJA DE CONSUMO DE MATERIAL',cd)}<table><tr><th>Material</th><th>Plan</th><th>Usado</th><th>Extra</th><th>Lote</th></tr>${items.map(i=>`<tr><td>${h(matById(i.material_id)?.nombre||'')}</td><td>${fmtN(i.cantidad_plan)}</td><td>${i.cantidad_usada==null?'':fmtN(i.cantidad_usada)}</td><td>${i.es_extra?'sí':''}</td><td></td></tr>`).join('')}${Array.from({length:6},()=>'<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td></tr>').join('')}</table>
@@ -2492,7 +2505,7 @@ async function imprimirPapeleria(c,d,ks){
    ============================================================ */
 const campActiva=()=>(S.camps||[]).find(c=>c.activa&&(!c.sede_id||c.sede_id===S.sede));
 const diasCamp=c=>(c?.dias||[]).slice().sort((a,b)=>a.fecha<b.fecha?-1:1);
-function pagoCamp(p){const cs=p.comprobantes||[],pag=cs.reduce((a,x)=>a+num(x.monto),0),tot=num(p.monto_total);
+function pagoCamp(p){const cs=(p.comprobantes||[]).filter(x=>!x.rechazado_por),pag=cs.reduce((a,x)=>a+num(x.monto),0),tot=num(p.monto_total);
   const liq=cs.some(x=>x.tipo==='liquidacion')||(tot>0&&pag>=tot-0.5);
   return {pag,tot,saldo:Math.max(0,tot-pag),liq,est:liq?'Liquidado':pag>0?'Anticipo':'Sin pago',cls:liq?'p-verde':pag>0?'p-amar':''}}
 const lioCamp=p=>[p.lio_tipo,p.lio_poder?fmtN(num(p.lio_poder))+' D':''].filter(Boolean).join(' ');
@@ -2555,7 +2568,7 @@ function pagoCampana(id){
   <div><label>Método</label><select id="cgMe">${['Efectivo','Tarjeta','Transferencia','Depósito'].map(o=>`<option>${o}</option>`).join('')}</select></div><div><label>Folio / referencia</label><input id="cgF"></div></div>
   <label>Comprobante (obligatorio · se lee solo)</label><input type="file" id="cgA" accept="image/*,application/pdf" capture="environment">
   <div class="acts"><button class="btn" id="ok">Guardar con PIN</button></div>`,'sm');
-  ligarComprobante(m,'#cgA','#cgM','#cgF');
+  ligarComprobante(m,'#cgA','#cgM','#cgF',p.paciente_nombre);
   m.querySelector('#ok').onclick=async()=>{const t=m.querySelector('#cgT').value,mo=num(m.querySelector('#cgM').value),file=m.querySelector('#cgA').files[0];
     if(mo<=0)return toast('Captura el monto',true);if(!file)return toast('El comprobante es obligatorio',true);
     if(f.tot&&f.pag+mo>f.tot+0.5)return toast(`Excede el total por ${money(f.pag+mo-f.tot)}. El saldo es ${money(f.saldo)}.`,true);
@@ -2565,6 +2578,68 @@ function pagoCampana(id){
     try{const url=await subirArchivo(file,'campana');const cs=[...(p.comprobantes||[]),{tipo:t,monto:mo,metodo:m.querySelector('#cgMe').value,folio:m.querySelector('#cgF').value||null,url,lectura,por:S.user.nombre,at:new Date().toISOString()}];
       await q(sb.from('qx_campana_pacientes').update({comprobantes:cs,updated_at:new Date().toISOString()}).eq('id',id));await logA('campana_pago','qx_campana_pacientes',id,{tipo:t,monto:mo});m.remove();toast('Pago registrado');await loadAll();render()}catch(e){m.querySelector('#ok').disabled=false}};
 }
+/* ============================================================
+   PAGOS Y COMPROBANTES (Recepción sube · Contabilidad/Dirección comprueba)
+   ============================================================ */
+const puedeSubirPago=()=>tiene('comprobantes')||tiene('programar');
+function pagosLista(){const out=[],sedeU=ubicIdsSede();
+  (S.evid||[]).filter(e=>['anticipo','abono','liquidacion','reembolso'].includes(e.tipo)).forEach(e=>{const c=S.cx.find(x=>x.id===e.cirugia_id);if(!c||(c.sede_id&&c.sede_id!==S.sede))return;
+    out.push({k:'cx',key:e.id,cid:c.id,pac:c.paciente_nombre,proc:c.procedimiento,ojo:c.ojo,fecha:c.fecha,tipo:e.tipo,monto:num(e.monto),metodo:e.metodo,folio:e.folio,url:e.url,lect:e.lectura,por:e.usuario_nombre,at:e.created_at,val:e.validado_por,valAt:e.validado_at,rech:e.rechazado_por,rechMot:e.rechazo_motivo})});
+  const camp=campActiva();(S.campPac||[]).filter(p=>!camp||p.campana_id===camp.id).forEach(p=>(p.comprobantes||[]).forEach((x,i)=>out.push({k:'camp',key:p.id+':'+i,pid:p.id,i,pac:p.paciente_nombre,proc:p.procedimiento,ojo:p.ojo,fecha:p.dia,tipo:x.tipo,monto:num(x.monto),metodo:x.metodo,folio:x.folio,url:x.url,lect:x.lectura,por:x.por,at:x.at,val:x.validado_por,valAt:x.validado_at,rech:x.rechazado_por,rechMot:x.rechazo_motivo})));
+  return out.sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')))}
+const estPago=x=>x.val?'ok':x.rech?'rech':'pend';
+function sinComprobante(){const hoy=hoyISO(),sedeU=ubicIdsSede();
+  const cxs=S.cx.filter(c=>['programada','confirmada'].includes(c.estado)&&c.fecha>=addDays(hoy,-7)&&(!c.sede_id||c.sede_id===S.sede)&&!(c.checklist||{}).cortesia&&!evidCx(c.id).some(e=>['anticipo','abono','liquidacion'].includes(e.tipo)&&!e.rechazado_por)).map(c=>({k:'cx',id:c.id,pac:c.paciente_nombre,proc:c.procedimiento,ojo:c.ojo,fecha:c.fecha,total:num(c.costo_total)}));
+  const camp=campActiva();const cps=camp?(S.campPac||[]).filter(p=>p.campana_id===camp.id&&!(p.comprobantes||[]).some(x=>!x.rechazado_por)).map(p=>({k:'camp',id:p.id,pac:p.paciente_nombre,proc:p.procedimiento,ojo:p.ojo,fecha:p.dia,total:num(p.monto_total)})):[];
+  return [...cxs,...cps].sort((a,b)=>String(a.fecha||'9').localeCompare(String(b.fecha||'9')))}
+function vPagos(){
+  const L=pagosLista(),sc=sinComprobante(),n={pend:L.filter(x=>estPago(x)==='pend').length,ok:L.filter(x=>estPago(x)==='ok').length,rech:L.filter(x=>estPago(x)==='rech').length,sin:sc.length};
+  const st=subtabs('pag',[['pend',`Por comprobar${n.pend?` <span class="tcount warn">${n.pend}</span>`:''}`],['ok','Comprobados '+n.ok],['rech',`No corresponden${n.rech?` <span class="tcount crit">${n.rech}</span>`:''}`],['sin',`Sin comprobante${n.sin?` <span class="tcount warn">${n.sin}</span>`:''}`]],can.validar()?'pend':'sin');
+  const qq=normTxt(S.sub.pagQ||'');
+  let html=`<div class="row" style="margin-bottom:10px;align-items:center"><h2 style="flex:3;margin:0">Pagos y comprobantes</h2>${puedeSubirPago()?'<button class="btn" style="flex:0 0 auto" onclick="subirComprobante()">＋ Subir comprobante</button>':''}</div>
+   <div class="muted" style="margin-bottom:8px">Recepción sube el comprobante (foto o PDF) de cada pago de cirugía o de campaña; el sistema lee el monto, busca el nombre del paciente y revisa que la referencia no esté repetida. Contabilidad o Dirección lo marca como <b>comprobado</b> o <b>no corresponde</b>.</div>
+   ${st.html}<input placeholder="Buscar paciente" value="${h(S.sub.pagQ||'')}" style="margin-bottom:10px" oninput="S.sub.pagQ=this.value;clearTimeout(window._pq);window._pq=setTimeout(()=>{render();const i=document.querySelector('#main input[placeholder=\\'Buscar paciente\\']');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}},350)">`;
+  const fil=x=>!qq||normTxt(x.pac).includes(qq);
+  if(st.cur==='sin'){const l=sc.filter(fil);
+    html+=l.length?l.map(x=>`<div class="list-item"><div class="grow"><b>${h(x.pac)}</b> ${x.k==='camp'?'<span class="pill p-morado">Campaña</span>':'<span class="pill p-azul">Cirugía</span>'}<div class="muted">${h(x.proc||'')} ${h(x.ojo||'')} · ${x.fecha?fCorta(x.fecha):'sin fecha'}${x.total?' · total '+money(x.total):''}</div></div>${puedeSubirPago()?`<button class="btn sm" onclick="${x.k==='camp'?`pagoCampana('${x.id}')`:`formPago('${x.id}')`}">Subir comprobante</button>`:''}</div>`).join(''):'<div class="card empty">Todas las cirugías programadas y pacientes de campaña tienen comprobante.</div>'}
+  else{const l=L.filter(x=>estPago(x)===st.cur&&fil(x));
+    html+=l.length?l.map(pagoRow).join(''):`<div class="card empty">${st.cur==='pend'?'No hay comprobantes por revisar.':st.cur==='ok'?'Aún no hay pagos comprobados.':'No hay comprobantes rechazados.'}</div>`}
+  $('#main').innerHTML=html;
+}
+function pagoRow(x){const e=estPago(x),nom=x.lect?.nombre_ok;
+  return `<div class="card" style="padding:12px"><div class="row" style="align-items:flex-start;gap:12px">
+   <div style="flex:0 0 auto">${x.url?(/\.pdf($|\?)/i.test(x.url)?`<a href="${h(x.url)}" target="_blank" class="pill p-azul" style="font-size:15px">📄 PDF</a>`:`<img class="thumb" src="${h(x.url)}" alt="Comprobante" onclick="window.open('${h(x.url)}')">`):'<span class="muted">sin archivo</span>'}</div>
+   <div style="flex:3"><b>${h(x.pac)}</b> ${x.k==='camp'?'<span class="pill p-morado">Campaña</span>':'<span class="pill p-azul">Cirugía</span>'} ${e==='ok'?'<span class="pill p-verde">✓ Comprobado</span>':e==='rech'?'<span class="pill p-rojo">No corresponde</span>':'<span class="pill p-amar">Por comprobar</span>'}
+    <div><b style="font-size:17px">${money(x.monto)}</b> · ${h({anticipo:'Anticipo',abono:'Abono',liquidacion:'Liquidación',reembolso:'Reembolso'}[x.tipo]||x.tipo||'')} · ${h(x.metodo||'')}${x.folio?' · ref. '+h(x.folio):''}</div>
+    <div class="muted">${h(x.proc||'')} ${h(x.ojo||'')}${x.fecha?' · '+fCorta(x.fecha):''} · subió ${h(x.por||'')} ${x.at?fDT(x.at):''}</div>
+    <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">${lectPill(x.lect)}${nom===true?'<span class="pill p-verde">✓ nombre del paciente</span>':nom===false?'<span class="pill p-amar">nombre no aparece</span>':''}${x.lect?.folio_dup?'<span class="pill p-rojo">referencia repetida</span>':''}</div>
+    ${e==='ok'?`<div class="muted">Comprobó ${h(x.val)} ${x.valAt?fDT(x.valAt):''}</div>`:''}${e==='rech'?`<div class="muted" style="color:#b42318">Rechazó ${h(x.rech)}: ${h(x.rechMot||'')}</div>`:''}</div>
+   <div style="flex:0 0 auto;display:flex;flex-direction:column;gap:6px">${can.validar()&&e!=='ok'?`<button class="btn sm" onclick="comprobarPago('${x.key}')">✓ Comprobado</button>`:''}${can.validar()&&e==='pend'?`<button class="btn sm sec" onclick="rechazarPago('${x.key}')">No corresponde</button>`:''}${e==='rech'&&puedeSubirPago()?`<button class="btn sm sec" onclick="${x.k==='camp'?`pagoCampana('${x.pid}')`:`formPago('${x.cid}')`}">Subir otro</button>`:''}</div></div></div>`}
+function _pagoKey(key){return pagosLista().find(x=>x.key===key)}
+async function _marcaCamp(x,campos){const p=S.campPac.find(y=>y.id===x.pid);const cs=(p.comprobantes||[]).slice();cs[x.i]={...cs[x.i],...campos};
+  await q(sb.from('qx_campana_pacientes').update({comprobantes:cs,updated_at:new Date().toISOString()}).eq('id',p.id),'Actualizar comprobante');p.comprobantes=cs}
+async function comprobarPago(key){const x=_pagoKey(key);if(!x)return;if(!can.validar())return toast('No tienes permiso para comprobar pagos',true);
+  const l=x.lect;const avisos=[l&&l.coincide===false?`El comprobante dice ${l.monto_leido?money(l.monto_leido):'otro monto'}${l.motivo?' (motivo: '+h(l.motivo)+')':''}.`:'',l?.nombre_ok===false?'No aparece el nombre del paciente en el comprobante.':'',l?.folio_dup?'La referencia ya estaba registrada en otro pago.':''].filter(Boolean);
+  if(!await confirmar(`¿Confirmas que el pago de <b>${money(x.monto)}</b> de <b>${h(x.pac)}</b>${x.folio?' (ref. '+h(x.folio)+')':''} sí ingresó (estado de cuenta, terminal o caja)?${avisos.length?'<br><br><b>Atención:</b><br>'+avisos.join('<br>'):l?.coincide?'<br>✓ El monto coincide con el comprobante.':''}`,'Comprobar pago','Sí, comprobado'))return;
+  if(!await pedirPIN('Comprobar pago'))return;const now=new Date().toISOString();
+  try{if(x.k==='cx')await q(sb.from('qx_cirugia_evidencias').update({validado_por:S.user.nombre,validado_at:now,rechazado_por:null,rechazado_at:null,rechazo_motivo:null}).eq('id',x.key),'Comprobar pago');
+    else await _marcaCamp(x,{validado_por:S.user.nombre,validado_at:now,rechazado_por:null,rechazo_motivo:null});
+    await logA('comprobar_pago',x.k==='cx'?'qx_cirugia_evidencias':'qx_campana_pacientes',x.k==='cx'?x.key:x.pid,{monto:x.monto,paciente:x.pac});toast('Pago comprobado');await loadAll();render()}catch(e){}}
+async function rechazarPago(key){const x=_pagoKey(key);if(!x)return;if(!can.validar())return toast('No tienes permiso',true);
+  const mot=await pedirTexto('El comprobante no corresponde','¿Por qué? (monto distinto, otro paciente, no aparece en el estado de cuenta, ilegible…)');if(!mot)return;
+  if(!await pedirPIN('Marcar comprobante como no corresponde'))return;const now=new Date().toISOString();
+  try{if(x.k==='cx')await q(sb.from('qx_cirugia_evidencias').update({rechazado_por:S.user.nombre,rechazado_at:now,rechazo_motivo:mot,validado_por:null,validado_at:null}).eq('id',x.key),'Rechazar comprobante');
+    else await _marcaCamp(x,{rechazado_por:S.user.nombre,rechazado_at:now,rechazo_motivo:mot,validado_por:null});
+    await logA('rechazar_comprobante',x.k==='cx'?'qx_cirugia_evidencias':'qx_campana_pacientes',x.k==='cx'?x.key:x.pid,{monto:x.monto,motivo:mot});toast('Marcado como no corresponde: Recepción debe subir otro');await loadAll();render()}catch(e){}}
+function subirComprobante(){
+  const hoy=hoyISO(),camp=campActiva();
+  const op=[...S.cx.filter(c=>c.estado!=='cancelada'&&c.fecha>=addDays(hoy,-30)&&(!c.sede_id||c.sede_id===S.sede)).map(c=>({k:'cx',id:c.id,pac:c.paciente_nombre,det:`${c.procedimiento||''} ${c.ojo||''} · ${fCorta(c.fecha)}`})),
+    ...(camp?(S.campPac||[]).filter(p=>p.campana_id===camp.id).map(p=>({k:'camp',id:p.id,pac:p.paciente_nombre,det:`Campaña · ${p.procedimiento||''} ${p.ojo||''}${p.dia?' · '+fCorta(p.dia):''}`})):[])];
+  const m=modal(`${mhead('Subir comprobante de pago')}<div class="muted">Busca al paciente (cirugía programada o paciente de campaña).</div><input id="scQ" placeholder="Nombre del paciente" autocomplete="off"><div id="scL" style="max-height:50vh;overflow:auto;margin-top:8px"></div>`,'sm');
+  const draw=()=>{const t=normTxt(m.querySelector('#scQ').value);const l=op.filter(o=>!t||normTxt(o.pac).includes(t)).slice(0,40);
+    m.querySelector('#scL').innerHTML=l.map(o=>`<button type="button" class="list-item" style="width:100%;text-align:left;background:none;border:0;cursor:pointer" data-k="${o.k}" data-id="${o.id}"><div class="grow"><b>${h(o.pac)}</b><div class="muted">${h(o.det)}</div></div></button>`).join('')||'<div class="muted">Sin coincidencias. Si el paciente aún no está programado, prográmalo primero desde su cotización.</div>';
+    m.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{m.remove();b.dataset.k==='camp'?pagoCampana(b.dataset.id):formPago(b.dataset.id)})};
+  m.querySelector('#scQ').oninput=draw;draw();m.querySelector('#scQ').focus()}
 function editCampPac(id){
   const p=S.campPac.find(x=>x.id===id),camp=(S.camps||[]).find(c=>c.id===p.campana_id),dias=diasCamp(camp);
   const m=modal(`${mhead(h(p.paciente_nombre))}<div class="grid2"><div><label>Ojo</label><select id="epO">${['OD','OI','AO','N/A'].map(o=>`<option ${o===p.ojo?'selected':''}>${o}</option>`).join('')}</select></div>
@@ -2651,6 +2726,11 @@ async function leerComprobante(file){
   const {data}=await w.recognize(img);
   return {...analizarTexto(data.text),conf:Math.round(data.confidence||0),texto:String(data.text||'').slice(0,1500),at:new Date().toISOString()};
 }
+function nombreEnTexto(t,nombre){if(!t||!nombre)return null;const tx=' '+normTxt(t).replace(/[^a-zñ ]+/g,' ')+' ';
+  const ws=normTxt(nombre).split(/\s+/).filter(w=>w.length>=4&&!['maria','jose','juan','del','los','las'].includes(w));if(!ws.length)return null;
+  return ws.some(w=>tx.includes(' '+w+' '))}
+function folioUsado(f){if(!f)return false;const n=String(f).replace(/\W/g,'').toUpperCase();if(n.length<5)return false;const eq=x=>x&&String(x).replace(/\W/g,'').toUpperCase()===n;
+  return (S.evid||[]).some(e=>eq(e.folio)||eq(e.lectura?.folio))||(S.campPac||[]).some(p=>(p.comprobantes||[]).some(x=>eq(x.folio)||eq(x.lectura?.folio)))}
 /* estado visible bajo el campo del comprobante */
 function lecturaHTML(l,monto){
   if(!l)return '';
@@ -2660,15 +2740,18 @@ function lecturaHTML(l,monto){
   const mo=num(monto),ok=mo>0&&l.montos.some(v=>Math.abs(v-mo)<=0.5);
   return `<div class="lect ${ok?'ok':mo>0?'bad':''}">${ok?`✓ El comprobante dice <b>${money(mo)}</b>: coincide con lo capturado.`:mo>0?`El comprobante dice <b>${money(l.montos[0])}</b> y capturaste <b>${money(mo)}</b>.`:`Monto leído: <b>${money(l.montos[0])}</b>.`}
    ${l.montos.length>1||!ok?`<div class="lect-c">Montos encontrados: ${l.montos.map(v=>`<button type="button" class="chipb" data-usar="${v}">${money(v)}</button>`).join('')}</div>`:''}
+   ${l.nombre_ok===true?'<div class="muted">✓ Aparece el nombre del paciente</div>':l.nombre_ok===false?'<div class="muted" style="color:#9a3412">⚠ No aparece el nombre del paciente: puede estar a nombre de un familiar, verifícalo.</div>':''}
+   ${l.folio_dup?`<div class="muted" style="color:#b42318">⚠ La referencia ${h(l.folio)} ya está registrada en otro pago.</div>`:''}
+   ${l.fecha&&l.fecha<addDays(hoyISO(),-60)?`<div class="muted" style="color:#9a3412">⚠ El comprobante es del ${fCorta(l.fecha)} (más de 60 días).</div>`:''}
    ${l.folio||l.fecha?`<div class="muted">${l.folio?'Referencia '+h(l.folio):''}${l.folio&&l.fecha?' · ':''}${l.fecha?'Fecha '+fCorta(l.fecha):''}</div>`:''}</div>`;
 }
 /* liga un campo de archivo + monto dentro de un modal */
-function ligarComprobante(box,fileSel,montoSel,folioSel){
-  const fi=box.querySelector(fileSel),mi=box.querySelector(montoSel),st=document.createElement('div');fi.after(st);
+function ligarComprobante(box,fileSel,montoSel,folioSel,pac){
+  box._pac=pac||'';const fi=box.querySelector(fileSel),mi=box.querySelector(montoSel),st=document.createElement('div');fi.after(st);
   const pinta=()=>{st.innerHTML=lecturaHTML(box._lect,mi.value);st.querySelectorAll('[data-usar]').forEach(b=>b.onclick=()=>{mi.value=b.dataset.usar;mi.dispatchEvent(new Event('input'));pinta()})};
   fi.addEventListener('change',async()=>{const f=fi.files[0];if(!f){box._lect=null;return pinta()}
     box._lect={leyendo:true};pinta();
-    try{const l=await leerComprobante(f);if(fi.files[0]!==f)return;box._lect=l;
+    try{const l=await leerComprobante(f);if(fi.files[0]!==f)return;l.nombre_ok=nombreEnTexto(l.texto,box._pac);l.folio_dup=folioUsado(l.folio);box._lect=l;
       if(!num(mi.value)&&l.montos.length){mi.value=l.montos[0];mi.dispatchEvent(new Event('input'))}
       if(folioSel&&l.folio){const fo=box.querySelector(folioSel);if(fo&&!fo.value)fo.value=l.folio}}
     catch(e){box._lect={error:e.message||'sin conexión'}}pinta()});
@@ -2676,6 +2759,7 @@ function ligarComprobante(box,fileSel,montoSel,folioSel){
 }
 /* al guardar: el monto debe cuadrar con el comprobante o justificarse */
 async function confirmarLectura(l,monto){
+  if(l&&l.folio_dup&&!await confirmar(`La referencia <b>${h(l.folio)}</b> ya está registrada en otro pago. ¿Es un pago distinto?`))return null;
   if(!l||l.leyendo){if(l&&l.leyendo&&!await confirmar('Aún se está leyendo el comprobante. ¿Guardar sin esperar la verificación?'))return null;return {sin_lectura:true}}
   if(l.error||!l.montos||!l.montos.length){const mot=await pedirTexto('No se pudo leer el monto','¿Por qué se guarda sin verificar? (foto borrosa, comprobante manual…)');if(!mot)return null;return {...l,coincide:false,motivo:mot}}
   const ok=l.montos.some(v=>Math.abs(v-num(monto))<=0.5);
@@ -3695,6 +3779,7 @@ async function paginaCotPublica(tok){
 function vMas(){
   let items=[['reporte','Reporte semanal'],['paquetes','Paquetes quirúrgicos'],['catalogo','Catálogo de materiales']];
   if(can.precios())items.splice(1,0,['precios','Precios y vigencias']);
+  if(tiene('aprobar')||tiene('catalogo'))items.splice(items.findIndex(i=>i[0]==='catalogo')+1,0,['clasif','Criticidad y mínimos']);
   if(can.usuarios())items.push(['usuarios','Usuarios']);
   if(can.config())items.push(['config','Configuración']);
   items.push(['bitacora','Bitácora']);items.push(['cuenta','Mi cuenta']);
@@ -3703,7 +3788,7 @@ function vMas(){
   if(!items.some(i=>i[0]===S.sub.mas))S.sub.mas=items[0][0];
   const st=subtabs('mas',items,items[0][0]);
   let html=st.html;
-  ({campanas:vCampanas,indic:vIndic,precios:vPrecios,reporte:vReporte,paquetes:vPaquetes,catalogo:vCatalogo,usuarios:vUsuarios,config:vConfig,bitacora:vBitacora,cuenta:vCuenta})[st.cur](x=>html+=x);
+  ({clasif:vClasif,campanas:vCampanas,indic:vIndic,precios:vPrecios,reporte:vReporte,paquetes:vPaquetes,catalogo:vCatalogo,usuarios:vUsuarios,config:vConfig,bitacora:vBitacora,cuenta:vCuenta})[st.cur](x=>html+=x);
   $('#main').innerHTML=html;
   if(st.cur==='bitacora')cargarBitacora();
 }
@@ -3745,30 +3830,37 @@ function vCatalogo(out){
   out(`<div class="row" style="margin-bottom:10px"><h2 style="flex:3">Catálogo de materiales</h2>${can.catalogo()?`<button class="btn sec" style="flex:0 0 auto" onclick="importarMat()">Carga masiva</button><button class="btn" style="flex:0 0 auto" onclick="formMaterial()">＋ Material</button>`:''}</div>
   <div class="card" style="padding:4px 10px"><div class="tblwrap"><table><tr><th>Material</th><th>Categoría</th><th>Unidad</th><th>Mín</th><th>Crít</th><th>Máx</th><th>Costo</th><th>Proveedor</th></tr>${[...S.mat].sort((a,b)=>(esCarro(a)-esCarro(b))||(a.categoria||'').localeCompare(b.categoria||'')||a.nombre.localeCompare(b.nombre)).map(m=>`<tr ${can.catalogo()?`onclick="formMaterial('${m.id}')" style="cursor:pointer;${m.activo?'':'opacity:.5'}"`:''}><td>${h(m.nombre)} ${critPill(m)} ${esCarro(m)?'<span class="pill p-rojo">carro rojo</span>':''}<div class="muted">${h(m.codigo||'')}${m.gaveta?' · '+h(m.gaveta):''}</div></td><td>${h(m.categoria||'')}</td><td>${h(m.unidad)}</td><td>${fmtN(m.stock_minimo)}</td><td>${fmtN(m.stock_critico)}</td><td>${m.stock_maximo==null?'—':fmtN(m.stock_maximo)}</td><td>${money(m.costo)}</td><td class="muted">${h(S.prov.find(p=>p.id===m.proveedor_id)?.nombre||'')}</td></tr>`).join('')||'<tr><td colspan=8 class="empty">Sin materiales</td></tr>'}</table></div></div>`);
 }
-function clasificarMat(){
+function clasificarMat(){const m=modal('<div id="clBox"></div>');clasifUI(m.querySelector('#clBox'),()=>m.remove())}
+function vClasif(out){out('<div class="card" id="clBox"></div>');setTimeout(()=>{if($('#clBox'))clasifUI($('#clBox'))},0)}
+function clasifUI(root,done){
   const ms=S.mat.filter(m=>m.activo).sort((a,b)=>(a.categoria||'').localeCompare(b.categoria||'')||a.nombre.localeCompare(b.nombre));
   const cam={};let fq='',fk='todos';
-  const m=modal(`${mhead('Clasificar materiales')}<div class="muted">Elige la criticidad de cada material y marca si se reesteriliza. Solo se guardan los que cambies.</div>
-   <div class="muted" style="margin:6px 0">${CRIT_ORD.map(k=>`<b>${CRIT[k][0]}:</b> ${CRIT[k][2]}.`).join(' ')}</div>
-   <div class="row" style="margin:8px 0"><input id="clQ" placeholder="Buscar material o categoría"><select id="clK" aria-label="Filtrar"><option value="todos">Todas</option>${CRIT_ORD.map(k=>`<option value="${k}">${CRIT[k][0]}</option>`).join('')}<option value="re">Reesterilizables</option></select></div>
-   <div id="clL" style="max-height:55vh;overflow:auto"></div>
-   <div class="acts"><span class="muted" id="clN" style="align-self:center;margin-right:auto">Sin cambios</span><button class="btn" id="ok">Guardar cambios con PIN</button></div>`);
+  root.innerHTML=`${done?mhead('Criticidad y mínimos de material'):'<h3>Criticidad y mínimos de material</h3>'}<div class="muted">Marca la criticidad de cada material y ajusta su mínimo y nivel crítico. Solo se guardan los que cambies (con tu PIN).</div>
+   <div class="muted" style="margin:6px 0">${CRIT_ORD.map(k=>`<b>${CRIT[k][0]}:</b> ${CRIT[k][2]}.`).join(' ')} <b>Mínimo:</b> al llegar ahí se pinta amarillo y se sugiere pedir. <b>Nivel crítico:</b> rojo, urgente.</div>
+   <div class="row" style="margin:8px 0"><input id="clQ" placeholder="Buscar material o categoría"><select id="clK" aria-label="Filtrar"><option value="todos">Todos (${ms.length})</option>${CRIT_ORD.map(k=>`<option value="${k}">${CRIT[k][0]}</option>`).join('')}<option value="sinmin">Sin mínimo capturado</option><option value="bajo">Bajo mínimo hoy</option><option value="re">Reesterilizables</option></select></div>
+   <div id="clL" style="max-height:${done?'55vh':'65vh'};overflow:auto"></div>
+   <div class="acts"><span class="muted" id="clN" style="align-self:center;margin-right:auto">Sin cambios</span><button class="btn" id="clOk">Guardar cambios con PIN</button></div>`;
   const val=(mm,k)=>cam[mm.id]&&k in cam[mm.id]?cam[mm.id][k]:k==='criticidad'?critOf(mm):mm[k];
-  const draw=()=>{const t=normTxt(fq);const l=ms.filter(x=>(!t||normTxt(x.nombre+' '+(x.categoria||'')).includes(t))&&(fk==='todos'||(fk==='re'?val(x,'reesterilizable'):val(x,'criticidad')===fk)));
-    m.querySelector('#clL').innerHTML=`<table class="tbl"><tr><th>Material</th><th>Criticidad</th><th>Reesteriliza</th><th>Observación</th></tr>${l.map(x=>`<tr data-id="${x.id}"><td>${h(x.nombre)}<div class="muted">${h(x.categoria||'')}</div></td>
-      <td><select class="clC" aria-label="Criticidad de ${h(x.nombre)}">${CRIT_ORD.map(k=>`<option value="${k}" ${val(x,'criticidad')===k?'selected':''}>${CRIT[k][0]}</option>`).join('')}</select></td>
+  const cnt=()=>{const n=Object.keys(cam).length;root.querySelector('#clN').textContent=n?n+' material(es) con cambios':'Sin cambios'};
+  const draw=()=>{const t=normTxt(fq);const l=ms.filter(x=>(!t||normTxt(x.nombre+' '+(x.categoria||'')).includes(t))&&(fk==='todos'||(fk==='re'?val(x,'reesterilizable'):fk==='sinmin'?!num(val(x,'stock_minimo')):fk==='bajo'?semaforo(x).nivel!=='ok':val(x,'criticidad')===fk)));
+    root.querySelector('#clL').innerHTML=`<table class="tbl clas"><tr><th>Material</th>${CRIT_ORD.map(k=>`<th style="text-align:center">${CRIT[k][0].replace('Moderadamente','Mod.')}</th>`).join('')}<th>Existencia</th><th>Mínimo</th><th>Nivel crítico</th><th>Reesteriliza</th><th>Observación</th></tr>${l.map(x=>`<tr data-id="${x.id}"><td>${h(x.nombre)}<div class="muted">${h(x.categoria||'')} · ${h(x.unidad||'')}</div></td>
+      ${CRIT_ORD.map(k=>`<td style="text-align:center"><input type="radio" class="clC" name="cr_${x.id}" value="${k}" aria-label="${CRIT[k][0]}" ${val(x,'criticidad')===k?'checked':''}></td>`).join('')}
+      <td><b>${fmtN(stockMat(x.id,ubicIdsSede()))}</b></td>
+      <td><input class="clMin" type="number" min="0" step="any" style="width:70px" aria-label="Mínimo" value="${h(val(x,'stock_minimo')??0)}"></td>
+      <td><input class="clCr" type="number" min="0" step="any" style="width:70px" aria-label="Nivel crítico" value="${h(val(x,'stock_critico')??0)}"></td>
       <td style="text-align:center"><input type="checkbox" class="clR" aria-label="Se reesteriliza" ${val(x,'reesterilizable')?'checked':''}></td>
-      <td><input class="clO" placeholder="${val(x,'reesterilizable')?'Método, ciclos máximos…':''}" value="${h(val(x,'reest_obs')||'')}"></td></tr>`).join('')||'<tr><td colspan="4" class="muted">Sin resultados</td></tr>'}</table>`;
-    m.querySelector('#clN').textContent=Object.keys(cam).length?Object.keys(cam).length+' material(es) con cambios':'Sin cambios'};
-  m.querySelector('#clQ').oninput=e=>{fq=e.target.value;draw()};m.querySelector('#clK').onchange=e=>{fk=e.target.value;draw()};
-  m.querySelector('#clL').addEventListener('change',e=>{const tr=e.target.closest('tr[data-id]');if(!tr)return;const id=tr.dataset.id;cam[id]=cam[id]||{};
-    if(e.target.classList.contains('clC'))cam[id].criticidad=e.target.value;if(e.target.classList.contains('clR'))cam[id].reesterilizable=e.target.checked;if(e.target.classList.contains('clO'))cam[id].reest_obs=e.target.value.trim()||null;
-    m.querySelector('#clN').textContent=Object.keys(cam).length+' material(es) con cambios'});
+      <td><input class="clO" placeholder="Método, ciclos máximos…" value="${h(val(x,'reest_obs')||'')}"></td></tr>`).join('')||'<tr><td colspan="9" class="muted">Sin resultados</td></tr>'}</table>`;cnt()};
+  root.querySelector('#clQ').oninput=e=>{fq=e.target.value;draw()};root.querySelector('#clK').onchange=e=>{fk=e.target.value;draw()};
+  root.querySelector('#clL').addEventListener('change',e=>{const tr=e.target.closest('tr[data-id]');if(!tr)return;const id=tr.dataset.id;cam[id]=cam[id]||{};const c=e.target.classList;
+    if(c.contains('clC'))cam[id].criticidad=e.target.value;if(c.contains('clR'))cam[id].reesterilizable=e.target.checked;if(c.contains('clO'))cam[id].reest_obs=e.target.value.trim()||null;
+    if(c.contains('clMin'))cam[id].stock_minimo=num(e.target.value);if(c.contains('clCr'))cam[id].stock_critico=num(e.target.value);cnt()});
   draw();
-  m.querySelector('#ok').onclick=async()=>{const ids=Object.keys(cam);if(!ids.length)return toast('No hay cambios',true);
-    if(!await pedirPIN('Clasificar '+ids.length+' material(es)'))return;
-    try{for(const id of ids){const r={...cam[id],updated_at:new Date().toISOString()};if(r.criticidad)r.critico=r.criticidad==='critico';await q(sb.from('qx_materiales').update(r).eq('id',id),'Clasificar material');Object.assign(matById(id)||{},r)}
-      await logA('clasificar_materiales','qx_materiales',null,{n:ids.length});m.remove();toast(ids.length+' material(es) actualizados');render()}catch(e){}};
+  root.querySelector('#clOk').onclick=async()=>{const ids=Object.keys(cam);if(!ids.length)return toast('No hay cambios',true);
+    const mal=ids.map(id=>matById(id)).filter(x=>x&&num(val(x,'stock_critico'))>num(val(x,'stock_minimo')));
+    if(mal.length)return toast('El nivel crítico debe ser menor o igual al mínimo: '+mal.map(x=>x.nombre).slice(0,3).join(', '),true);
+    if(!await pedirPIN('Actualizar '+ids.length+' material(es)'))return;
+    try{for(const id of ids){const r={...cam[id],updated_at:new Date().toISOString()};if(r.criticidad)r.critico=r.criticidad==='critico';await q(sb.from('qx_materiales').update(r).eq('id',id),'Actualizar material');Object.assign(matById(id)||{},r);delete cam[id]}
+      await logA('clasificar_materiales','qx_materiales',null,{n:ids.length});toast(ids.length+' material(es) actualizados');if(done){done();render()}else draw()}catch(e){}};
 }
 function formMaterial(id){
   const m0=id?matById(id):{nombre:'',categoria:'',unidad:'pza',area:S.tab==='carro'?'carro_rojo':'quirofano',pzas_presentacion:1,critico:false,stock_minimo:0,stock_critico:0,stock_maximo:null,costo:0,controla_caducidad:true,activo:true};
