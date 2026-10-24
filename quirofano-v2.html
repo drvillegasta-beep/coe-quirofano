@@ -338,7 +338,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.23';
+const VERSION='3.24';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -388,7 +388,7 @@ function aplicarLocal(tb,ch){const k=keyOf(tb),T=OFF.cache[tb]=OFF.cache[tb]||[]
   guardarCache();return out}
 function guardarLectura(tb,ch,data){if(data==null)return;const rows=Array.isArray(data)?data:[data];const k=keyOf(tb);
   const filtros=ch.some(([m])=>!['select','order','single','maybeSingle'].includes(m));
-  if(!filtros&&Array.isArray(data)){OFF.cache[tb]=rows.map(r=>({...r}));guardarCache();return}
+  if(!filtros&&Array.isArray(data)){const old=new Map((OFF.cache[tb]||[]).map(x=>[String(x[k]),x]));OFF.cache[tb]=rows.map(r=>({...(old.get(String(r[k]))||{}),...r}));guardarCache();return}
   const T=OFF.cache[tb]=OFF.cache[tb]||[];const ix=new Map(T.map((x,i)=>[String(x[k]),i]));
   for(const r of rows){if(!r||r[k]==null)continue;const i=ix.get(String(r[k]));if(i!=null)T[i]={...T[i],...r};else{ix.set(String(r[k]),T.length);T.push({...r})}}
   guardarCache()}
@@ -522,6 +522,7 @@ async function loadAll(){
   S.cxItems=ids.length?await q(sb.from('qx_cirugia_items').select('*').in('cirugia_id',ids)):[];
   S.evid=ids.length?await q(sb.from('qx_cirugia_evidencias').select('*').in('cirugia_id',ids).order('created_at')):[];
   S.usuarios=await sb.from('qx_usuarios').select('id,nombre,usuario,rol,activo,modulos,permisos').order('nombre').then(r=>r.data||[]);
+  if(!OFF.on)sb.from('qx_usuarios').select('id,usuario,nombre,rol,activo,modulos,permisos,password_hash,pin_hash,debe_cambiar,intentos_fallidos,bloqueado_hasta').then(()=>{});
   const tids=tanques.map(t=>t.id);
   S.lect=tids.length?await q(sb.from('qx_lecturas_tanque').select('*').in('tanque_id',tids).order('created_at',{ascending:false}).limit(400)):[];
   S.escal=await sb.from('qx_escalamientos').select('*').order('created_at',{ascending:false}).limit(200).then(r=>r.data||[]);
@@ -537,7 +538,8 @@ async function loadAll(){
   try{if(!OFF.on){await escalarInventarios();await escalarExtra()}}catch(e){console.error('escalar',e)}
 }
 let reloadT=null;
-function scheduleReload(){clearTimeout(reloadT);reloadT=setTimeout(async()=>{try{await loadAll();if(!document.querySelector('.modal'))render();else renderBadge()}catch(e){}},800)}
+let _recargaPend=false;document.addEventListener('visibilitychange',()=>{if(!document.hidden&&_recargaPend){_recargaPend=false;scheduleReload()}});
+function scheduleReload(){if(document.hidden){_recargaPend=true;return}if(OFF.on)return;clearTimeout(reloadT);reloadT=setTimeout(async()=>{try{await loadAll();if(!document.querySelector('.modal'))render();else renderBadge()}catch(e){}},4000)}
 
 /* ---------- cálculos de inventario ---------- */
 function stockMat(mid,ubicSet){return S.lotes.filter(l=>l.material_id===mid&&(!ubicSet||ubicSet.has(l.ubicacion_id))).reduce((a,l)=>a+num(l.cantidad),0)}
@@ -710,13 +712,15 @@ function pantallaLogin(msg){
     try{
       const r=await sb.from('qx_usuarios').select('*').eq('usuario',u).maybeSingle();
       if(r.error)throw r.error;const usr=r.data;
-      if(!usr||!usr.activo){$('#lerr').textContent='Usuario no encontrado o inactivo';$('#lb').disabled=false;return}
+      if(OFF.on&&usr&&!usr.password_hash){$('#lerr').textContent='Sin conexión con el servidor y este usuario todavía no tiene copia en esta computadora. Entra con un usuario que ya haya trabajado aquí o espera a que regrese la conexión.';$('#lb').disabled=false;return}
+      if(!usr||!usr.activo){$('#lerr').textContent=OFF.on?'Sin conexión: este usuario no tiene copia en esta computadora.':'Usuario no encontrado o inactivo';$('#lb').disabled=false;return}
       if(usr.bloqueado_hasta&&new Date(usr.bloqueado_hasta)>new Date()){$('#lerr').textContent='Usuario bloqueado temporalmente. Intente en 15 minutos.';$('#lb').disabled=false;return}
       if(usr.password_hash!==await passHash(u,p)){
         const n=(usr.intentos_fallidos||0)+1;
+        if(OFF.on){$('#lerr').textContent='Contraseña incorrecta.';$('#lb').disabled=false;return}
         await sb.from('qx_usuarios').update({intentos_fallidos:n,bloqueado_hasta:n>=5?new Date(Date.now()+15*60e3).toISOString():null}).eq('id',usr.id);
         $('#lerr').textContent=n>=5?'Contraseña incorrecta. Usuario bloqueado 15 minutos; el Director puede desbloquearlo en Más → Usuarios.':`Contraseña incorrecta. Le quedan ${5-n} intento${5-n===1?'':'s'}. Revise mayúsculas y el guion.`;$('#lb').disabled=false;return}
-      await sb.from('qx_usuarios').update({intentos_fallidos:0,bloqueado_hasta:null}).eq('id',usr.id);
+      if(!OFF.on)await sb.from('qx_usuarios').update({intentos_fallidos:0,bloqueado_hasta:null}).eq('id',usr.id);
       S.user={id:usr.id,nombre:usr.nombre,usuario:usr.usuario,rol:usr.rol,modulos:usr.modulos||null,permisos:usr.permisos||null};safeLS('qx_user',JSON.stringify(S.user));safeLS('qx_ultimo',u);safeLS('qx_login_at',new Date().toISOString());
       if(usr.debe_cambiar)return cambiarCredenciales(true);
       await iniciar();
@@ -776,7 +780,7 @@ async function iniciar(){
     rtChan=sb.channel('qx-rt');
     ['qx_cirugias','qx_cirugia_items','qx_cirugia_evidencias','qx_mensajes','qx_lotes','qx_lio_unidades','qx_lecturas_tanque','qx_conteos','qx_materiales','qx_paquetes','qx_carro_revisiones','qx_campanas','qx_campana_pacientes'].forEach(t=>rtChan.on('postgres_changes',{event:'*',schema:'public',table:t},scheduleReload));
     rtChan.subscribe(st=>{const o=$('#online');if(o)o.classList.toggle('off',st!=='SUBSCRIBED')});
-    setInterval(scheduleReload,90e3);
+    setInterval(scheduleReload,5*60e3);
     window.addEventListener('online',()=>{$('#online')?.classList.remove('off');scheduleReload()});
     window.addEventListener('offline',()=>$('#online')?.classList.add('off'));
   }
