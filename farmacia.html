@@ -649,6 +649,15 @@ let PEDIDOS=[
 const PSTEPS=['Enviado','Autorizado','Pedido al proveedor','Recibido'];
 let ATENDIDAS=new Set();let RXHOY=[];
 
+let BAJO={};const ESC_H={agotado:4,critico:4,minimo:24};
+const hTxt=h=>h<1?'menos de 1 h':h<24?Math.floor(h)+' h':Math.floor(h/24)+' día'+(Math.floor(h/24)>1?'s':'');
+function cubierto(p){const pe=PEDIDOS.find(x=>x.est<3&&(x.det||[]).some(d=>+d.producto_id===p.id));if(pe)return 'pedido '+pe.id;if(SOLS.some(x=>x.producto_id===p.id&&(x.estado==='pendiente'||x.estado==='parcial')))return 'pedido al almacén';return null}
+function escEvents(){const ev=[],now=Date.now();
+ Object.values(BAJO).forEach(b=>{const p=PROD.find(x=>x.id===b.producto_id);if(!p||!p.cap||p.srv)return;const h=(now-new Date(b.desde_nivel))/36e5,lim=ESC_H[b.nivel]||24;if(h<lim||cubierto(p))return;
+  ev.push({id:`e${p.id}:${b.nivel}:${Math.floor(h/24)}`,k:b.nivel==='minimo'?'warn':'crit',grp:'esc',t:`Sin pedido del mostrador · ${p.nm} ${b.nivel==='agotado'?'agotado':b.nivel==='critico'?'en crítico':'en mínimo'}`,d:`Desde hace ${hTxt(h)} nadie ha solicitado reposición. Existencia ${stock(p)}, mínimo ${p.min}, crítico ${p.cri}${stockA(p)?`, en almacén ${stockA(p)}`:''}.`,p,esc:1})});
+ const dl=LAST_CONTEO?Math.round((TODAY-new Date(LAST_CONTEO+'T12:00:00'))/864e5):null;
+ if(dl!=null&&dl>8)ev.push({id:'econt'+ISO(TODAY),k:'crit',grp:'esc',t:'El mostrador no ha hecho el conteo semanal',d:`Último conteo firmado: ${fmtD(LAST_CONTEO)} (hace ${dl} días). Tocaba el lunes.`,p:null,econt:1});
+ return ev}
 let CEDIT=new Set();let CONTEOS_PEND=[],LAST_CONTEO=null,LAST_IMPORT=null,LAST_IMPORT_N=0,HAS_SALIDAS=false;
 const nextMonday=()=>{const d=new Date(TODAY);const w=d.getDay();d.setDate(d.getDate()+((8-w)%7));return d};
 function alerts(){
@@ -657,9 +666,10 @@ function alerts(){
  if(nocap.length)a.push({id:'nocap',k:'info',grp:'disc',t:`${nocap.length} producto${nocap.length>1?'s':''} sin existencia capturada`,d:'Importe el reporte de eOptics (Excel) o registre entradas con lote y caducidad.',p:null,imp:1});
  PR.filter(p=>p.cap).forEach(p=>{
   const[k]=stockState(p),s=stock(p),lk=p.lotes.map(l=>l.id).sort((a,b)=>a-b).join('.');
-  if(k==='dead')a.push({id:`s${p.id}:dead`,k:'dead',grp:'stock',t:`${p.nm}: agotado`,d:`Sin existencia vigente${p.min?` (mínimo ${p.min})`:''}. En receta se sugiere alternativa del mismo grupo.`,p});
-  else if(k==='crit')a.push({id:`s${p.id}:crit:${lk}`,k:'crit',grp:'stock',t:`${p.nm}: existencia crítica`,d:`Quedan ${s} (crítico ≤ ${p.cri}, mínimo ${p.min}).`,p});
-  else if(k==='warn')a.push({id:`s${p.id}:warn:${lk}`,k:'warn',grp:'stock',t:`${p.nm}: en mínimo`,d:`Quedan ${s} (mínimo ${p.min}).`,p});
+  const cov=['dead','crit','warn'].includes(k)?cubierto(p):null,nv={dead:'agotado',crit:'critico',warn:'minimo'}[k],cola=cov?` Ya solicitado (${cov}).`:` Si no se pide en ${ESC_H[nv]} h, se avisa a Dirección y Finanzas.`;
+  if(k==='dead')a.push({id:`s${p.id}:dead`,k:'dead',grp:'stock',t:`${p.nm}: agotado`,d:`Sin existencia vigente${p.min?` (mínimo ${p.min})`:''}.${cola}`,p,cov});
+  else if(k==='crit')a.push({id:`s${p.id}:crit:${lk}`,k:'crit',grp:'stock',t:`${p.nm}: existencia crítica`,d:`Quedan ${s} (crítico ≤ ${p.cri}, mínimo ${p.min}).${cola}`,p,cov});
+  else if(k==='warn')a.push({id:`s${p.id}:warn:${lk}`,k:'warn',grp:'stock',t:`${p.nm}: en mínimo`,d:`Quedan ${s} (mínimo ${p.min}).${cola}`,p,cov});
   p.lotes.filter(l=>l.cad).forEach(l=>{const[ck,ct]=cadState(l.cad),id=`c${p.id}:${l.l}:${ck}`;
    if(ck==='dead')a.push({id,k:'dead',grp:'cad',t:`${p.nm} lote ${l.l}: vencido`,d:`${l.q} pza caducó el ${fmtD(l.cad)}. Retirar del anaquel y dar de baja con PIN.`,p,cad:1,lote:l.l});
    else if(ck==='crit'||ck==='warn')a.push({id,k:ck,grp:'cad',t:`${p.nm} lote ${l.l}: caduca en ${ct}`,d:`${l.q} pza · vence ${fmtD(l.cad)}. Se sugiere primero en recetas.`,p,cad:1,lote:l.l});
@@ -735,7 +745,7 @@ function vSetup(){
  </ol></section>`;
 }
 function vDash(){
- const al=alerts().filter(a=>!ATENDIDAS.has(a.id)&&!((a.imp||a.sinl||a.cls)&&!can('entrada'))).slice(0,6);
+ const al=[...((can('autorizar')||eff()==='dir')?escEvents():[]),...alerts()].filter(a=>!ATENDIDAS.has(a.id)&&!((a.imp||a.sinl||a.cls)&&!can('entrada'))).slice(0,8);
  const top=PROD.filter(p=>!p.srv&&p.sal>0).sort((a,b)=>b.sal-a.sal).slice(0,8),mx=top.length?top[0].sal:1;
  const sinMov=PROD.filter(p=>p.cap&&p.sal===0&&!p.srv&&stock(p)>0);
  return `${DEMO?'<div class="proto"><b>Modo demostración:</b> no hay conexión con la base de datos de farmacia; los datos no se guardan.</div>':''}${vSetup()}
@@ -754,8 +764,10 @@ function alertRow(a){
   ${ATENDIDAS.has(a.id)?'<span class="chip c-ok">Atendida</span>':`<button class="btn sm" data-ok="${esc(a.id)}">Marcar atendida</button>`}</div></div>`;
 }
 function alertActs(a){const b=[];
- if(a.grp==='stock'&&a.p&&can('pedir')&&stockA(a.p))b.push(`<button class="btn sm pri" data-palm="${a.p.id}">Pedir al almacén (${stockA(a.p)})</button>`);
- if(a.grp==='stock'&&a.p&&can('pedir'))b.push(`<button class="btn sm ${stockA(a.p)?'':'pri'}" data-ped="${a.p.id}">Solicitar a Finanzas</button>`);
+ if(a.esc&&a.p){if(can('almacen')&&stockA(a.p))b.push(`<button class="btn sm pri" data-tras="${a.p.id}|${Math.min(stockA(a.p),Math.max(a.p.min*2-stock(a.p),1))}|">Enviar del almacén</button>`);if(can('pedir'))b.push(`<button class="btn sm ${can('almacen')&&stockA(a.p)?'':'pri'}" data-ped="${a.p.id}">Generar pedido</button>`);else if(can('almacen'))b.push(`<button class="btn sm pri" data-palp="${a.p.id}|${Math.max(a.p.min*2-stock(a.p),1)}">Pedir al proveedor</button>`)}
+ if(a.econt)b.push(`<button class="btn sm" data-goinvc="1">Ver conteo</button>`);
+ if(a.grp==='stock'&&a.p&&can('pedir')&&stockA(a.p)&&!a.cov)b.push(`<button class="btn sm pri" data-palm="${a.p.id}">Pedir al almacén (${stockA(a.p)})</button>`);
+ if(a.grp==='stock'&&a.p&&can('pedir')&&!a.cov)b.push(`<button class="btn sm ${stockA(a.p)?'':'pri'}" data-ped="${a.p.id}">Solicitar a Finanzas</button>`);
  if(a.sol&&can('almacen'))b.push(stockA(a.p)?`<button class="btn sm pri" data-tras="${a.p.id}|${Math.min(a.sol.cantidad-a.sol.surtido,stockA(a.p))}|${a.sol.id}">Enviar a farmacia</button>`:`<button class="btn sm pri" data-palp="${a.p.id}|${a.sol.cantidad-a.sol.surtido}">Pedir al proveedor</button>`,`<button class="btn sm" data-rech="${a.sol.id}">Rechazar</button>`);
  if(a.grp==='almst'&&a.p&&can('almacen'))b.push(`<button class="btn sm pri" data-palp="${a.p.id}">Pedir al proveedor</button>`);
  if(a.ainv&&can('almacen'))b.push(`<button class="btn sm pri" data-ainv="1">Hacer inventario</button>`);
@@ -844,7 +856,7 @@ function conteoImpDlg(){
   aplicar(linesToRows(L))}catch(er){$('#imPrev').innerHTML='';dErr(er.message)}};
  $('#ciI').onchange=e=>{if(e.target.files.length)leer(e.target.files)};$('#ciF').onchange=e=>{if(e.target.files.length)leer(e.target.files)};
 }
-function vAlert(){return `<h2>Alertas</h2><p class="note">Las importantes (caducidades, existencias bajas y discrepancias) también aparecen como ventana emergente al entrar y cada vez que surge una nueva.</p>${alerts().map(alertRow).join('')||'<p class="note">Sin alertas.</p>'}`}
+function vAlert(){return `<h2>Alertas</h2><p class="note">Las importantes (caducidades, existencias bajas y discrepancias) también aparecen como ventana emergente al entrar y cada vez que surge una nueva.</p>${[...((can('autorizar')||eff()==='dir')?escEvents():[]),...alerts()].map(alertRow).join('')||'<p class="note">Sin alertas.</p>'}`}
 function vPed(){
  const canP=can('pedir');
  return `<h2>Pedidos a Finanzas</h2>
@@ -1279,6 +1291,7 @@ function bindActs(R){
  R.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editDlg(+b.dataset.edit));
  R.querySelectorAll('[data-goinv]').forEach(b=>b.onclick=()=>{closePop();invFilter=b.dataset.goinv;invQ='';go('inv')});
  R.querySelectorAll('[data-prm]').forEach(b=>b.onclick=()=>{closePop();paramDlg(b.dataset.prm==='1')});
+ R.querySelectorAll('[data-goinvc]').forEach(b=>b.onclick=()=>{closePop();go(tabsFor().includes('conteo')?'conteo':'dash')});
  R.querySelectorAll('[data-goped]').forEach(b=>b.onclick=()=>{closePop();go('ped')});
 }
 
@@ -1447,7 +1460,9 @@ function popMark(ids){ids.forEach(i=>POP_MEM.add(i));try{sessionStorage.setItem(
 function popEvents(){
  if(!ME||DEMO||viewAs||!LOADED)return[];
  const ev=[];
- if(tabsFor().includes('alert'))alerts().filter(a=>a.grp&&a.grp!=='info'&&!ATENDIDAS.has(a.id)&&!((a.imp||a.sinl)&&!can('entrada'))).forEach(a=>ev.push(a));
+ const bk='@'+Math.floor(Date.now()/72e5),nag=can('pedir')&&!can('autorizar');
+ if(tabsFor().includes('alert'))alerts().filter(a=>a.grp&&a.grp!=='info'&&!((a.imp||a.sinl)&&!can('entrada'))&&!(a.grp==='stock'&&a.cov)).map(a=>a.grp==='stock'&&nag?{...a,id:a.id+bk}:a).filter(a=>!ATENDIDAS.has(a.id)).forEach(a=>ev.push(a));
+ if(can('autorizar')||eff()==='dir')escEvents().filter(a=>!ATENDIDAS.has(a.id)).forEach(a=>ev.push(a));
  if(can('almacen'))alertsAlm().filter(a=>!ATENDIDAS.has(a.id)).forEach(a=>ev.push(a));
  if(can('autorizar'))PEDIDOS.filter(p=>p.est===0&&p.por!==ME.nombre).forEach(p=>ev.push({id:'p'+p.id,k:p.prio==='Urgente'?'crit':'warn',grp:'ped',t:`Solicitud ${p.id} por autorizar${p.prio==='Urgente'?' · URGENTE':''}`,d:`${p.items} · ${p.monto?money(p.monto):'costo por definir'} · ${p.por}${p.nota?' · '+p.nota:''}`}));
  return ev;
@@ -1459,7 +1474,7 @@ function checkPop(force){
  if(!nu.length){if(force)toast('Sin avisos pendientes.');return}
  showPop(nu,all.length);
 }
-const POPG=[['cad','Caducidades','var(--crit)'],['stock','Existencias bajas','var(--warn)'],['disc','Discrepancias','var(--accent)'],['alm','Farmacia pide al almacén','var(--warn)'],['almst','Almacén · existencias e inventario','var(--warn)'],['almcad','Almacén · caducidades','var(--crit)'],['ped','Solicitudes a Finanzas','var(--ok)']];
+const POPG=[['esc','Escalado · el mostrador no ha respondido','var(--crit)'],['cad','Caducidades','var(--crit)'],['stock','Existencias bajas','var(--warn)'],['disc','Discrepancias','var(--accent)'],['alm','Farmacia pide al almacén','var(--warn)'],['almst','Almacén · existencias e inventario','var(--warn)'],['almcad','Almacén · caducidades','var(--crit)'],['ped','Solicitudes a Finanzas','var(--ok)']];
 function showPop(list,total){
  const n=list.length,lim=24;
  $('#popT').textContent=n===1?'1 aviso importante':`${n} avisos importantes`;
@@ -1731,9 +1746,10 @@ async function loadAll(){
   sb.from('far_log').select('created_at,detalle').eq('accion','import_eoptics').order('created_at',{ascending:false}).limit(1),
   sb.from('far_solicitudes_alm').select('*').in('estado',['pendiente','parcial']).order('id'),
   sb.from('far_conteos').select('fecha').eq('ubicacion','almacen').order('fecha',{ascending:false}).limit(1),
-  sb.rpc('far_almacen_dia')]);
+  sb.rpc('far_almacen_dia'),
+  sb.rpc('far_revisar_bajo')]);
  R.forEach((r,k)=>{if(r.error&&k!==6&&k<8)throw r.error});TPL_DB=!R[6].error;
- const [p,l,pe,pm,at,us,pl,rh,mv,cp,lc,li,so,lca]=R.map(r=>r.data||[]);SOLS=so;LAST_CONTEO_A=lca[0]?lca[0].fecha:null;if(R[14]&&!R[14].error&&R[14].data!=null)ALM_DIA=+R[14].data;
+ const [p,l,pe,pm,at,us,pl,rh,mv,cp,lc,li,so,lca]=R.map(r=>r.data||[]);BAJO=R[15]&&!R[15].error?Object.fromEntries((R[15].data||[]).map(b=>[b.producto_id,b])):{};SOLS=so;LAST_CONTEO_A=lca[0]?lca[0].fecha:null;if(R[14]&&!R[14].error&&R[14].data!=null)ALM_DIA=+R[14].data;
  CONTEOS_PEND=cp.filter(c=>c.conteo!==c.existencia);LAST_CONTEO=lc[0]?lc[0].fecha:null;LAST_IMPORT=li[0]?li[0].created_at:null;LAST_IMPORT_N=li[0]&&li[0].detalle?li[0].detalle.claves:0;HAS_SALIDAS=mv.length>0;
  const SAL={};mv.forEach(m=>{SAL[m.producto_id]=(SAL[m.producto_id]||0)-m.cantidad});RXHOY=rh;if(TPL_DB)TPLS=pl.map(r=>({id:r.id,nombre:r.nombre,icono:r.icono,dx:r.diagnostico||'',meds:r.medicamentos||[]}));
  if(!p.length)throw new Error('vacio');
@@ -1813,7 +1829,7 @@ let LOADED=false;
 async function startData(){
  try{await loadAll();await loadCals();LOADED=true;remap();setOnline(true,'En línea · sincronizado');renderTabs();render();loadBusy(true);setInterval(()=>loadBusy(),5*60000);
   const ch=sb.channel('coe-farmacia');
-  ['far_productos','far_lotes','far_pedidos','far_alertas_atendidas','far_permisos','far_usuarios','rec_recetas','rec_plantillas','far_conteos','far_solicitudes_alm'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{clearTimeout(rlT);rlT=setTimeout(reload,500)}));
+  ['far_productos','far_lotes','far_pedidos','far_alertas_atendidas','far_permisos','far_usuarios','rec_recetas','rec_plantillas','far_conteos','far_solicitudes_alm','far_movimientos'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{clearTimeout(rlT);rlT=setTimeout(reload,500)}));
   ch.subscribe();setTimeout(checkPop,600);setInterval(checkPop,60000);
  }catch(e){setOnline(false,'Sin conexión');renderTabs();render();toast('No se pudieron cargar los datos. Revise su conexión.')}
 }
@@ -1913,7 +1929,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610230614';
+const APP_VER='202610251740';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
