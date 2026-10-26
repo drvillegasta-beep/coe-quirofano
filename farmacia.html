@@ -498,6 +498,8 @@ body.locked .shell{visibility:hidden}
 .day small{font-size:11px;text-transform:uppercase;color:var(--muted)}.day b{font-size:18px}.day em{font-style:normal;font-size:11px;color:var(--ok)}
 .day.few em{color:var(--warn)}.day.full{opacity:.45}.day.full em{color:var(--muted)}
 .day[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft)}
+.citares{margin:6px 0 10px;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line);line-height:1.7}
+.citaok a{color:inherit;text-decoration:underline}
 .citaok{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--ok-soft);color:var(--ok);font-weight:600}
 .strip2{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .almcal{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.almcal>div{flex:1;min-width:220px}
@@ -905,7 +907,7 @@ const EMOJIS=['👁️','🦠','🎯','💧','🩹','💊','🔥','🤧','🌸',
 let TPL_EDIT=false,TPL_DB=false;
 const rxHash=()=>JSON.stringify([RX.pac,RX.edad,RX.dx,RX.med,RX.sede,RX.cita,RX.hora,RX.cal,RX.tel,RX.motivo,RX.promos,RX.meds.map(m=>[m.pid,m.eye,m.dose,m.f,m.fh,m.fx,m.d,m.dU,m.dN,m.taper,m.via,m.uni,m.prn,m.taper?fasesOf(m):0])]);
 const rxFolio=()=>RX.folio&&RX.saved===rxHash()?RX.folio:'SIN GUARDAR';
-let RX={hora:null,cal:null,tel:'',motivo:'Subsecuente',promos:false,folio:null,saved:null,pac:'',edad:'',dx:'',med:'vil',sede:'tac',cita:'',meds:[],view:'std'};
+let RX={hora:null,turno:null,cal:null,tel:'',motivo:'Subsecuente',promos:false,folio:null,saved:null,pac:'',edad:'',dx:'',med:'vil',sede:'tac',cita:'',meds:[],view:'std'};
 function tplMeds(t){const miss=[];const meds=t.meds.map(m=>{const p=PROD.find(x=>x.cl===m.clave);if(!p){miss.push(m.clave);return null}return{pid:p.id,eye:m.ojo||'AO',dose:m.gotas,f:m.veces??2,d:m.dias||0,taper:m.reduccion?1:0,via:m.via||'oft',uni:m.unidad||(m.via&&m.via!=='oft'?defUni(m.via):'gota'),prn:!!m.prn,...(m.cada_horas?{fh:m.cada_horas}:{}),fx:m.frecuencia_libre||'',...(m.dur_unidad?{dU:m.dur_unidad,dN:m.dur_n}:{}),...(m.reduccion?{fases:JSON.parse(JSON.stringify(m.fases||defFases(m.gotas)))}:{})}}).filter(Boolean);return{meds,miss}}
 function loadTpl(id,quiet){const t=TPLS.find(x=>String(x.id)===String(id));if(!t)return;const{meds,miss}=tplMeds(t);RX.dx=t.dx||RX.dx;RX.meds=meds;if(!quiet){toast(miss.length?`Plantilla cargada. ${miss.length} medicamento(s) ya no están en el catálogo.`:`Plantilla «${t.nombre}» cargada.`);render()}}
 loadTpl('l1',true);
@@ -1023,28 +1025,40 @@ function tplDel(id){const t=TPLS.find(x=>String(x.id)===String(id));if(!t)return
   $('#msgOvl').hidden=true;toast('Plantilla borrada.');render()};}
 let CALS=[],BUSY={},BUSY_AT=0,BUSY_ERR='',CAL_DIRECTO=false,CITA_OK=null;
 const calSrc=c=>c&&(c.tiene_ical||CAL_DIRECTO);
-const MOTIVOS=['Subsecuente','Postoperatorio','Revisión de presión','Revisión de tratamiento','Resultados de estudios'];
+const MOTIVOS=['Subsecuente','Estudios','Postoperatorio','Revisión de presión','Revisión de tratamiento','Resultados de estudios'];
+const CAP=3;/* pacientes que se pueden atender a la misma hora */
+const TURNOS={am:['Mañana',9*60,14*60],pm:['Tarde',15*60,19*60]};
+const esEstudio=m=>/estudio|^oct|campo visual|topograf|biometr|ultrason|paquimet|angiograf|retinograf|pentacam|orbscan/i.test((m||'').trim())&&!/resultado/i.test(m||'');
 const hm2=t=>{const[h,m]=t.split(':').map(Number);return h*60+m};
 const fmtH=min=>{const h=Math.floor(min/60),m=min%60;return `${((h+11)%12)+1}:${String(m).padStart(2,'0')} ${h<12?'am':'pm'}`};
 function slotDate(dateStr,min){const[y,mo,d]=dateStr.split('-').map(Number);return new Date(y,mo-1,d,Math.floor(min/60),min%60,0)}
-function calSlots(cal,dateStr){if(!cal||!dateStr)return[];const out=[];const a=hm2((cal.hora_inicio||'09:00').slice(0,5)),b=hm2((cal.hora_fin||'19:00').slice(0,5)),st=cal.duracion_min||20;
- const bz=BUSY[cal.id]||{ocupado:[],dias:[]};const dayBlocked=(bz.dias||[]).includes(dateStr);const now=new Date();
- for(let m=a;m+st<=b;m+=st){const s=slotDate(dateStr,m),e=new Date(s.getTime()+st*60000);
-  const busy=dayBlocked||(bz.ocupado||[]).some(([x,y])=>new Date(x)<e&&new Date(y)>s);out.push({m,label:fmtH(m),busy,past:s<now})}
+function turnoRango(cal,t){const a=hm2((cal.hora_inicio||'09:00').slice(0,5)),b=hm2((cal.hora_fin||'19:00').slice(0,5));if(!t)return[a,b];const[,x,y]=TURNOS[t];return[Math.max(a,x),Math.min(b,y)]}
+function calSlots(cal,dateStr,t){if(!cal||!dateStr)return[];const out=[];const[a,b]=turnoRango(cal,t),st=cal.duracion_min||20;
+ const bz=BUSY[cal.id]||{ocupado:[],dias:[]};const dayBlocked=(bz.dias||[]).includes(dateStr);const now=new Date();const oc=(bz.ocupado||[]).map(([x,y])=>[new Date(x),new Date(y)]);
+ for(let m=a;m+st<=b;m+=st){const s=slotDate(dateStr,m),e=new Date(s.getTime()+st*60000);const n=oc.filter(([x,y])=>x<e&&y>s).length;
+  out.push({m,label:fmtH(m),n,busy:dayBlocked||n>=CAP,past:s<now})}
  return out}
-function vCita(){const cal=CALS.find(c=>String(c.id)===String(RX.cal))||null;const sl=calSlots(cal,RX.cita);const bz=cal&&BUSY[cal.id];
- const dayBlocked=cal&&bz&&(bz.dias||[]).includes(RX.cita);const libres=sl.filter(x=>!x.busy&&!x.past).length;
+/* citas que ya hay en ese turno (cuenta cada evento una vez) */
+function turnoCitas(cal,dateStr,t){const bz=BUSY[cal.id];if(!bz)return 0;const[a,b]=turnoRango(cal,t),s=slotDate(dateStr,a),e=slotDate(dateStr,b);return (bz.ocupado||[]).filter(([x,y])=>new Date(x)<e&&new Date(y)>s).length}
+/* hora automática: la primera del turno donde aún cabe un paciente */
+function autoHora(cal){if(!cal||!RX.cita)return null;const sl=calSlots(cal,RX.cita,RX.turno).filter(x=>!x.busy&&!x.past);if(!sl.length)return null;
+ if(RX.hora!=null&&sl.some(x=>x.m===RX.hora))return RX.hora;return sl[0].m}
+function vCita(){const cal=CALS.find(c=>String(c.id)===String(RX.cal))||null;if(!RX.turno)RX.turno=esEstudio(RX.motivo)?'pm':'am';
+ const okNow=CITA_OK&&CITA_OK.k===citaKey();if(cal&&!okNow)RX.hora=autoHora(cal);const bz=cal&&BUSY[cal.id];const tn=TURNOS[RX.turno][0].toLowerCase();
+ const sl=cal&&RX.cita?calSlots(cal,RX.cita,RX.turno):[];const dayBlocked=cal&&bz&&(bz.dias||[]).includes(RX.cita);
+ const estado=!cal?'':BUSY_ERR?`<span class="note">· no se pudo leer la agenda (${esc(BUSY_ERR)}); se agenda igual</span>`:bz&&bz.error?`<span class="note">· ${esc(bz.error)}</span>`:calSrc(cal)?'':'<span class="note">· sin conexión a Google Calendar</span>';
  return `<div class="sec-h">Próxima cita</div>
- <div class="field"><span class="lbl" style="margin-bottom:4px">Agenda</span>${CALS.length?`<div class="seg2 sm wrap">${CALS.filter(c=>c.activo).map(c=>`<button type="button" data-cal="${c.id}" aria-pressed="${String(RX.cal)===String(c.id)}"><span class="dot" style="background:${esc(c.color||'#1d5873')}"></span>${esc(c.nombre)}</button>`).join('')}</div>`:'<p class="note">No hay agendas configuradas. El Director las agrega en Accesos.</p>'}</div>
- ${cal?`<div class="field"><span class="lbl" style="margin-bottom:4px">Disponibilidad · próximas 3 semanas${calSrc(cal)?'':' <span class="note">(sin bloqueos de Google)</span>'}</span><div class="days">${Array.from({length:22},(_,k)=>{const ds=addDays(k),d=new Date(ds+'T12:00:00');if(d.getDay()===0)return '';const sl=calSlots(cal,ds),lib=sl.filter(x=>!x.busy&&!x.past).length,blk=(BUSY[cal.id]&&(BUSY[cal.id].dias||[]).includes(ds));return `<button type="button" class="day ${lib?(lib<4?'few':''):'full'}" data-dia="${ds}" aria-pressed="${RX.cita===ds}" ${lib?'':'disabled'}><small>${d.toLocaleDateString('es-MX',{weekday:'short'})}</small><b>${d.getDate()}</b><em>${blk?'bloqueado':lib?lib+' libres':'lleno'}</em></button>`}).join('')}</div></div>`:''}
- <div class="field"><label for="rxCita">Fecha</label><input type="date" id="rxCita" value="${RX.cita}" min="${ISO(TODAY)}"><div class="chips sm">${[[7,'1 sem'],[14,'2 sem'],[30,'1 mes'],[90,'3 meses']].map(([d,t])=>`<button type="button" data-cita="${d}" aria-pressed="${RX.cita===addDays(d)}">${t}</button>`).join('')}</div></div>
- ${cal&&RX.cita?`<div class="field"><span class="lbl" style="margin-bottom:4px">Hora · ${new Date(RX.cita+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})} ${calSrc(cal)?(BUSY_ERR?`<span class="note">· no se pudo leer la agenda: ${esc(BUSY_ERR)}</span>`:bz&&bz.error?`<span class="note">· ${esc(bz.error)}</span>`:`<span class="note">· ${dayBlocked?'día bloqueado en Google Calendar':libres+' horarios libres'}</span>`):'<span class="note">· sin conexión a Google Calendar: no se ven los bloqueos</span>'}</span>
-   <div class="slots">${sl.map(x=>`<button type="button" class="slot" data-hora="${x.m}" ${x.busy||x.past?'disabled':''} aria-pressed="${RX.hora===x.m}" title="${x.busy?'Ocupado o bloqueado':x.past?'Ya pasó':'Libre'}">${x.label}</button>`).join('')}</div></div>`:''}
- <div class="field"><span class="lbl" style="margin-bottom:4px">Motivo</span><div class="chips sm">${MOTIVOS.map(m=>`<button type="button" data-motivo="${esc(m)}" aria-pressed="${RX.motivo===m}">${esc(m)}</button>`).join('')}</div><input type="text" id="rxMot" value="${esc(RX.motivo)}" style="margin-top:6px" placeholder="Motivo de la cita"></div>
+ <div class="field"><span class="lbl" style="margin-bottom:4px">1 · Agenda</span>${CALS.length?`<div class="seg2 sm wrap">${CALS.filter(c=>c.activo).map(c=>`<button type="button" data-cal="${c.id}" aria-pressed="${String(RX.cal)===String(c.id)}"><span class="dot" style="background:${esc(c.color||'#1d5873')}"></span>${esc(c.nombre)}</button>`).join('')}</div>`:'<p class="note">No hay agendas configuradas. El Director las agrega en Accesos.</p>'}</div>
+ <div class="field"><span class="lbl" style="margin-bottom:4px">2 · Motivo</span><div class="chips sm">${MOTIVOS.map(m=>`<button type="button" data-motivo="${esc(m)}" aria-pressed="${RX.motivo===m}">${m==='Estudios'?'🔬 ':''}${esc(m)}</button>`).join('')}</div><input type="text" id="rxMot" value="${esc(RX.motivo)}" style="margin-top:6px" placeholder="Motivo de la cita (ej. OCT, campo visual)"></div>
+ <div class="field"><span class="lbl" style="margin-bottom:4px">3 · Turno ${esEstudio(RX.motivo)?'<span class="note">· los estudios se agendan por la tarde</span>':''}</span><div class="seg2 sm">${Object.entries(TURNOS).map(([k,[t,a,b]])=>`<button type="button" data-turno="${k}" aria-pressed="${RX.turno===k}">${k==='am'?'☀️':'🌇'} ${t} <span class="note">${fmtH(a)}–${fmtH(b)}</span></button>`).join('')}</div></div>
+ <div class="field"><span class="lbl" style="margin-bottom:4px">4 · Día ${estado}</span><div class="chips sm">${[[7,'1 sem'],[14,'2 sem'],[30,'1 mes'],[90,'3 meses']].map(([d,t])=>`<button type="button" data-cita="${d}" aria-pressed="${RX.cita===addDays(d)}">${t}</button>`).join('')}<input type="date" id="rxCita" value="${RX.cita}" min="${ISO(TODAY)}" style="width:auto;margin-left:4px" aria-label="Otra fecha"></div>
+ ${cal?`<div class="days" style="margin-top:8px">${Array.from({length:22},(_,k)=>{const ds=addDays(k),d=new Date(ds+'T12:00:00');if(d.getDay()===0)return '';const s=calSlots(cal,ds,RX.turno),lib=s.some(x=>!x.busy&&!x.past),blk=(bz&&(bz.dias||[]).includes(ds)),n=turnoCitas(cal,ds,RX.turno);return `<button type="button" class="day ${lib?(n>=12?'few':''):'full'}" data-dia="${ds}" aria-pressed="${RX.cita===ds}" ${lib?'':'disabled'}><small>${d.toLocaleDateString('es-MX',{weekday:'short'})}</small><b>${d.getDate()}</b><em>${blk?'bloqueado':!lib?'lleno':n?n+' cita'+(n>1?'s':''):'libre'}</em></button>`}).join('')}</div>`:''}</div>
+ ${cal&&RX.cita&&!okNow?(dayBlocked||RX.hora==null?`<p class="note" style="color:var(--warn)">${dayBlocked?'Ese día está bloqueado en Google Calendar.':`Ya no hay lugar en la ${tn} de ese día.`} Elija otro día${dayBlocked?'':' u otro turno'}.</p>`
+  :`<div class="citares"><div>📌 <b>${esc(new Date(RX.cita+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'}))}</b> · ${esc(TURNOS[RX.turno][0])} · llega a las <select id="rxHora" aria-label="Hora" style="width:auto;display:inline-block;padding:2px 6px">${sl.filter(x=>!x.busy&&!x.past).map(x=>`<option value="${x.m}" ${x.m===RX.hora?'selected':''}>${x.label}${x.n?` (${x.n} ya)`:''}</option>`).join('')}</select></div><div class="note">Se atienden hasta ${CAP} pacientes a la vez; la hora es aproximada.</div></div>`):''}
  <label class="chk"><input type="checkbox" id="rxPromo" ${RX.promos?'checked':''}> El paciente acepta recibir avisos y promociones de la clínica por WhatsApp</label>
- ${CITA_OK&&CITA_OK.k===citaKey()?`<div class="citaok">✓ Cita agendada en Google Calendar · <b>${esc(CITA_OK.txt)}</b></div>`:`<button type="button" class="btn pri gcal" id="gcalBtn" ${cal&&RX.hora!=null&&RX.cita?'':'disabled'}>📅 ${CAL_DIRECTO?'Agendar cita':'Agendar en Google Calendar'}${cal?' · '+esc(cal.nombre):''}</button>`}
- ${cal&&RX.hora==null?'<p class="note">Elija una hora libre para agendar.</p>':''}`}
-const citaKey=()=>[RX.cal,RX.cita,RX.hora,RX.pac.trim()].join('|');
+ ${okNow?`<div class="citaok">✓ Cita guardada en Google Calendar · <b>${esc(CITA_OK.txt)}</b>${CITA_OK.liga?` · <a href="${esc(CITA_OK.liga)}" target="_blank" rel="noopener">Ver en Google Calendar ↗</a>`:''}</div>`:`<button type="button" class="btn pri gcal" id="gcalBtn" ${cal&&RX.hora!=null&&RX.cita?'':'disabled'}>📅 ${CAL_DIRECTO?'Agendar cita':'Agendar en Google Calendar'}${cal?' · '+esc(cal.nombre):''}</button>`}
+ ${cal&&!RX.cita?'<p class="note">Elija el día.</p>':''}`}
+const citaKey=()=>[RX.cal,RX.cita,RX.turno,RX.pac.trim()].join('|');
 async function loadCals(){if(!sb)return;try{const r=await sb.rpc('far_calendarios_lista');if(r.error)throw r.error;CALS=r.data||[];try{const d=await sb.rpc('far_cal_directo');CAL_DIRECTO=!!d.data}catch(e){CAL_DIRECTO=false}if(RX.cal==null){const f=CALS.find(c=>c.activo);if(f)RX.cal=f.id}}catch(e){CALS=[]}}
 async function loadBusy(force){if(!sb||!ME||!ME.token)return;if(!force&&Date.now()-BUSY_AT<4*60000)return;if(!CALS.some(c=>calSrc(c)&&c.activo))return;
  const d0=new Date(TODAY);d0.setDate(d0.getDate()-1);const d1=new Date(TODAY);d1.setDate(d1.getDate()+65);
@@ -1059,9 +1073,9 @@ async function citaDirecta(btn){const d=citaDatos();btn.disabled=true;btn.textCo
  try{const r=await sb.functions.invoke('cal-cita',{body:{token:ME.token,cal:d.cal.id,inicio:d.s.toISOString(),fin:d.e.toISOString(),titulo:d.titulo,detalle:d.detalle,ubicacion:d.ubicacion,folio:RX.folio}});
   const x=r.data||{};if(r.error||x.error)throw new Error(x.error||r.error.message);
   (BUSY[d.cal.id]=BUSY[d.cal.id]||{ocupado:[],dias:[]}).ocupado.push([d.s.toISOString(),d.e.toISOString()]);
-  CITA_OK={k:citaKey(),txt:`${d.s.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})} · ${fmtH(RX.hora)} · ${d.cal.nombre}`};
+  CITA_OK={k:citaKey(),liga:x.liga||null,txt:`${d.s.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})} · ${fmtH(RX.hora)} · ${d.cal.nombre}`};
   if(sb&&RX.folio)sb.from('rec_recetas').update({cita_inicio:d.s.toISOString(),cita_calendario:d.cal.nombre,telefono:RX.tel||null,motivo_cita:RX.motivo||null,acepta_promos:!!RX.promos}).eq('folio',RX.folio).then(()=>{});
-  toast('Cita agendada en Google Calendar.');render();setTimeout(()=>loadBusy(true),4000)}
+  toast(x.verificada?'Cita guardada y verificada en Google Calendar.':'Cita agendada en Google Calendar.');render();setTimeout(()=>loadBusy(true),4000)}
  catch(e){toast('No se agendó: '+e.message);if(/ocupar/.test(e.message)){RX.hora=null;loadBusy(true)}render()}}
 function gcalUrl(){const cal=CALS.find(c=>String(c.id)===String(RX.cal));if(!cal||RX.hora==null)return null;
  const s=slotDate(RX.cita,RX.hora),e=new Date(s.getTime()+(cal.duracion_min||20)*60000);
@@ -1238,9 +1252,10 @@ function bind(){
  M.querySelectorAll('[data-cita]').forEach(b=>b.onclick=()=>{RX.cita=addDays(+b.dataset.cita);RX.hora=null;render()});
  M.querySelectorAll('[data-dia]').forEach(b=>b.onclick=()=>{RX.cita=b.dataset.dia;RX.hora=null;render()});
  M.querySelectorAll('[data-cal]').forEach(b=>b.onclick=()=>{RX.cal=+b.dataset.cal;RX.hora=null;render();loadBusy()});
- M.querySelectorAll('[data-hora]').forEach(b=>b.onclick=()=>{RX.hora=+b.dataset.hora;render()});
- M.querySelectorAll('[data-motivo]').forEach(b=>b.onclick=()=>{RX.motivo=b.dataset.motivo;render()});
- const rm=$('#rxMot');if(rm)rm.onchange=()=>{RX.motivo=rm.value.trim();render()};
+ const rh=$('#rxHora');if(rh)rh.onchange=()=>{RX.hora=+rh.value;render()};
+ M.querySelectorAll('[data-turno]').forEach(b=>b.onclick=()=>{RX.turno=b.dataset.turno;RX.hora=null;render()});
+ M.querySelectorAll('[data-motivo]').forEach(b=>b.onclick=()=>{RX.motivo=b.dataset.motivo;RX.turno=esEstudio(RX.motivo)?'pm':'am';RX.hora=null;render()});
+ const rm=$('#rxMot');if(rm)rm.onchange=()=>{RX.motivo=rm.value.trim();if(esEstudio(RX.motivo)){RX.turno='pm';RX.hora=null}render()};
  const rt=$('#rxTel');if(rt)rt.onchange=()=>{RX.tel=rt.value.trim();render()};
  const rp=$('#rxPromo');if(rp)rp.onchange=()=>{RX.promos=rp.checked;render()};
  const gb=$('#gcalBtn');if(gb)gb.onclick=async()=>{if(!RX.pac.trim()){toast('Falta el nombre del paciente.');return}if(!RX.tel.trim()){toast('Escriba el teléfono del paciente.');$('#rxTel')?.focus();return}
@@ -1929,7 +1944,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610251740';
+const APP_VER='202610261525';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
