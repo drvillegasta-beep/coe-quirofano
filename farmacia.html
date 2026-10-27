@@ -501,6 +501,8 @@ body.locked .shell{visibility:hidden}
 .citares{margin:6px 0 10px;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line);line-height:1.7}
 .citaok a{color:inherit;text-decoration:underline}
 .cttbl td{font-size:13px}.ctpend{margin:4px 0 6px 16px;padding:0;font-size:12.5px}.ctnota{font-size:12px;padding:4px 6px}.ctbtns{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.ctbtns .btn{text-decoration:none}
+.offbar{margin:0 0 12px;padding:10px 14px;border-radius:10px;background:#fff4e0;color:#6b4300;border:1px solid #f0c27a;font-size:13.5px;line-height:1.45}
+.side-foot .online{cursor:pointer}
 .citaok{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--ok-soft);color:var(--ok);font-weight:600}
 .strip2{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .almcal{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.almcal>div{flex:1;min-width:220px}
@@ -546,6 +548,7 @@ body{margin:0}[hidden]{display:none!important}img{max-width:100%}
   <header class="top"><div class="ttl"><h1 id="pgTitle">Panel</h1><span id="pgSub"></span></div><div class="spacer"></div>
    <button class="btn pri sm" id="reqBtn" hidden>Solicitar a Finanzas</button><button class="bell" id="bellBtn" aria-label="Alertas"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><span id="bellCount">0</span></button></header>
   <div class="strip" id="strip"></div>
+  <div id="offBar" class="offbar" hidden></div>
   <main id="main"></main>
  </div>
 </div>
@@ -1817,7 +1820,7 @@ async function saveRx(){
  if(!sb){RX.folio='DEMO-'+String(Date.now()).slice(-5);RX.saved=rxHash();toast('Modo demostración: la receta no se guardó en la base de datos.');render();return}
  const meds=RX.meds.map(m=>{const p=PROD.find(x=>x.id===m.pid);return{clave:p.cl,producto:p.nm,principio:p.pa,via:m.via||'oft',unidad:isOft(m)?'gota':m.uni,prn:!!m.prn,dosis:m.dose,cada_horas:m.fh||null,frecuencia:fqTxt(m),duracion:m.d?durLbl(m):null,ojo:isOft(m)?m.eye:null,gotas:m.dose,veces_dia:m.taper?null:m.f,dias:m.taper?fasesDias(m):m.d,reduccion:!!m.taper,...(m.taper?{fases:fasesOf(m)}:{})}});
  const d=await db(sb.from('rec_recetas').insert({paciente:RX.pac,edad:+RX.edad||null,diagnostico:RX.dx,medico:DOCS[RX.med].n,sede:RX.sede==='tac'?'Tacámbaro':'Morelia',proxima_cita:RX.cita||null,telefono:RX.tel||null,motivo_cita:RX.motivo||null,cita_inicio:RX.hora!=null?slotDate(RX.cita,RX.hora).toISOString():null,cita_calendario:(CALS.find(c=>String(c.id)===String(RX.cal))||{}).nombre||null,acepta_promos:!!RX.promos,medicamentos:meds,creada_por:ME?ME.nombre:PERFILES[eff()]}).select().single(),'Receta');
- if(!d)return;RX.folio=d.folio;RX.saved=rxHash();RXHOY.unshift(d);logDb('receta_emitida',{folio:d.folio});toast(`Receta ${d.folio} guardada.`);render();
+ if(!d)return;RX.folio=d.folio;RX.saved=rxHash();RXHOY.unshift(d);logDb('receta_emitida',{folio:d.folio});toast(String(d.folio).startsWith('PEND-')?`Receta guardada sin red (folio provisional ${d.folio}). Se sube sola al volver la conexión.`:`Receta ${d.folio} guardada.`);render();
 }
 /* ===== sesión: usuario + contraseña, cierres 14:30 y 18:30 ===== */
 let ME=null,closeT=null;
@@ -1844,7 +1847,7 @@ async function enter(sess){
 }
 let LOADED=false;
 async function startData(){
- try{await loadAll();await loadCals();LOADED=true;remap();setOnline(true,'En línea · sincronizado');renderTabs();render();loadBusy(true);setInterval(()=>loadBusy(),5*60000);
+ try{await loadAll();await loadCals();LOADED=true;remap();setOnline(true,'En línea · sincronizado');offUi();renderTabs();render();loadBusy(true);setInterval(()=>loadBusy(),5*60000);
   const ch=sb.channel('coe-farmacia');
   ['far_productos','far_lotes','far_pedidos','far_alertas_atendidas','far_permisos','far_usuarios','rec_recetas','rec_plantillas','far_conteos','far_solicitudes_alm','far_movimientos'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{clearTimeout(rlT);rlT=setTimeout(reload,500)}));
   ch.subscribe();setTimeout(checkPop,600);setInterval(checkPop,60000);
@@ -2016,18 +2019,91 @@ function newUserDlg(){if(!sb){toast('Disponible solo con conexión.');return}
  $('#nuF').onsubmit=async e=>{e.preventDefault();const r=await sb.rpc('far_crear_usuario',{p_token:ME.token,p_nombre:$('#nuN').value,p_usuario:$('#nuU').value,p_perfil:$('#nuP').value});
   if(r.error){toast(r.error.message.includes('duplicate')?'Ese usuario ya existe.':r.error.message);return}
   showMsg('Usuario creado',`<p>Usuario <span class="mono">${esc($('#nuU')?.value||'')}</span></p><p class="tmp mono">${esc(r.data)}</p><p class="note">Contraseña temporal. Entréguela en persona; se le pedirá cambiarla al entrar.</p>`);reload()}}
+/* ===== Trabajar sin red: datos guardados en esta computadora y cambios en cola ===== */
+const NF=window.fetch.bind(window);
+const OFF={q:[],fails:[],map:{},busy:false,net:true,ready:false};
+const IDB=(()=>{let p;const open=()=>p||(p=new Promise((res,rej)=>{const r=indexedDB.open('coe-farmacia-off',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
+ const tx=async(m,f)=>{const d=await open();return new Promise((res,rej)=>{const t=d.transaction('kv',m),q=f(t.objectStore('kv'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})};
+ return{get:k=>tx('readonly',s=>s.get(k)).catch(()=>undefined),set:(k,v)=>tx('readwrite',s=>s.put(v,k)).catch(()=>{})}})();
+const RD_RPC=/\/rpc\/(far_sesion|far_revisar_bajo|far_almacen_dia|far_calendarios_lista|far_cal_directo)$/;
+const QW=/^\/rest\/v1\/(rec_recetas|far_log|far_alertas_atendidas|cit_confirmaciones|far_conteos)(\?|$)/;
+const jres=(o,s=200)=>new Response(JSON.stringify(o),{status:s,headers:{'content-type':'application/json'}});
+const withTO=(p,ms)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new TypeError('timeout')),ms))]);
+const offKey=(m,path,body)=>(m+' '+path+' '+(body||'')).replace(/\d{4}-\d\d-\d\dT\d\d(?:%3A|:)\d\d(?:%3A|:)\d\d(?:\.\d+)?(?:Z|%2B00%3A00|\+00:00)?/g,'TS');
+async function sha(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+async function saveVerifier(body,t){try{const {p_usuario,p_pass}=JSON.parse(body);const salt=[...crypto.getRandomValues(new Uint32Array(2))].join('-');const L=(await IDB.get('logins'))||{};L[String(p_usuario).toLowerCase().trim()]={salt,h:await sha(salt+'|'+p_pass),s:t};await IDB.set('logins',L)}catch(e){}}
+async function offLogin(body){try{const {p_usuario,p_pass}=JSON.parse(body);const L=(await IDB.get('logins'))||{},v=L[String(p_usuario).toLowerCase().trim()];
+ if(!v)return jres({message:'Sin red. Este usuario no ha entrado antes en esta computadora; la primera vez necesita internet'},503);
+ if(await sha(v.salt+'|'+p_pass)!==v.h)return jres(null);
+ const s=JSON.parse(v.s);s.expira=nextCut().toISOString();s.sin_red=true;return jres(s)}catch(e){return jres({message:'Sin red'},503)}}
+async function enqueue(url,m,init,body,path){const h={};new Headers(init.headers||{}).forEach((v,k)=>h[k]=v);
+ const it={id:Date.now()+'-'+Math.random().toString(36).slice(2,7),url,m,h,body,t:new Date().toISOString(),tbl:(path.match(/\/rest\/v1\/([a-z_]+)/)||[])[1],por:ME?ME.nombre:''};
+ let rows=null;
+ if(it.tbl==='rec_recetas'&&m==='POST'){const o=JSON.parse(body||'{}'),pid=-Date.now(),pf='PEND-'+String(Date.now()).slice(-6);it.prov={id:pid,folio:pf};rows=[{...o,id:pid,folio:pf,created_at:it.t,estado:o.estado||'emitida'}]}
+ OFF.q.push(it);await IDB.set('queue',OFF.q);offUi();
+ if(!/return=representation/.test(h.prefer||''))return new Response(null,{status:m==='POST'?201:204});
+ rows=rows||[].concat(JSON.parse(body||'[]'));return jres(/vnd\.pgrst\.object/.test(h.accept||'')?rows[0]:rows,201)}
+async function offFetch(input,init={}){
+ const url=typeof input==='string'?input:input.url;
+ if(!url.startsWith(SB_URL)||url.includes('/realtime/'))return NF(input,init);
+ const m=(init.method||'GET').toUpperCase(),body=typeof init.body==='string'?init.body:'',path=url.slice(SB_URL.length),p0=path.split('?')[0];
+ const isLogin=/\/rpc\/far_login$/.test(p0);
+ const isRead=m==='GET'||m==='HEAD'||RD_RPC.test(p0)||/\/functions\/v1\/cal-ocupado/.test(p0)||(/\/functions\/v1\/cal-cita/.test(p0)&&/"accion":"eventos"/.test(body));
+ const isQ=!isRead&&!isLogin&&QW.test(path);
+ let res=null;
+ if(navigator.onLine!==false){try{res=await withTO(NF(input,init),15000)}catch(e){res=null}}
+ if(res){netUp();const key=offKey(m,path,body);
+  if(isRead&&res.ok){const cp=res.clone();cp.text().then(t=>IDB.set('r:'+key,{t,ct:res.headers.get('content-type')||'application/json',cr:res.headers.get('content-range'),at:Date.now()}))}
+  if(isLogin&&res.ok){res.clone().text().then(t=>{if(t&&t!=='null')saveVerifier(body,t)})}
+  return res}
+ netDown();
+ if(isRead){const c=await IDB.get('r:'+offKey(m,path,body));if(c){const hd={'content-type':c.ct};if(c.cr)hd['content-range']=c.cr;return new Response(c.t,{status:200,headers:hd})}return jres({message:'Sin red y sin datos guardados de esta sección'},503)}
+ if(isLogin)return offLogin(body);
+ if(isQ)return enqueue(url,m,init,body,path);
+ return jres({message:'Sin red: esta acción necesita internet. Hágala al volver la conexión'},503)}
+function netDown(){if(!OFF.net)return;OFF.net=false;offUi();toast('Sin red: puede seguir trabajando. Los cambios se suben solos al volver la conexión.')}
+async function netUp(){if(OFF.net)return;OFF.net=true;offUi();
+ if(ME&&ME.token&&sb){try{const r=await sb.rpc('far_sesion',{p_token:ME.token});if(r&&!r.error&&!r.data){await syncQueue();logout('Volvió la red. Entre de nuevo para seguir; sus cambios ya se subieron.');return}}catch(e){}}
+ syncQueue();if(ME&&!DEMO&&LOADED)setTimeout(reload,800)}
+async function syncQueue(){if(OFF.busy||!OFF.q.length||!OFF.ready)return;OFF.busy=true;offUi();let ok=0,bad=0;
+ try{while(OFF.q.length){const it=OFF.q[0];let url=it.url,body=it.body||'';
+   for(const [a,b] of Object.entries(OFF.map)){url=url.split(a).join(b);body=body.split(a).join(b)}
+   let r;try{r=await withTO(NF(url,{method:it.m,headers:it.h,body:it.m==='GET'?undefined:(body||undefined)}),20000)}catch(e){OFF.net=false;break}
+   if(r.ok){ok++;if(it.prov){try{const d=await r.json();const row=Array.isArray(d)?d[0]:d;if(row){OFF.map[it.prov.folio]=row.folio;OFF.map[String(it.prov.id)]=String(row.id);if(RX.folio===it.prov.folio)RX.folio=row.folio}}catch(e){}}}
+   else{bad++;OFF.fails.push({...it,err:r.status+' '+(await r.text()).slice(0,200)});await IDB.set('fails',OFF.fails)}
+   OFF.q.shift();await IDB.set('queue',OFF.q);await IDB.set('map',OFF.map)}}
+ finally{OFF.busy=false;offUi()}
+ if(ok)toast(`Volvió la red: ${ok} cambio(s) subidos al servidor.${bad?` ${bad} no se pudieron subir (toque el estado de conexión abajo a la izquierda).`:''}`);else if(bad)toast(`${bad} cambio(s) hechos sin red no se pudieron subir.`);
+ if(ok&&ME&&!DEMO&&LOADED)reload()}
+function offUi(){if(!ME||DEMO)return;const n=OFF.q.length;
+ if(!OFF.net)setOnline(false,'Sin red · '+(n?n+' cambio'+(n>1?'s':'')+' por subir':'datos guardados'));
+ else if(OFF.busy)setOnline(true,'Subiendo cambios…');
+ else setOnline(true,n?'En línea · '+n+' por subir':'En línea · sincronizado');
+ const b=$('#offBar');if(b){b.hidden=OFF.net;b.innerHTML=`📴 <b>Sin red.</b> Trabajando con los datos guardados en esta computadora${n?` · <b>${n}</b> cambio${n>1?'s':''} por subir`:''}. Recetas, confirmaciones, conteos y alertas se guardan y se suben solos. Pedidos, entradas, bajas, PIN y agendar en Google necesitan internet.`}}
+async function offInit(){OFF.q=(await IDB.get('queue'))||[];OFF.fails=(await IDB.get('fails'))||[];OFF.map=(await IDB.get('map'))||{};OFF.ready=true;offUi();syncQueue()}
+window.addEventListener('online',()=>{OFF.net=false;netUp()});
+window.addEventListener('offline',()=>netDown());
+setInterval(()=>{if(OFF.q.length&&!OFF.busy)NF(SB_URL+'/rest/v1/',{method:'HEAD',headers:{apikey:SB_KEY}}).then(()=>netUp()).catch(()=>netDown())},30000);
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('farmacia-sw.js',{scope:'./farmacia'}).catch(()=>{});
+const OFF_TXT=it=>{const t={rec_recetas:'Receta',far_log:'Registro',far_alertas_atendidas:'Alerta atendida',cit_confirmaciones:'Confirmación de cita',far_conteos:'Conteo'}[it.tbl]||it.tbl;let x='';try{const b=JSON.parse(it.body||'{}');x=b.paciente||b.accion||(b.cita_confirmada!==undefined?'confirmación':'')||''}catch(e){}return `${t}${x?' · '+x:''} · ${new Date(it.t).toLocaleString('es-MX',{dateStyle:'short',timeStyle:'short'})}${it.por?' · '+it.por:''}`};
+document.addEventListener('click',e=>{if(!e.target.closest('.side-foot .online')||!ME||DEMO)return;
+ showMsg('Cambios hechos sin red',`<p class="note" style="margin-top:0">${OFF.net?'Hay conexión.':'Sin red en este momento.'} Los cambios se suben solos al volver la conexión.</p>
+ <h4>Por subir (${OFF.q.length})</h4>${OFF.q.length?'<ul>'+OFF.q.map(it=>`<li>${esc(OFF_TXT(it))}</li>`).join('')+'</ul>':'<p class="note">Nada pendiente.</p>'}
+ ${OFF.fails.length?`<h4>No se pudieron subir (${OFF.fails.length})</h4><ul>${OFF.fails.slice(-20).map(it=>`<li>${esc(OFF_TXT(it))}<div class="note">${esc(it.err)}</div></li>`).join('')}</ul>`:''}
+ <div class="toolbar" style="justify-content:flex-end">${OFF.q.length?'<button class="btn pri" id="offSync">Subir ahora</button>':''}</div>`);
+ const b=$('#offSync');if(b)b.onclick=async()=>{b.disabled=true;b.textContent='Subiendo…';OFF.net=true;await syncQueue();$('#msgOvl').hidden=true}});
 async function boot(){
  $('#pgSub').textContent=TODAY.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).replace(/^./,c=>c.toUpperCase())+' · Tacámbaro';
  RX.cita=ISO(new Date(TODAY.getTime()+7*86400000));
  document.body.classList.add('locked');setOnline(false,'Conectando…');
- try{if(!window.supabase)throw new Error('lib');sb=window.supabase.createClient(SB_URL,SB_KEY);DEMO=false}
+ try{if(!window.supabase)throw new Error('lib');sb=window.supabase.createClient(SB_URL,SB_KEY,{global:{fetch:offFetch}});DEMO=false;offInit()}
  catch(e){sb=null;DEMO=true;$('#lgDemo').hidden=false;lgErr('Sin conexión con el servidor.');setTimeout(()=>$('#lgUser').focus(),50);return}
  const st=sGet();
  if(st&&st.token&&new Date(st.expira)>new Date()){try{const r=await sb.rpc('far_sesion',{p_token:st.token});if(r.data){await enter(r.data);return}}catch(e){}}
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610262311';
+const APP_VER='202610271221';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
