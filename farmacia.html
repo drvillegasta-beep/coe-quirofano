@@ -1930,7 +1930,7 @@ async function citasLoad(){CIT.load=true;CIT.err='';CIT.gerr='';paintCitas();
   const gd=g&&g.data;if(g&&g.error)CIT.gerr='No se pudo leer Google Calendar.';else if(gd&&gd.error)CIT.gerr=gd.error;
   ((gd&&gd.agendas)||[]).forEach(ag=>{if(ag.error)CIT.gerr=(CIT.gerr?CIT.gerr+' · ':'')+ag.nombre+': '+ag.error;
    (ag.eventos||[]).forEach(ev=>{const t=(ev.titulo||'').trim();if(!t||/^(bloque|comida|cerrad|vacacion|no agendar|descanso|junta|prueba)/i.test(t))return;
-    const ph=(t.match(/(?:\+?52)?\s*(\d[\d\s.-]{8,}\d)/)||[])[1],tel=ph?ph.replace(/\D/g,'').slice(-10):((ev.detalle||'').match(/Tel[eé]fono:\s*([\d\s.-]{10,})/i)||[])[1]?.replace(/\D/g,'').slice(-10)||'';
+    const ph=(t.match(/(?:\+?52)?\s*(\d[\d\s.-]{8,}\d)/)||t.match(/\s(S\/?N|SIN (?:NUMERO|NÚMERO|TEL[EÉ]FONO))(?=\s|$)/i)||[])[1],tel=ph&&/\d/.test(ph)?ph.replace(/\D/g,'').slice(-10):((ev.detalle||'').match(/Tel[eé]fono:\s*([\d\s.-]{10,})/i)||[])[1]?.replace(/\D/g,'').slice(-10)||'';
     let nom=ph?t.slice(0,t.indexOf(ph)).trim():t,mot=((ev.detalle||'').match(/Motivo:\s*(.+)/i)||[])[1]||(ph?t.slice(t.indexOf(ph)+ph.length).trim():'');
     if(!nom)nom=t;const kn=nrm(nom),w=kn.split(/\s+/).slice(0,2).join(' ');
     const m=rows.find(r=>{const kr=nrm(r.paciente);return kr&&(kr===kn||kn.includes(kr)||kr.includes(kn)||(w.length>5&&kr.startsWith(w)))});
@@ -2027,7 +2027,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610262257';
+const APP_VER='202610262311';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
