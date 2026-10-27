@@ -338,7 +338,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.24';
+const VERSION='3.25';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -478,6 +478,7 @@ const ROL_DEF={
 const modsOf=u=>Array.isArray(u?.modulos)&&u.modulos.length?u.modulos:(ROL_DEF[u?.rol]||{m:[]}).m;
 const permsOf=u=>u?.rol==='director'?PERMISOS.map(x=>x[0]):Array.isArray(u?.permisos)?u.permisos:(ROL_DEF[u?.rol]||{p:[]}).p;
 const tiene=k=>permsOf(S.user).includes(k);
+const puedeEditarCot=c=>!!c&&(tiene('editar_cot')||(tiene('cotizar')&&['vigente','vencida'].includes(estadoCot(c))));
 const can={cotizar:()=>tiene('cotizar'),precios:()=>tiene('precios'),validar:()=>tiene('validar'),programar:()=>tiene('programar'),inventario:()=>tiene('inventario'),
   aprobar:()=>tiene('aprobar'),descuento:()=>tiene('descuento'),catalogo:()=>tiene('catalogo'),usuarios:()=>tiene('usuarios'),config:()=>tiene('config'),pedir:()=>tiene('pedir')};
 const cfg=(k,d)=>S.config[k]!=null&&S.config[k]!==''?S.config[k]:d;
@@ -3291,8 +3292,10 @@ let Q=null;
 const ANEST_TIPOS=['Tópica','Local','Retrobulbar','Peribulbar','Subtenoniana','Sedación','General'];
 const anestTxt=(a,incl)=>{const t=!a||a==='Sí'||a==='No'?'':a.toLowerCase();
   if(incl===true)return 'Anestesia incluida'+(t?' ('+t+')':' (tipo por definir)');
-  if(incl===false)return 'Anestesia no incluida'+(t?' ('+t+')':'');
+  if(incl===false)return 'Anestesia no incluida, se paga aparte'+(t?' ('+t+')':'');
   return !a?'':a==='No'?'Sin anestesia':a==='Sí'?'Con anestesia (tipo por definir)':'Anestesia '+a.toLowerCase()};
+const anestOpc=x=>x.anestesia_incluida===true?'si':x.anestesia_incluida===false?'no':x.anestesia==='No'?'sin':'';
+function setAnestQ(v){if(v==='sin'){Q.anestesia='No';Q.anestesia_incluida=null}else{Q.anestesia_incluida=v==='si';if(!Q.anestesia||Q.anestesia==='No')Q.anestesia='Sí'}vCotizar()}
 const nuevaQ=()=>({anticipo:null,vigencia:null,paciente_nombre:'',expediente:'',telefono1:'',telefono2:'',motivo:'',anestesia:'',medico:S.user?.rol==='consultorio'||S.user?.rol==='director'?'':'',items:[],desc_tipo:'pct',desc_val:'',desc_motivo:'',autorizado:null,notas:'',cat:'cirugia'});
 function vCotizar(){
   if(!can.cotizar())S.sub.cot='lista';
@@ -3309,8 +3312,9 @@ function vCotizar(){
     <div><label for="qT2">Tel. familiar</label><input id="qT2" inputmode="tel" value="${h(Q.telefono2)}" placeholder="10 dígitos" oninput="Q.telefono2=this.value"></div>
     <div><label for="qE">Expediente</label><input id="qE" value="${h(Q.expediente)}" oninput="Q.expediente=this.value"></div>
     <div><label for="qM">Médico</label><input id="qM" list="dlMed" value="${h(Q.medico)}" oninput="Q.medico=this.value"><datalist id="dlMed">${meds.map(m=>`<option value="${h(m)}">`).join('')}</datalist></div>
-    <div><label>Anestesia en el precio</label><div class="seg" id="qAn">${[[true,'Incluida'],[false,'No incluida']].map(([v,o])=>`<button type="button" class="${Q.anestesia_incluida===v?'on':''}" onclick="Q.anestesia_incluida=${v};if(!Q.anestesia||Q.anestesia==='No')Q.anestesia='Sí';vCotizar()">${o}</button>`).join('')}</div>
-    ${Q.anestesia_incluida!=null?`<select style="margin-top:6px" aria-label="Tipo de anestesia" onchange="Q.anestesia=this.value||'Sí'">${[['Sí','Tipo por definir'],...ANEST_TIPOS.map(t=>[t,t])].map(([v,t])=>`<option value="${v}" ${Q.anestesia===v?'selected':''}>${t}</option>`).join('')}</select>`:''}</div>
+    <div style="grid-column:1/-1"><label>Anestesia</label><div class="seg" id="qAn">${[['si','✓ Incluida en el precio'],['no','✗ No incluida (se paga aparte)'],['sin','No requiere anestesia']].map(([v,o])=>`<button type="button" class="${anestOpc(Q)===v?'on':''}" onclick="setAnestQ('${v}')">${o}</button>`).join('')}</div>
+    ${anestOpc(Q)==='si'||anestOpc(Q)==='no'?`<select style="margin-top:6px" aria-label="Tipo de anestesia" onchange="Q.anestesia=this.value||'Sí'">${[['Sí','Tipo por definir'],...ANEST_TIPOS.map(t=>[t,t])].map(([v,t])=>`<option value="${v}" ${Q.anestesia===v?'selected':''}>${t}</option>`).join('')}</select>`:''}
+    ${anestOpc(Q)==='no'?'<div class="muted" style="margin-top:4px">En la hoja del paciente se imprime: <b>la anestesia no está incluida y se paga aparte</b>.</div>':''}</div>
     <div style="grid-column:1/-1"><label for="qMo">Diagnóstico / motivo</label><input id="qMo" placeholder="Ej. Catarata OD" value="${h(Q.motivo)}" oninput="Q.motivo=this.value"></div>
     <div style="grid-column:1/-1"><label for="qNt">Notas de la cotización <span class="muted">(internas, no se imprimen)</span></label><textarea id="qNt" rows="2" placeholder="Ej. paciente prefiere operarse en diciembre; tiene seguro; llamar por la tarde" oninput="Q.notas=this.value">${h(Q.notas||'')}</textarea></div></div>
    </div>
@@ -3491,12 +3495,12 @@ async function guardarCot(){
   if(t1.length!==10)return toast('El teléfono 1 debe tener 10 dígitos',true);
   if(t2&&t2.length!==10)return toast('El teléfono 2 debe tener 10 dígitos',true);
   if(!Q.motivo.trim())return toast('Escribe el motivo del estudio o diagnóstico',true);
-  if(Q.items.some(i=>i.categoria==='cirugia')&&Q.anestesia_incluida==null)return toast('Indica si la anestesia está incluida o no en el precio',true);
+  if(Q.items.some(i=>i.categoria==='cirugia')&&!anestOpc(Q))return toast('Indica la anestesia: incluida, no incluida o no requiere',true);
   if(!Q.items.length)return toast('Agrega al menos un concepto',true);
   if(Q.vigencia&&Q.vigencia<hoyISO())return toast('La fecha de validez ya pasó: pon una nueva fecha',true);
   if(r.descuento>0&&!Q.desc_motivo.trim())return toast('Escribe el motivo del descuento',true);
   let autor=null;
-  if(Q.editId){if(!tiene('editar_cot'))return toast('No tienes permiso para editar cotizaciones',true);
+  if(Q.editId){if(!tiene('editar_cot')&&!tiene('cotizar'))return toast('No tienes permiso para editar cotizaciones',true);
     if(!await pedirPIN('Guardar cambios a '+Q.editFolio+' · '+Q.paciente_nombre))return;
     const upd={paciente_nombre:Q.paciente_nombre.trim(),expediente:Q.expediente||null,telefono1:t1,telefono2:t2||null,motivo:Q.motivo.trim(),anestesia:Q.anestesia||null,anestesia_incluida:Q.anestesia_incluida??null,medico:Q.medico||null,
       items:Q.items,subtotal:r.subtotal,descuento:r.descuento,descuento_motivo:r.descuento?Q.desc_motivo:null,descuento_autorizado_por:r.descuento?S.user.nombre:null,total:r.total,anticipo:Q.anticipo!=null?num(Q.anticipo):r.anticipo,
@@ -3549,7 +3553,7 @@ async function hojaCot(c){
   <div class="h2top">${logoTag()}<div class="h2tit">COTIZACIÓN<div>${h(c.folio)} · ${fCorta(c.created_at)}</div></div></div>
   <div class="h2pac">${h(c.paciente_nombre)}</div>
   ${conceptos}
-  ${c.anestesia_incluida!=null?`<div style="font-size:15px;margin:8px 0">${h(anestTxt(c.anestesia,c.anestesia_incluida))}</div>`:''}
+  ${c.anestesia_incluida!=null||c.anestesia==='No'?`<div style="font-size:${c.anestesia_incluida===false?'19px;font-weight:700':'15px'};margin:8px 0">${h(c.anestesia==='No'&&c.anestesia_incluida==null?'No requiere anestesia':anestTxt(c.anestesia,c.anestesia_incluida))}</div>`:''}
   <div class="h2vig ${est==='vencida'?'venc':''}">Precio válido hasta el <b>${fFecha(c.vigencia_hasta)}</b>${num(c.anticipo)?`<br>Para apartar su fecha de cirugía: <b>${money(c.anticipo).replace('.00','')}</b>`:''}</div>
   <div class="h2pie"><div class="progtel"><div>PARA PROGRAMAR LLAME AL</div><div class="tels">${String(cfg('tels_programar','(459) 100 0431|(459) 134 5529')).split('|').map((t,i)=>`<b>${h(t.trim())}${i===1?' <small>WhatsApp</small>':''}</b>`).join('')}</div></div>
    ${qr?`<div class="qr"><img src="${qr}" alt="QR de la cotización"><div>Escanee con su celular</div></div>`:''}</div>
@@ -3559,7 +3563,7 @@ async function hojaCot(c){
    ${est==='vigente'&&(c.items||[]).some(i=>i.categoria==='cirugia')&&can.programar()?`<button class="btn sec" onclick="programarDesdeCot('${c.id}')">Programar cirugía</button>`:''}
    ${est==='vencida'?`<button class="btn sec" onclick="renovarCot('${c.id}')">Renovar con precios actuales</button>`:''}
    <button class="btn sec" onclick="notasCot('${c.id}')">Notas${c.notas?' ('+String(c.notas).split('\n').filter(Boolean).length+')':''}</button>
-   ${tiene('editar_cot')?`<button class="btn sec" onclick="editarCot('${c.id}')">Editar</button><button class="btn sec" onclick="rehabilitarCot('${c.id}')">Rehabilitar / cambiar estado</button>`:''}
+   ${puedeEditarCot(c)?`<button class="btn sec" onclick="editarCot('${c.id}')">✏️ Modificar cotización</button>`:''}${tiene('editar_cot')?`<button class="btn sec" onclick="rehabilitarCot('${c.id}')">Rehabilitar / cambiar estado</button>`:''}
    ${(c.items||[]).some(i=>i.categoria==='cirugia'||i.categoria==='laser')?`<button class="btn sec" onclick="consentimientoCot('${c.id}')">Consentimiento informado</button>`:''}
     ${campActiva()&&est!=='vencida'&&(c.items||[]).some(i=>i.categoria==='cirugia')&&(can.cotizar()||can.programar())?`<button class="btn" onclick="enviarCampana('${c.id}')">Enviar a campaña</button>`:''}`;
   printWin(inner,extra);
@@ -3619,13 +3623,13 @@ async function cargarCotLista(){
   ${segHTML}
   ${l.map(c=>{const e=estadoCot(c),d=diasHasta(c.vigencia_hasta);return `<div class="card" style="cursor:pointer" onclick="hojaCot(S.cots.find(x=>x.id==='${c.id}'))"><div class="row" style="flex-wrap:nowrap"><div style="flex:3;min-width:0"><b>${h(c.paciente_nombre)}</b> <span class="muted">${h(c.folio)}</span>
    <div class="muted">${(c.items||[]).map(it=>h(it.nombre)+(it.lateralidad!=='sin_lado'?' '+ojosTxt(it):'')).join(' · ')}</div><div class="muted">${fCorta(c.created_at)} · ${h(c.elaboro||'')} · Tel. ${h(c.telefono1||'')}${c.telefono2?' / '+h(c.telefono2):''}${c.anestesia?' · '+h(anestTxt(c.anestesia,c.anestesia_incluida)):''}${pagadoCot(c)?' · pagado '+money(pagadoCot(c)):''}</div></div>
-   <div style="text-align:right;flex:0 0 auto"><b>${bilQ(c)?money(porOjoQ(c))+'</b> <span class="muted">por ojo</span><b>':money(c.total)}</b><div><span class="pill ${EST_COT[e][0]}">${EST_COT[e][1]}${e==='vigente'?' · '+d+' d':''}</span></div>${num(c.descuento)?`<div class="muted">desc. ${money(c.descuento)}</div>`:''}</div></div></div>`}).join('')||'<div class="card empty">Sin cotizaciones en esta vista</div>'}`;
+   <div style="text-align:right;flex:0 0 auto"><b>${bilQ(c)?money(porOjoQ(c))+'</b> <span class="muted">por ojo</span><b>':money(c.total)}</b><div><span class="pill ${EST_COT[e][0]}">${EST_COT[e][1]}${e==='vigente'?' · '+d+' d':''}</span></div>${num(c.descuento)?`<div class="muted">desc. ${money(c.descuento)}</div>`:''}${puedeEditarCot(c)?`<button class="btn sec sm" style="margin-top:6px" onclick="event.stopPropagation();editarCot('${c.id}')">✏️ Modificar</button>`:''}</div></div></div>`}).join('')||'<div class="card empty">Sin cotizaciones en esta vista</div>'}`;
 }
 /* editar una cotización existente (mismo folio) */
 function editarCot(id){
-  const c=(S.cots||[]).find(x=>x.id===id);if(!c)return;if(!tiene('editar_cot'))return toast('No tienes permiso para editar cotizaciones',true);
+  const c=(S.cots||[]).find(x=>x.id===id);if(!c)return;if(!puedeEditarCot(c))return toast(tiene('cotizar')?'Esta cotización ya está programada, realizada o cancelada: solo Dirección puede modificarla':'No tienes permiso para editar cotizaciones',true);
   Q=nuevaQ();Object.assign(Q,{editId:c.id,editFolio:c.folio,editTotal:num(c.total),editEstado:c.estado,paciente_nombre:c.paciente_nombre||'',expediente:c.expediente||'',telefono1:c.telefono1||'',telefono2:c.telefono2||'',motivo:c.motivo||'',
-    medico:c.medico||'',anestesia:c.anestesia==='No'?'':(c.anestesia||''),anestesia_incluida:c.anestesia_incluida??null,notas:c.notas||'',anticipo:num(c.anticipo)||null,vigencia:c.vigencia_hasta>=hoyISO()?c.vigencia_hasta:addDays(hoyISO(),num(cfg('vig_cirugia',30))),
+    medico:c.medico||'',anestesia:c.anestesia||'',anestesia_incluida:c.anestesia_incluida??null,notas:c.notas||'',anticipo:num(c.anticipo)||null,vigencia:c.vigencia_hasta>=hoyISO()?c.vigencia_hasta:addDays(hoyISO(),num(cfg('vig_cirugia',30))),
     items:JSON.parse(JSON.stringify(c.items||[])).map(it=>it.precio_id?it:{...it,manual:true}),desc_tipo:num(c.descuento)?'monto':'pct',desc_val:num(c.descuento)?String(num(c.descuento)):'',desc_motivo:c.descuento_motivo||''});
   document.querySelectorAll('.modal').forEach(m=>m.remove());S.tab='cotizar';S.sub.cot='nueva';render();
   toast('Edita y guarda: se pedirá tu PIN')}
