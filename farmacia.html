@@ -1049,7 +1049,7 @@ function vCita(){const cal=CALS.find(c=>String(c.id)===String(RX.cal))||null;if(
  const okNow=CITA_OK&&CITA_OK.k===citaKey();if(cal&&!okNow)RX.hora=autoHora(cal);const bz=cal&&BUSY[cal.id];const tn=TURNOS[RX.turno][0].toLowerCase();
  const sl=cal&&RX.cita?calSlots(cal,RX.cita,RX.turno):[];const dayBlocked=cal&&bz&&(bz.dias||[]).includes(RX.cita);
  const estado=!cal?'':BUSY_ERR?`<span class="note">· no se pudo leer la agenda (${esc(BUSY_ERR)}); se agenda igual</span>`:bz&&bz.error?`<span class="note">· ${esc(bz.error)}</span>`:calSrc(cal)?'':'<span class="note">· sin conexión a Google Calendar</span>';
- return `<div class="sec-h">Próxima cita <span class="sec-act"><button type="button" class="btn sm" data-citas="1">📋 Citas de mañana</button></span></div>
+ return `<div class="sec-h">Próxima cita <span class="sec-act"><button type="button" class="btn sm pri" data-citas="1">📋 Citas de mañana</button></span></div>
  <div class="field"><span class="lbl" style="margin-bottom:4px">1 · Agenda</span>${CALS.length?`<div class="seg2 sm wrap">${CALS.filter(c=>c.activo).map(c=>`<button type="button" data-cal="${c.id}" aria-pressed="${String(RX.cal)===String(c.id)}"><span class="dot" style="background:${esc(c.color||'#1d5873')}"></span>${esc(c.nombre)}</button>`).join('')}</div>`:'<p class="note">No hay agendas configuradas. El Director las agrega en Accesos.</p>'}</div>
  <div class="field"><span class="lbl" style="margin-bottom:4px">2 · Motivo</span><div class="chips sm">${MOTIVOS.map(m=>`<button type="button" data-motivo="${esc(m)}" aria-pressed="${RX.motivo===m}">${m==='Estudios'?'🔬 ':''}${esc(m)}</button>`).join('')}</div><input type="text" id="rxMot" value="${esc(RX.motivo)}" style="margin-top:6px" placeholder="Motivo de la cita (ej. OCT, campo visual)"></div>
  <div class="field"><span class="lbl" style="margin-bottom:4px">3 · Turno ${esEstudio(RX.motivo)?'<span class="note">· los estudios se agendan por la tarde</span>':''}</span><div class="seg2 sm">${Object.entries(TURNOS).map(([k,[t,a,b]])=>`<button type="button" data-turno="${k}" aria-pressed="${RX.turno===k}">${k==='am'?'☀️':'🌇'} ${t} <span class="note">${fmtH(a)}–${fmtH(b)}</span></button>`).join('')}</div></div>
@@ -1903,7 +1903,7 @@ let CIT={d:null,rows:[],f:'todos',load:false,err:''};
 const CONF={si:['ok','✓ Confirmó'],no:['crit','✗ Cancela'],nc:['warn','No contesta'],'':['mute','Por confirmar']};
 function sigHabil(){const d=new Date(TODAY);d.setDate(d.getDate()+1);if(d.getDay()===0)d.setDate(d.getDate()+1);return ISO(d)}
 const fechaLarga=ds=>{const t=new Date(ds+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});return t.charAt(0).toUpperCase()+t.slice(1)};
-function pendDe(r){const m=(r.motivo_cita||'Subsecuente').trim(),out=[];
+function pendDe(r){const m=(r.motivo_cita||(r.src==='g'?'':'Subsecuente')).trim(),out=[];if(!m){out.push('Motivo no capturado en la agenda');if(r.nota_cita)out.push('Nota: '+r.nota_cita);return out}
  if(esEstudio(m))out.push('Realizar estudio(s)'+(m.replace(/^estudios?:?\s*/i,'')?': '+m.replace(/^estudios?:?\s*/i,''):'')+' · por la tarde');
  else if(/resultado/i.test(m))out.push('Revisar resultados de estudios');
  else if(/postop/i.test(m))out.push('Revisión postoperatoria');
@@ -1914,15 +1914,29 @@ function pendDe(r){const m=(r.motivo_cita||'Subsecuente').trim(),out=[];
  if(r.nota_cita)out.push('Nota: '+r.nota_cita);return out}
 const horaDe=r=>r.cita_inicio?fmtH(new Date(r.cita_inicio).getHours()*60+new Date(r.cita_inicio).getMinutes()):'—';
 async function citasDlg(d){CIT.d=d||CIT.d||sigHabil();dlg('Citas del día siguiente','<div id="ctBox"></div>',true);$('#msgOvl .dlg').classList.add('xwide');await citasLoad()}
-async function citasLoad(){CIT.load=true;CIT.err='';paintCitas();
+async function citasLoad(){CIT.load=true;CIT.err='';CIT.gerr='';paintCitas();
  try{if(!sb||DEMO)throw new Error('Sin conexión con la base de datos.');
   const D=CIT.d,a=new Date(D+'T00:00:00'),b=new Date(a.getTime()+864e5);
   const sel='id,folio,paciente,edad,diagnostico,medico,sede,proxima_cita,medicamentos,telefono,motivo_cita,cita_inicio,cita_calendario,cita_confirmada,confirmada_at,confirmada_por,nota_cita,created_at,estado';
-  const [r1,r2]=await Promise.all([sb.from('rec_recetas').select(sel).eq('proxima_cita',D).neq('estado','prueba'),sb.from('rec_recetas').select(sel).gte('cita_inicio',a.toISOString()).lt('cita_inicio',b.toISOString()).neq('estado','prueba')]);
+  const [r1,r2,g,cf]=await Promise.all([sb.from('rec_recetas').select(sel).eq('proxima_cita',D).neq('estado','prueba'),sb.from('rec_recetas').select(sel).gte('cita_inicio',a.toISOString()).lt('cita_inicio',b.toISOString()).neq('estado','prueba'),
+   (ME&&ME.token?sb.functions.invoke('cal-cita',{body:{token:ME.token,accion:'eventos',desde:a.toISOString(),hasta:b.toISOString()}}).catch(e=>({error:e})):Promise.resolve({data:null})),
+   sb.from('cit_confirmaciones').select('*').eq('fecha',D)]);
   if(r1.error)throw r1.error;if(r2.error)throw r2.error;
   const by={};[...(r1.data||[]),...(r2.data||[])].forEach(r=>{if(/prueba de sistema/i.test(r.paciente||''))return;const k=nrm(r.paciente);if(!k)return;const o=by[k];
-   if(!o||(r.created_at>o.created_at))by[k]={...r,_ids:[...new Set([...(o?o._ids:[]),r.id])],cita_confirmada:r.cita_confirmada||(o&&o.cita_confirmada)||null,nota_cita:r.nota_cita||(o&&o.nota_cita)||null};else o._ids=[...new Set([...o._ids,r.id])]});
-  CIT.rows=Object.values(by).sort((x,y)=>(x.cita_inicio||'9').localeCompare(y.cita_inicio||'9')||nrm(x.paciente).localeCompare(nrm(y.paciente)))}
+   if(!o||(r.created_at>o.created_at))by[k]={...r,k:'r'+r.id,src:'rx',_ids:[...new Set([...(o?o._ids:[]),r.id])],cita_confirmada:r.cita_confirmada||(o&&o.cita_confirmada)||null,nota_cita:r.nota_cita||(o&&o.nota_cita)||null};else o._ids=[...new Set([...o._ids,r.id])]});
+  const rows=Object.values(by);
+  /* citas de Google Calendar */
+  const CF={};((cf&&cf.data)||[]).forEach(c=>CF[c.evento_id]=c);
+  const gd=g&&g.data;if(g&&g.error)CIT.gerr='No se pudo leer Google Calendar.';else if(gd&&gd.error)CIT.gerr=gd.error;
+  ((gd&&gd.agendas)||[]).forEach(ag=>{if(ag.error)CIT.gerr=(CIT.gerr?CIT.gerr+' · ':'')+ag.nombre+': '+ag.error;
+   (ag.eventos||[]).forEach(ev=>{const t=(ev.titulo||'').trim();if(!t||/^(bloque|comida|cerrad|vacacion|no agendar|descanso|junta|prueba)/i.test(t))return;
+    const ph=(t.match(/(?:\+?52)?\s*(\d[\d\s.-]{8,}\d)/)||[])[1],tel=ph?ph.replace(/\D/g,'').slice(-10):((ev.detalle||'').match(/Tel[eé]fono:\s*([\d\s.-]{10,})/i)||[])[1]?.replace(/\D/g,'').slice(-10)||'';
+    let nom=ph?t.slice(0,t.indexOf(ph)).trim():t,mot=((ev.detalle||'').match(/Motivo:\s*(.+)/i)||[])[1]||(ph?t.slice(t.indexOf(ph)+ph.length).trim():'');
+    if(!nom)nom=t;const kn=nrm(nom),w=kn.split(/\s+/).slice(0,2).join(' ');
+    const m=rows.find(r=>{const kr=nrm(r.paciente);return kr&&(kr===kn||kn.includes(kr)||kr.includes(kn)||(w.length>5&&kr.startsWith(w)))});
+    if(m){m.cita_inicio=m.cita_inicio||ev.inicio;m.cita_calendario=m.cita_calendario||ag.nombre;m.gid=m.gid||ev.id;if(!m.telefono&&tel)m.telefono=tel;return}
+    const c=CF[ev.id]||{};rows.push({k:'g'+ev.id,src:'g',gid:ev.id,paciente:nom.replace(/\s+/g,' '),telefono:tel||null,motivo_cita:mot?mot.replace(/^(.)(.*)$/,(x,a,b)=>a.toUpperCase()+b.toLowerCase()):'',cita_inicio:ev.inicio,cita_calendario:ag.nombre,diagnostico:'',medicamentos:[],folio:'Google Calendar',cita_confirmada:c.estado||null,confirmada_por:c.por||null,confirmada_at:c.at||null,nota_cita:c.nota||null})})});
+  CIT.rows=rows.sort((x,y)=>(x.cita_inicio||'9').localeCompare(y.cita_inicio||'9')||nrm(x.paciente).localeCompare(nrm(y.paciente)))}
  catch(e){CIT.err=e.message||String(e);CIT.rows=[]}
  CIT.load=false;paintCitas()}
 function paintCitas(){const B=$('#ctBox');if(!B)return;const R=CIT.rows,n=k=>R.filter(r=>(r.cita_confirmada||'')===k).length;
@@ -1930,25 +1944,28 @@ function paintCitas(){const B=$('#ctBox');if(!B)return;const R=CIT.rows,n=k=>R.f
  B.innerHTML=`<div class="toolbar" style="margin:0 0 10px;flex-wrap:wrap;gap:8px"><input type="date" id="ctD" value="${CIT.d}" style="width:auto"><span class="note"><b>${esc(fechaLarga(CIT.d))}</b></span><span class="spacer"></span>
   <button class="btn sm" id="ctPrintC">🖨️ Imprimir confirmados</button><button class="btn sm pri" id="ctPrintT">🖨️ Imprimir relación completa</button></div>
  <div class="chips sm" style="margin-bottom:8px">${[['todos','Todos',R.length],['si','Confirmaron',n('si')],['','Por confirmar',n('')],['nc','No contestan',n('nc')],['no','Cancelan',n('no')]].map(([k,t,c])=>`<button type="button" data-ctf="${k}" aria-pressed="${CIT.f===k}">${t} · ${c}</button>`).join('')}</div>
- ${CIT.load?'<p class="note">Cargando citas…</p>':CIT.err?`<p class="ferr">${esc(CIT.err)}</p>`:!L.length?`<p class="note">${R.length?'Nadie en este filtro.':'No hay pacientes con cita ese día en las recetas.'}</p>`:
+ ${CIT.gerr?`<p class="note" style="color:var(--warn)">⚠️ Citas de Google Calendar: ${esc(CIT.gerr)}</p>`:''}
+ ${CIT.load?'<p class="note">Cargando citas…</p>':CIT.err?`<p class="ferr">${esc(CIT.err)}</p>`:!L.length?`<p class="note">${R.length?'Nadie en este filtro.':'No hay pacientes con cita ese día.'}</p>`:
  `<div class="pm-tbl"><table class="cttbl"><thead><tr><th>Hora</th><th>Paciente</th><th>Motivo · pendientes</th><th>Confirmación</th></tr></thead><tbody>
- ${L.map(r=>{const tel=(r.telefono||'').replace(/\D/g,''),st=r.cita_confirmada||'';return `<tr data-ct="${r.id}"><td class="mono">${esc(horaDe(r))}<div class="note">${esc(r.cita_calendario||'')}</div></td>
-  <td><b>${esc((r.paciente||'').trim())}</b>${r.edad?` <span class="note">${r.edad} a</span>`:''}<div class="note">${esc(r.diagnostico||'')}</div><div class="note">${tel?`📞 ${esc(r.telefono)}`:'Sin teléfono'} · ${esc(r.folio)}</div></td>
-  <td><b>${esc(r.motivo_cita||'Subsecuente')}</b><ul class="ctpend">${pendDe(r).map(p=>`<li>${esc(p)}</li>`).join('')}</ul><input type="text" class="ctnota" data-ctn="${r.id}" value="${esc(r.nota_cita||'')}" placeholder="Agregar pendiente o nota"></td>
-  <td>${chip(CONF[st])}${r.confirmada_por?`<div class="note">${esc(r.confirmada_por)}</div>`:''}<div class="ctbtns">${tel?`<a class="btn sm" target="_blank" rel="noopener" href="${esc(waCita(r))}">💬 WhatsApp</a>`:''}<button class="btn sm" data-ctc="${r.id}:si">✓ Confirmó</button><button class="btn sm" data-ctc="${r.id}:nc">No contesta</button><button class="btn sm" data-ctc="${r.id}:no">✗ Cancela</button></div></td></tr>`}).join('')}
+ ${L.map(r=>{const tel=(r.telefono||'').replace(/\D/g,''),st=r.cita_confirmada||'';return `<tr data-ct="${esc(r.k)}"><td class="mono">${esc(horaDe(r))}<div class="note">${esc(r.cita_calendario||'')}</div></td>
+  <td><b>${esc((r.paciente||'').trim())}</b>${r.edad?` <span class="note">${r.edad} a</span>`:''}<div class="note">${esc(r.diagnostico||'')}</div><div class="note">${tel?`📞 ${esc(r.telefono)}`:'Sin teléfono'} · ${r.src==='g'?'📅 Solo en Google Calendar':esc(r.folio)}</div></td>
+  <td><b>${esc(r.motivo_cita||(r.src==='g'?'Cita en Google Calendar':'Subsecuente'))}</b><ul class="ctpend">${pendDe(r).map(p=>`<li>${esc(p)}</li>`).join('')}</ul><input type="text" class="ctnota" data-ctn="${esc(r.k)}" value="${esc(r.nota_cita||'')}" placeholder="Agregar pendiente o nota"></td>
+  <td>${chip(CONF[st])}${r.confirmada_por?`<div class="note">${esc(r.confirmada_por)}</div>`:''}<div class="ctbtns">${tel?`<a class="btn sm" target="_blank" rel="noopener" href="${esc(waCita(r))}">💬 WhatsApp</a>`:''}<button class="btn sm" data-ctc="${esc(r.k)}|si">✓ Confirmó</button><button class="btn sm" data-ctc="${esc(r.k)}|nc">No contesta</button><button class="btn sm" data-ctc="${esc(r.k)}|no">✗ Cancela</button></div></td></tr>`}).join('')}
  </tbody></table></div>`}`;
  $('#ctD').onchange=e=>{if(e.target.value){CIT.d=e.target.value;citasLoad()}};
  B.querySelectorAll('[data-ctf]').forEach(b=>b.onclick=()=>{CIT.f=b.dataset.ctf;paintCitas()});
- B.querySelectorAll('[data-ctc]').forEach(b=>b.onclick=()=>{const[id,v]=b.dataset.ctc.split(':');setConf(+id,v)});
- B.querySelectorAll('[data-ctn]').forEach(i=>i.onchange=()=>setNota(+i.dataset.ctn,i.value.trim()));
+ B.querySelectorAll('[data-ctc]').forEach(b=>b.onclick=()=>{const i=b.dataset.ctc.lastIndexOf('|');setConf(b.dataset.ctc.slice(0,i),b.dataset.ctc.slice(i+1))});
+ B.querySelectorAll('[data-ctn]').forEach(i=>i.onchange=()=>setNota(i.dataset.ctn,i.value.trim()));
  $('#ctPrintC').onclick=()=>printCitas(true);$('#ctPrintT').onclick=()=>printCitas(false)}
 function waCita(r){const tel=(r.telefono||'').replace(/\D/g,'').slice(-10),sede=/mor/i.test(r.sede||'')?'Morelia (Hospital Victoria, consultorio 1206)':'Tacámbaro';
  const t=`Hola ${(r.paciente||'').trim().split(/\s+/)[0]}, le saludamos de Centro Ocular Especializado. Le recordamos su cita ${CIT.d===sigHabil()?'de mañana':''} ${fechaLarga(CIT.d).toLowerCase()}${r.cita_inicio?' a las '+horaDe(r):''} en ${sede}. Motivo: ${r.motivo_cita||'consulta subsecuente'}. ¿Nos confirma su asistencia? Responda SÍ o NO. Gracias.`;
  return 'https://wa.me/52'+tel+'?text='+encodeURIComponent(t.replace(/\s+/g,' '))}
-async function setConf(id,v){const r=CIT.rows.find(x=>x.id===id);if(!r)return;const nv=r.cita_confirmada===v?null:v,por=ME?ME.nombre:null,at=new Date().toISOString();
- const d=await db(sb.from('rec_recetas').update({cita_confirmada:nv,confirmada_at:nv?at:null,confirmada_por:nv?por:null}).in('id',r._ids),'Cita');if(d===null)return;
- Object.assign(r,{cita_confirmada:nv,confirmada_at:nv?at:null,confirmada_por:nv?por:null});logDb('cita_confirmacion',{folio:r.folio,estado:nv});paintCitas()}
-async function setNota(id,v){const r=CIT.rows.find(x=>x.id===id);if(!r||(r.nota_cita||'')===v)return;const d=await db(sb.from('rec_recetas').update({nota_cita:v||null}).in('id',r._ids),'Nota');if(d===null)return;r.nota_cita=v||null;toast('Nota guardada.');paintCitas()}
+function saveCit(r,patch){if(r.src==='g')return db(sb.from('cit_confirmaciones').upsert({evento_id:r.gid,fecha:CIT.d,agenda:r.cita_calendario,paciente:r.paciente,estado:('cita_confirmada' in patch)?patch.cita_confirmada:r.cita_confirmada,nota:('nota_cita' in patch)?patch.nota_cita:r.nota_cita,por:ME?ME.nombre:null,at:new Date().toISOString()},{onConflict:'evento_id'}),'Cita');
+ return db(sb.from('rec_recetas').update(patch).in('id',r._ids),'Cita')}
+async function setConf(k,v){const r=CIT.rows.find(x=>x.k===k);if(!r)return;const nv=r.cita_confirmada===v?null:v,por=ME?ME.nombre:null,at=new Date().toISOString();
+ const patch={cita_confirmada:nv,confirmada_at:nv?at:null,confirmada_por:nv?por:null};const d=await saveCit(r,patch);if(d===null)return;
+ Object.assign(r,patch);logDb('cita_confirmacion',{folio:r.folio,paciente:r.paciente,estado:nv});paintCitas()}
+async function setNota(k,v){const r=CIT.rows.find(x=>x.k===k);if(!r||(r.nota_cita||'')===v)return;const d=await saveCit(r,{nota_cita:v||null});if(d===null)return;r.nota_cita=v||null;toast('Nota guardada.');paintCitas()}
 function printCitas(soloConf){const L=soloConf?CIT.rows.filter(r=>r.cita_confirmada==='si'):CIT.rows;if(!L.length){toast(soloConf?'Todavía no hay pacientes confirmados.':'No hay citas.');return}
  const logo=getComputedStyle(document.documentElement).getPropertyValue('--iso').trim();
  const est=r=>({si:'Confirmó',no:'Cancela',nc:'No contesta'}[r.cita_confirmada]||'Por confirmar');
@@ -1958,7 +1975,7 @@ function printCitas(soloConf){const L=soloConf?CIT.rows.filter(r=>r.cita_confirm
  ul{margin:2px 0 0 14px;padding:0}.n{color:#555}.ck{width:16px;height:16px;border:1px solid #333;display:inline-block}tr{page-break-inside:avoid}</style></head><body>
  <div class="hd"><div class="lg"></div><div><h1>Centro Ocular Especializado · ${soloConf?'Pacientes que confirmaron cita':'Relación de citas'}</h1><small>${esc(fechaLarga(CIT.d))} · ${L.length} paciente${L.length>1?'s':''}${soloConf?'':` · confirmados ${CIT.rows.filter(r=>r.cita_confirmada==='si').length}`} · impreso ${new Date().toLocaleString('es-MX',{dateStyle:'short',timeStyle:'short'})} por ${esc(ME?ME.nombre:'')}</small></div></div>
  <table><thead><tr><th>#</th><th>Hora</th><th>Paciente</th><th>Teléfono</th><th>Motivo / pendientes</th>${soloConf?'':'<th>Confirmación</th>'}<th>Llegó</th></tr></thead><tbody>
- ${L.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(horaDe(r))}<div class="n">${esc(r.cita_calendario||'')}</div></td><td><b>${esc((r.paciente||'').trim())}</b>${r.edad?' · '+r.edad+' a':''}<div class="n">${esc(r.diagnostico||'')}</div></td><td>${esc(r.telefono||'—')}</td><td><b>${esc(r.motivo_cita||'Subsecuente')}</b><ul>${pendDe(r).map(p=>`<li>${esc(p)}</li>`).join('')}</ul></td>${soloConf?'':`<td>${est(r)}</td>`}<td><span class="ck"></span></td></tr>`).join('')}
+ ${L.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(horaDe(r))}<div class="n">${esc(r.cita_calendario||'')}</div></td><td><b>${esc((r.paciente||'').trim())}</b>${r.edad?' · '+r.edad+' a':''}<div class="n">${esc(r.diagnostico||'')}</div></td><td>${esc(r.telefono||'—')}</td><td><b>${esc(r.motivo_cita||(r.src==='g'?'Cita en Google Calendar':'Subsecuente'))}</b><ul>${pendDe(r).map(p=>`<li>${esc(p)}</li>`).join('')}</ul></td>${soloConf?'':`<td>${est(r)}</td>`}<td><span class="ck"></span></td></tr>`).join('')}
  </tbody></table><script>onload=()=>{setTimeout(()=>print(),300)}<\/script></body></html>`;
  const w=window.open('','ctprint','width=900,height=1000');if(!w){toast('Permita ventanas emergentes para imprimir.');return}w.document.open();w.document.write(h);w.document.close();logDb('citas_impresas',{fecha:CIT.d,solo_confirmados:soloConf,pacientes:L.length})}
 document.addEventListener('click',e=>{if(e.target.closest('[data-citas]'))citasDlg()});
@@ -2010,7 +2027,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610262251';
+const APP_VER='202610262257';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
