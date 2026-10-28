@@ -584,6 +584,20 @@ body{margin:0}[hidden]{display:none!important}img{max-width:100%}
 <div class="ovl" id="popOvl" hidden><div class="dlg pop" role="alertdialog" aria-modal="true" aria-labelledby="popT"><div class="dlg-h"><div><h3 id="popT">Atención</h3><div class="cur" id="popSub"></div></div><button class="icon-btn" type="button" id="popX" aria-label="Cerrar">✕</button></div><div class="dlg-b" id="popB"></div><div class="pop-f" id="popF"></div></div></div>
 <div class="ovl" id="msgOvl" hidden><div class="dlg pw"><div class="dlg-h"><div><h3 id="msgT"></h3></div><button class="icon-btn" type="button" id="msgX" aria-label="Cerrar">✕</button></div><div class="dlg-b" id="msgB"></div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>/* COE · ahorro de servidor: si la app no se usa, se pausa y suelta sus conexiones en vivo */
+(()=>{const IDLE_MIN=25,HID_MIN=15;let last=Date.now(),hidAt=null,sleeping=false;const clients=[];
+ const wrap=lib=>{if(lib&&lib.createClient&&!lib.__coeW){const cc=lib.createClient;lib.createClient=(...a)=>{const c=cc.apply(lib,a);clients.push(c);return c};lib.__coeW=1}return lib};
+ let _sb=wrap(window.supabase);try{Object.defineProperty(window,'supabase',{configurable:true,get:()=>_sb,set:v=>{_sb=wrap(v)}})}catch(e){}
+ const _si=window.setInterval.bind(window);window.setInterval=(fn,ms,...a)=>_si(()=>{if(!sleeping)typeof fn==='function'?fn(...a):(0,eval)(fn)},ms);
+ ['mousemove','keydown','pointerdown','touchstart','wheel','scroll'].forEach(e=>addEventListener(e,()=>{last=Date.now()},{passive:true,capture:true}));
+ document.addEventListener('visibilitychange',()=>{hidAt=document.hidden?Date.now():null;if(!document.hidden)check()});
+ function sleep(why){if(sleeping)return;sleeping=true;window.COE_DORMIDO=true;clients.forEach(c=>{try{c.removeAllChannels()}catch(e){}});try{window.COE_ON_SLEEP&&window.COE_ON_SLEEP()}catch(e){}
+  const d=document.createElement('div');d.id='coeSleep';d.setAttribute('role','dialog');d.style.cssText='position:fixed;inset:0;z-index:2147483647;background:rgba(10,22,30,.84);display:flex;align-items:center;justify-content:center;font:16px system-ui,-apple-system,Segoe UI,sans-serif;color:#fff;text-align:center;padding:20px;cursor:pointer';
+  d.innerHTML='<div><div style="font-size:44px;line-height:1">⏸️</div><div style="font-size:21px;font-weight:700;margin:10px 0 6px">App en pausa</div><p style="opacity:.86;max-width:380px;margin:0 auto 16px;line-height:1.45">'+why+' Así el servidor no se satura. Su sesión y lo que guardó siguen igual.</p><button type="button" style="font:inherit;padding:11px 26px;border-radius:10px;border:0;background:#fff;color:#123;font-weight:700;cursor:pointer">Continuar</button></div>';
+  d.onclick=()=>{d.remove();sleeping=false;window.COE_DORMIDO=false;last=Date.now();if(window.COE_ON_WAKE){try{window.COE_ON_WAKE()}catch(e){location.reload()}}else location.reload()};
+  (document.body||document.documentElement).appendChild(d)}
+ function check(){if(sleeping)return;const n=Date.now();if(hidAt&&n-hidAt>HID_MIN*6e4)sleep('Se pausó porque la pestaña estuvo '+HID_MIN+' minutos en segundo plano.');else if(n-last>IDLE_MIN*6e4)sleep('Se pausó tras '+IDLE_MIN+' minutos sin uso.')}
+ _si(check,30000);})();</script>
 <script>
 document.documentElement.style.setProperty('--iso','url("data:image/png;base64,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")');
 const TODAY=(()=>{const d=new Date();d.setHours(12,0,0,0);return d})();
@@ -737,7 +751,7 @@ const TABIC={dash:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14"
  alm:'<path d="M3 21V9l9-5 9 5v12"/><path d="M7 21v-8h10v8"/><path d="M7 17h10"/>',
  acc:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>'};
 function renderTabs(){$('#pgTitle').textContent=TABN[tab];$('#tabs').innerHTML=tabsFor().map(t=>`<button role="tab" aria-selected="${t===tab}" data-t="${t}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TABIC[t]}</svg><span>${TABN[t]}</span></button>`).join('');$('#tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>go(b.dataset.t))}
-function go(t){tab=t;renderTabs();render();window.scrollTo({top:0});if(t==='rx')loadBusy()}
+function go(t){tab=t;renderTabs();render();if(t==='rx')loadBusy();window.scrollTo({top:0});if(t==='rx')loadBusy()}
 
 function vSetup(){
  if(DEMO||!can('entrada'))return '';
@@ -1065,7 +1079,7 @@ function vCita(){const cal=CALS.find(c=>String(c.id)===String(RX.cal))||null;if(
  ${cal&&!RX.cita?'<p class="note">Elija el día.</p>':''}`}
 const citaKey=()=>[RX.cal,RX.cita,RX.turno,RX.pac.trim()].join('|');
 async function loadCals(){if(!sb)return;try{const r=await sb.rpc('far_calendarios_lista');if(r.error)throw r.error;CALS=r.data||[];try{const d=await sb.rpc('far_cal_directo');CAL_DIRECTO=!!d.data}catch(e){CAL_DIRECTO=false}if(RX.cal==null){const f=CALS.find(c=>c.activo);if(f)RX.cal=f.id}}catch(e){CALS=[]}}
-async function loadBusy(force){if(!sb||!ME||!ME.token)return;if(!force&&Date.now()-BUSY_AT<4*60000)return;if(!CALS.some(c=>calSrc(c)&&c.activo))return;
+async function loadBusy(force){if(!sb||!ME||!ME.token)return;if(!force&&(document.hidden||window.COE_DORMIDO||tab!=='rx'))return;if(!force&&Date.now()-BUSY_AT<4*60000)return;if(!CALS.some(c=>calSrc(c)&&c.activo))return;
  const d0=new Date(TODAY);d0.setDate(d0.getDate()-1);const d1=new Date(TODAY);d1.setDate(d1.getDate()+65);
  try{const r=await sb.functions.invoke('cal-ocupado',{body:{token:ME.token,desde:d0.toISOString(),hasta:d1.toISOString()}});if(r.error)throw r.error;BUSY=r.data.calendarios||{};BUSY_ERR='';BUSY_AT=Date.now()}
  catch(e){BUSY_ERR=(e&&e.message)||'sin conexión'}
@@ -1845,12 +1859,17 @@ async function enter(sess){
  if(!DEMO&&!LOADED){await startData()}else{renderTabs();render();if(!DEMO)reload()}
  nextStep();setTimeout(checkPop,900);
 }
+let RT_DIRTY=false;
+/* cambios en vivo: una sola recarga agrupada; si la pestaña está oculta, se recarga al volver */
+function subRT(){if(!sb||DEMO)return;try{sb.removeAllChannels()}catch(e){}const ch=sb.channel('coe-farmacia');
+ ['far_productos','far_lotes','far_pedidos','far_alertas_atendidas','far_permisos','far_usuarios','rec_recetas','rec_plantillas','far_conteos','far_solicitudes_alm','far_movimientos'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{if(document.hidden||window.COE_DORMIDO){RT_DIRTY=true;return}clearTimeout(rlT);rlT=setTimeout(reload,2500)}));
+ ch.subscribe()}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&RT_DIRTY&&LOADED&&!window.COE_DORMIDO){RT_DIRTY=false;reload()}});
+window.COE_ON_WAKE=()=>{if(!ME||DEMO||!LOADED){location.reload();return}subRT();RT_DIRTY=false;reload();loadBusy(true)};
 let LOADED=false;
 async function startData(){
  try{await loadAll();await loadCals();LOADED=true;remap();setOnline(true,'En línea · sincronizado');offUi();renderTabs();render();loadBusy(true);setInterval(()=>loadBusy(),5*60000);
-  const ch=sb.channel('coe-farmacia');
-  ['far_productos','far_lotes','far_pedidos','far_alertas_atendidas','far_permisos','far_usuarios','rec_recetas','rec_plantillas','far_conteos','far_solicitudes_alm','far_movimientos'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{clearTimeout(rlT);rlT=setTimeout(reload,500)}));
-  ch.subscribe();setTimeout(checkPop,600);setInterval(checkPop,60000);
+  subRT();setTimeout(checkPop,600);setInterval(checkPop,60000);
  }catch(e){setOnline(false,'Sin conexión');renderTabs();render();toast('No se pudieron cargar los datos. Revise su conexión.')}
 }
 function openPw(first){$('#pwT').textContent=first?'Cambie su contraseña':'Cambiar contraseña';$('#pwSub').textContent=first?'Está usando una contraseña temporal. Elija una propia para continuar.':'Escriba su contraseña actual y la nueva.';$('#pwX').hidden=!!first;$('#pwErr').hidden=true;['pwA','pwN','pwN2'].forEach(k=>$('#'+k).value='');$('#pwOvl').hidden=false;setTimeout(()=>$('#pwA').focus(),50)}
@@ -2103,7 +2122,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610271221';
+const APP_VER='202610272130';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
