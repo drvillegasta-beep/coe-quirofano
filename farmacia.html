@@ -686,7 +686,7 @@ function alerts(){
  if(nocap.length)a.push({id:'nocap',k:'info',grp:'disc',t:`${nocap.length} producto${nocap.length>1?'s':''} sin existencia capturada`,d:'Importe el reporte de eOptics (Excel) o registre entradas con lote y caducidad.',p:null,imp:1});
  PR.filter(p=>p.cap).forEach(p=>{
   const[k]=stockState(p),s=stock(p),lk=p.lotes.map(l=>l.id).sort((a,b)=>a-b).join('.');
-  const cov=['dead','crit','warn'].includes(k)?cubierto(p):null,nv={dead:'agotado',crit:'critico',warn:'minimo'}[k],cola=cov?` Ya solicitado (${cov}).`:` Si no se pide en ${ESC_H[nv]} h, se avisa a Dirección y Finanzas.`;
+  const sa=stockA(p),cov=['dead','crit','warn'].includes(k)?cubierto(p):null,nv={dead:'agotado',crit:'critico',warn:'minimo'}[k],cola=(sa?` En almacén hay ${sa}: pídalo al almacén.`:' El almacén tampoco tiene.')+(cov?` Ya solicitado (${cov}).`:` Si no se pide en ${ESC_H[nv]} h, se avisa a Dirección y Finanzas.`);
   if(k==='dead')a.push({id:`s${p.id}:dead`,k:'dead',grp:'stock',t:`${p.nm}: agotado`,d:`Sin existencia vigente${p.min?` (mínimo ${p.min})`:''}.${cola}`,p,cov});
   else if(k==='crit')a.push({id:`s${p.id}:crit:${lk}`,k:'crit',grp:'stock',t:`${p.nm}: existencia crítica`,d:`Quedan ${s} (crítico ≤ ${p.cri}, mínimo ${p.min}).${cola}`,p,cov});
   else if(k==='warn')a.push({id:`s${p.id}:warn:${lk}`,k:'warn',grp:'stock',t:`${p.nm}: en mínimo`,d:`Quedan ${s} (mínimo ${p.min}).${cola}`,p,cov});
@@ -827,8 +827,8 @@ function vInv(){
   <span class="spacer"></span>
   ${canE?`<button class="btn" id="npInv">+ Producto nuevo</button><button class="btn" data-prm="0">Mínimos, lotes y caducidades</button><button class="btn" id="scanBtn" title="Con el lector: escanee el código y se abre la entrada de ese producto">Escanear</button><button class="btn pri" data-ent="0">+ Entrada</button>`:'<span class="note">Solo lectura para este usuario.</span>'}
  </div>
- <div class="panel tbl"><table class="invt"><thead><tr><th>Clave</th><th>Descripción (eOptics)</th><th>Grupo</th><th class="num">Exist.</th><th>Estado</th><th>Lote / caducidad</th>${!can('costos')?'':'<th class="num">Costo</th><th class="num">Venta</th>'}</tr></thead><tbody>
- ${rows.map(p=>{const ls=[...p.lotes].sort(lotSort);return `<tr><td class="mono" style="font-size:12px">${esc(p.cl)}${canEd?`<div class="racts">${canE&&!p.srv?`<button class="btn sm" data-ent="${p.id}">+ Entrada</button>`:''}<button class="btn sm" data-edit="${p.id}">Editar</button></div>`:''}</td><td class="desc"><b>${esc(p.d)}</b>${p.pa&&p.pa!=='—'?`<div class="note">${esc(p.pa)}</div>`:''}</td><td>${p.g==='sc'?chip(['info','Sin clasificar']):esc(GRUPOS[p.g])}</td><td class="num"><b>${p.srv?'—':p.cap?stock(p):'—'}</b>${p.srv||!p.cap?'':`<div class="mm">mín ${p.min}<br>crít ${p.cri}</div>`}${stockA(p)?`<div class="mm" style="color:var(--accent)">almacén ${stockA(p)}</div>`:''}</td><td>${chip(stockState(p))}${p.ejp&&!p.srv?'<div style="margin-top:3px">'+chip(['info','Por definir'])+'</div>':''}</td>
+ <div class="panel tbl"><table class="invt"><thead><tr><th>Clave</th><th>Descripción (eOptics)</th><th>Grupo</th><th class="num">Farmacia</th><th class="num">Almacén</th><th>Estado</th><th>Lote / caducidad</th>${!can('costos')?'':'<th class="num">Costo</th><th class="num">Venta</th>'}</tr></thead><tbody>
+ ${rows.map(p=>{const ls=[...p.lotes].sort(lotSort);return `<tr><td class="mono" style="font-size:12px">${esc(p.cl)}${canEd?`<div class="racts">${canE&&!p.srv?`<button class="btn sm" data-ent="${p.id}">+ Entrada</button>`:''}<button class="btn sm" data-edit="${p.id}">Editar</button></div>`:''}</td><td class="desc"><b>${esc(p.d)}</b>${p.pa&&p.pa!=='—'?`<div class="note">${esc(p.pa)}</div>`:''}</td><td>${p.g==='sc'?chip(['info','Sin clasificar']):esc(GRUPOS[p.g])}</td><td class="num"><b>${p.srv?'—':p.cap?stock(p):'—'}</b>${p.srv||!p.cap?'':`<div class="mm">mín ${p.min}<br>crít ${p.cri}</div>`}</td><td class="num">${p.srv?'—':stockA(p)?`<b style="color:var(--accent)">${stockA(p)}</b>${['dead','crit','warn'].includes(stockState(p)[0])&&can('pedir')?`<div><button class="lnk sm" data-palm="${p.id}">pedir</button></div>`:''}`:'<span class="note">0</span>'}</td><td>${chip(stockState(p))}${p.ejp&&!p.srv?'<div style="margin-top:3px">'+chip(['info','Por definir'])+'</div>':''}</td>
   <td>${p.srv?'—':ls.map(l=>`<div class="lotl"><span class="mono" style="font-size:12px">${esc(l.l)}</span> · ${l.q} · ${chip(cadState(l.cad))}${!l.cad&&canE?` <button class="lnk sm" data-ent="${p.id}|1">asignar</button>`:''}${l.cad&&days(l.cad)<0&&canA?` <button class="lnk sm" data-baja="${p.id}|${esc(l.l)}">dar de baja</button>`:''}</div>`).join('')||'<span class="note">—</span>'}</td>${!can('costos')?'':`<td class="num">${p.srv?'—':p.c?money(p.c):'<span class="note">—</span>'}</td><td class="num">${p.v?money(p.v):'<span class="note">—</span>'}</td>`}</tr>`}).join('')||'<tr><td colspan="9" class="note">Sin productos con ese filtro.</td></tr>'}
  </tbody></table></div><p class="note">Cada reporte de eOptics que importe descuenta las salidas del lote que caduca primero. Las piezas que llegan sin lote quedan como «Sin lote ni caducidad» hasta que se les asigna. Un lote vencido no cuenta como existencia.</p>`;
 }
@@ -1331,6 +1331,9 @@ function bindActs(R){
 
 /* ---------- Solicitud a Finanzas con PIN ---------- */
 let REQ=null;
+/* cantidad para llegar al mínimo, y sugerida (doble del mínimo o consumo de 4 semanas; en farmacia descuenta lo que hay en almacén) */
+const needMin=(p,alm)=>alm?Math.max(0,(p.minA||0)-stockA(p)):(p.cap?Math.max(0,(p.min||0)-stock(p)):(p.min||0));
+const sugQ=(p,alm)=>alm?Math.max(0,Math.max(2*(p.minA||0),p.sal||0)-stockA(p)):Math.max(0,Math.max(2*(p.min||0),p.sal||0)-(p.cap?stock(p):0)-stockA(p));
 function reqDlg(items,alm){
  if(!can(alm?'almacen':'pedir')){toast('Su perfil no envía solicitudes a Finanzas.');return}
  REQ={alm:!!alm,items:items.length?items.map(i=>({...i})):[{pid:null,nombre:'',cant:1}],prio:items.some(i=>{const p=PROD.find(x=>x.id===i.pid);return p&&p.cap&&stock(p)===0})?'Urgente':'Normal',nota:''};
@@ -1338,22 +1341,28 @@ function reqDlg(items,alm){
 }
 function renderReq(){const B=$('#rqBox');if(!B||!REQ)return;
  const low=PROD.filter(p=>!p.srv&&(REQ.alm?(p.minA>0&&stockA(p)<=p.minA):(p.cap&&['dead','crit','warn'].includes(stockState(p)[0])))&&!REQ.items.some(i=>i.pid===p.id));
+ const lowMin=PROD.filter(p=>!p.srv&&needMin(p,REQ.alm)>0&&!REQ.items.some(i=>i.pid===p.id)),lowSug=PROD.filter(p=>!p.srv&&sugQ(p,REQ.alm)>0&&(REQ.alm?stockA(p)<=Math.max(p.minA,1):(p.cap&&(stock(p)<=p.min||(p.sal>0&&stock(p)<p.sal))))&&!REQ.items.some(i=>i.pid===p.id));
  let tot=0,sinc=0;REQ.items.filter(i=>i.pid||(i.nombre||'').trim()).forEach(i=>{const p=PROD.find(x=>x.id===i.pid);if(p&&p.c)tot+=p.c*(+i.cant||0);else sinc++});
  B.innerHTML=`<p class="note" style="margin-top:0">${REQ.alm?'Pedido de Finanzas al proveedor para surtir el almacén.':'Elija del catálogo o escriba un medicamento que no tenemos. Finanzas recibe el aviso al momento.'}${!REQ.alm&&REQ.items.some(i=>{const p=PROD.find(x=>x.id===i.pid);return p&&stockA(p)})?' <b>Ojo:</b> algún producto ya está en el almacén; puede pedirlo al almacén en lugar de comprarlo.':''}</p>
  ${REQ.items.map((i,k)=>{const p=PROD.find(x=>x.id===i.pid);return `<div class="rq-row"><div>${i.pid===0||(!i.pid&&i.nombre)?`<input type="text" data-rqn="${k}" value="${esc(i.nombre)}" placeholder="Nombre, presentación y concentración">`:`<select data-rqp="${k}"><option value="">Elegir producto…</option>${prodOpts(i.pid)}<option value="0">Otro (no está en catálogo)…</option></select>`}</div>
   <input type="number" min="1" data-rqc="${k}" value="${esc(i.cant)}" aria-label="Cantidad"><button type="button" class="icon-btn" data-rqx="${k}" aria-label="Quitar">✕</button>
-  ${p?`<small>${REQ.alm?`Almacén ${stockA(p)} (mín ${p.minA||0}) · farmacia ${p.cap?stock(p):'—'}`:`Existencia ${p.cap?stock(p):'sin capturar'} · mínimo ${p.min}${stockA(p)?` · almacén ${stockA(p)}`:''}`}${p.c&&can('costos')?` · costo ${money(p.c)} c/u`:''}</small>`:''}</div>`}).join('')}
- <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" id="rqAdd">+ Agregar renglón</button>${low.length?`<button type="button" class="btn sm" id="rqLow">+ Agregar lo que está bajo (${low.length})</button>`:''}</div>
+  ${p?`<small>${REQ.alm?`Almacén ${stockA(p)} (mín ${p.minA||0}) · farmacia ${p.cap?stock(p):'—'}`:`Existencia ${p.cap?stock(p):'sin capturar'} · mínimo ${p.min}${stockA(p)?` · almacén ${stockA(p)}`:''}`}${p.c&&can('costos')?` · costo ${money(p.c)} c/u`:''}${(()=>{const m=needMin(p,REQ.alm),g=sugQ(p,REQ.alm);return (m||g)?` · <button type="button" class="lnk sm" data-rqs="${k}|${m}">para mínimo: ${m}</button> · <button type="button" class="lnk sm" data-rqs="${k}|${g}">sugerido: ${g}</button>`:''})()}</small>`:''}</div>`}).join('')}
+ <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" id="rqAdd">+ Agregar renglón</button>${lowSug.length?`<button type="button" class="btn sm pri" id="rqSug" title="Cantidad para cubrir el doble del mínimo o el consumo de 4 semanas${REQ.alm?'':', descontando lo que hay en almacén'}">✨ Sugeridos (${lowSug.length})</button>`:''}${lowMin.length?`<button type="button" class="btn sm" id="rqMin" title="Solo lo necesario para llegar al mínimo">Completar mínimos (${lowMin.length})</button>`:''}${REQ.items.some(i=>i.pid)?`<button type="button" class="btn sm" id="rqAllSug">Poner cantidad sugerida a todos</button>`:''}</div>
  ${can('costos')?'':'<!--'}<div class="rq-tot"><span>Total estimado</span><span class="mono">${money(tot)}${sinc?` <small class="note">+ ${sinc} sin costo</small>`:''}</span></div>${can('costos')?'':'-->'}
  <div class="fgrid"><label>Prioridad<select id="rqPr"><option ${REQ.prio==='Normal'?'selected':''}>Normal</option><option ${REQ.prio==='Urgente'?'selected':''}>Urgente</option></select></label>
  <label>${REQ.alm?'Nota (proveedor, forma de pago…)':'Nota para Finanzas (opcional)'}<input type="text" id="rqNo" value="${esc(REQ.nota)}" placeholder="Proveedor, paciente que espera…"></label></div>
  ${pinHtml('Su PIN para confirmar',REQ.alm?'Firmar y registrar pedido':'Firmar y enviar a Finanzas')}`;
- B.querySelectorAll('[data-rqp]').forEach(s=>s.onchange=()=>{const k=+s.dataset.rqp;if(s.value==='0'){REQ.items[k]={pid:0,nombre:'',cant:REQ.items[k].cant}}else{const p=PROD.find(x=>x.id===+s.value);REQ.items[k]={pid:p?p.id:null,nombre:p?p.nm:'',cant:p&&REQ.items[k].cant<=1?Math.max((p.min||1)*2-stock(p),1):REQ.items[k].cant}}renderReq();const n=B.querySelector(`[data-rqn="${k}"]`);if(n)n.focus()});
+ B.querySelectorAll('[data-rqp]').forEach(s=>s.onchange=()=>{const k=+s.dataset.rqp;if(s.value==='0'){REQ.items[k]={pid:0,nombre:'',cant:REQ.items[k].cant}}else{const p=PROD.find(x=>x.id===+s.value);REQ.items[k]={pid:p?p.id:null,nombre:p?p.nm:'',cant:p&&REQ.items[k].cant<=1?Math.max(sugQ(p,REQ.alm),1):REQ.items[k].cant}}renderReq();const n=B.querySelector(`[data-rqn="${k}"]`);if(n)n.focus()});
  B.querySelectorAll('[data-rqn]').forEach(s=>s.oninput=()=>{REQ.items[+s.dataset.rqn].nombre=s.value});
  B.querySelectorAll('[data-rqc]').forEach(s=>s.oninput=()=>{REQ.items[+s.dataset.rqc].cant=Math.max(1,parseInt(s.value)||1)});
  B.querySelectorAll('[data-rqc]').forEach(s=>s.onchange=()=>renderReq());
  B.querySelectorAll('[data-rqx]').forEach(s=>s.onclick=()=>{REQ.items.splice(+s.dataset.rqx,1);if(!REQ.items.length)REQ.items.push({pid:null,nombre:'',cant:1});renderReq()});
  $('#rqAdd').onclick=()=>{REQ.items.push({pid:null,nombre:'',cant:1});renderReq()};
+ B.querySelectorAll('[data-rqs]').forEach(b=>b.onclick=()=>{const[k,q]=b.dataset.rqs.split('|').map(Number);if(q>0){REQ.items[k].cant=q;renderReq()}else toast('Ya tiene lo necesario.')});
+ const addL=(L,f)=>{REQ.items=REQ.items.filter(i=>i.pid||i.nombre);L.forEach(p=>REQ.items.push({pid:p.id,nombre:p.nm,cant:Math.max(f(p),1)}));if(L.some(p=>REQ.alm?stockA(p)===0:stock(p)===0))REQ.prio='Urgente';renderReq()};
+ const sg=$('#rqSug');if(sg)sg.onclick=()=>addL(lowSug,p=>sugQ(p,REQ.alm));
+ const mn=$('#rqMin');if(mn)mn.onclick=()=>addL(lowMin,p=>needMin(p,REQ.alm));
+ const as=$('#rqAllSug');if(as)as.onclick=()=>{REQ.items.forEach(i=>{const p=PROD.find(x=>x.id===i.pid);if(p){const g=sugQ(p,REQ.alm);if(g>0)i.cant=g}});renderReq()};
  const lw=$('#rqLow');if(lw)lw.onclick=()=>{REQ.items=REQ.items.filter(i=>i.pid||i.nombre);low.forEach(p=>REQ.items.push({pid:p.id,nombre:p.nm,cant:Math.max((p.min||1)*2-stock(p),1)}));if(low.some(p=>stock(p)===0))REQ.prio='Urgente';renderReq()};
  $('#rqPr').onchange=e=>{REQ.prio=e.target.value};$('#rqNo').oninput=e=>{REQ.nota=e.target.value};
  $('#rqF').onsubmit=async e=>{e.preventDefault();dErr('');
@@ -2122,7 +2131,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610280819';
+const APP_VER='202610281039';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
