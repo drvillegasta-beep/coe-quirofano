@@ -793,7 +793,7 @@ async function iniciar(){
   if(!modsOf(S.user).includes(S.tab))S.tab=modsOf(S.user).includes('cotizar')&&!modsOf(S.user).includes('inicio')?'cotizar':(modsOf(S.user)[0]||'mas');
   if(!rtChan){
     rtChan=sb.channel('qx-rt');
-    ['qx_cirugias','qx_cirugia_items','qx_cirugia_evidencias','qx_mensajes','qx_lotes','qx_lio_unidades','qx_lecturas_tanque','qx_conteos','qx_materiales','qx_paquetes','qx_carro_revisiones','qx_campanas','qx_campana_pacientes'].forEach(t=>rtChan.on('postgres_changes',{event:'*',schema:'public',table:t},scheduleReload));
+    ['qx_cirugias','qx_cirugia_items','qx_cirugia_evidencias','qx_mensajes','qx_lotes','qx_lio_unidades','qx_lecturas_tanque','qx_conteos','qx_carro_revisiones','qx_campanas','qx_campana_pacientes'].forEach(t=>rtChan.on('postgres_changes',{event:'*',schema:'public',table:t},scheduleReload));
     rtChan.subscribe(st=>{const o=$('#online');if(o)o.classList.toggle('off',st!=='SUBSCRIBED')});
     setInterval(scheduleReload,5*60e3);
     window.addEventListener('online',()=>{$('#online')?.classList.remove('off');scheduleReload()});

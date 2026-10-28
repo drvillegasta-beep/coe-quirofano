@@ -1862,7 +1862,7 @@ async function enter(sess){
 let RT_DIRTY=false;
 /* cambios en vivo: una sola recarga agrupada; si la pestaña está oculta, se recarga al volver */
 function subRT(){if(!sb||DEMO)return;try{sb.removeAllChannels()}catch(e){}const ch=sb.channel('coe-farmacia');
- ['far_productos','far_lotes','far_pedidos','far_alertas_atendidas','far_permisos','far_usuarios','rec_recetas','rec_plantillas','far_conteos','far_solicitudes_alm','far_movimientos'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{if(document.hidden||window.COE_DORMIDO){RT_DIRTY=true;return}clearTimeout(rlT);rlT=setTimeout(reload,2500)}));
+ ['far_productos','far_lotes','far_pedidos','far_alertas_atendidas','rec_recetas','far_conteos','far_solicitudes_alm'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{if(document.hidden||window.COE_DORMIDO){RT_DIRTY=true;return}clearTimeout(rlT);rlT=setTimeout(reload,2500)}));
  ch.subscribe()}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&RT_DIRTY&&LOADED&&!window.COE_DORMIDO){RT_DIRTY=false;reload()}});
 window.COE_ON_WAKE=()=>{if(!ME||DEMO||!LOADED){location.reload();return}subRT();RT_DIRTY=false;reload();loadBusy(true)};
@@ -2122,7 +2122,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610272130';
+const APP_VER='202610280819';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
