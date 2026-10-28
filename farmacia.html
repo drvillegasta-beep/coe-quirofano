@@ -1077,6 +1077,9 @@ function vCita(){const cal=CALS.find(c=>String(c.id)===String(RX.cal))||null;if(
  <label class="chk"><input type="checkbox" id="rxPromo" ${RX.promos?'checked':''}> El paciente acepta recibir avisos y promociones de la clínica por WhatsApp</label>
  ${okNow?`<div class="citaok">✓ Cita guardada en Google Calendar · <b>${esc(CITA_OK.txt)}</b>${CITA_OK.liga?` · <a href="${esc(CITA_OK.liga)}" target="_blank" rel="noopener">Ver en Google Calendar ↗</a>`:''}</div>`:`<button type="button" class="btn pri gcal" id="gcalBtn" ${cal&&RX.hora!=null&&RX.cita?'':'disabled'}>📅 ${CAL_DIRECTO?'Agendar cita':'Agendar en Google Calendar'}${cal?' · '+esc(cal.nombre):''}</button>`}
  ${cal&&!RX.cita?'<p class="note">Elija el día.</p>':''}`}
+/* teléfono a 10 dígitos (quita lada de país 52/521, espacios y guiones) */
+const tel10=t=>{let d=String(t||'').replace(/\D/g,'');if(d.length>10&&/^(52|521|1)/.test(d))d=d.slice(-10);return d};
+let CITA_BUSY=false,CITA_LEJOS='';
 const citaKey=()=>[RX.cal,RX.cita,RX.turno,RX.pac.trim()].join('|');
 async function loadCals(){if(!sb)return;try{const r=await sb.rpc('far_calendarios_lista');if(r.error)throw r.error;CALS=r.data||[];try{const d=await sb.rpc('far_cal_directo');CAL_DIRECTO=!!d.data}catch(e){CAL_DIRECTO=false}if(RX.cal==null){const f=CALS.find(c=>c.activo);if(f)RX.cal=f.id}}catch(e){CALS=[]}}
 async function loadBusy(force){if(!sb||!ME||!ME.token)return;if(!force&&(document.hidden||window.COE_DORMIDO||tab!=='rx'))return;if(!force&&Date.now()-BUSY_AT<4*60000)return;if(!CALS.some(c=>calSrc(c)&&c.activo))return;
@@ -1085,7 +1088,7 @@ async function loadBusy(force){if(!sb||!ME||!ME.token)return;if(!force&&(documen
  catch(e){BUSY_ERR=(e&&e.message)||'sin conexión'}
  if(tab==='rx'&&!MODAL&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))render()}
 function citaDatos(){const cal=CALS.find(c=>String(c.id)===String(RX.cal));const s=slotDate(RX.cita,RX.hora),e=new Date(s.getTime()+(cal.duracion_min||20)*60000);
- const titulo=[RX.pac.trim().toUpperCase(),(RX.tel||'').replace(/\D/g,''),(RX.motivo||'').toUpperCase()].filter(Boolean).join(' ');
+ const titulo=`${RX.pac.trim().replace(/\s+/g,' ').toUpperCase()}, ${tel10(RX.tel)} ${(RX.motivo||'Subsecuente').trim().toUpperCase()}`;
  const detalle=[`Motivo: ${RX.motivo||'—'}`,`Teléfono: ${RX.tel||'—'}`,`Diagnóstico: ${RX.dx||'—'}`,`Receta: ${rxFolio()}`,RX.promos?'Acepta avisos por WhatsApp':'',`Agendado desde COE Farmacia por ${ME?ME.nombre:''}`].filter(Boolean).join('\n');
  return {cal,s,e,titulo,detalle,ubicacion:RX.sede==='tac'?'COE Tacámbaro':'COE Morelia'}}
 async function citaDirecta(btn){const d=citaDatos();btn.disabled=true;btn.textContent='Agendando…';
@@ -1099,7 +1102,7 @@ async function citaDirecta(btn){const d=citaDatos();btn.disabled=true;btn.textCo
 function gcalUrl(){const cal=CALS.find(c=>String(c.id)===String(RX.cal));if(!cal||RX.hora==null)return null;
  const s=slotDate(RX.cita,RX.hora),e=new Date(s.getTime()+(cal.duracion_min||20)*60000);
  const f=d=>`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}00`;
- const title=[RX.pac.trim().toUpperCase(),(RX.tel||'').replace(/\D/g,''),(RX.motivo||'').toUpperCase()].filter(Boolean).join(' ');
+ const title=citaDatos().titulo;
  const det=[`Motivo: ${RX.motivo||'—'}`,`Teléfono: ${RX.tel||'—'}`,`Diagnóstico: ${RX.dx||'—'}`,`Receta: ${rxFolio()}`,RX.promos?'Acepta avisos por WhatsApp':'',`Agendado desde COE Farmacia por ${ME?ME.nombre:''}`].filter(Boolean).join('\n');
  const p=new URLSearchParams({action:'TEMPLATE',text:title,dates:f(s)+'/'+f(e),ctz:'America/Mexico_City',details:det,src:cal.calendar_id,location:RX.sede==='tac'?'COE Tacámbaro':'COE Morelia'});
  return 'https://calendar.google.com/calendar/render?'+p.toString()}
@@ -1277,10 +1280,13 @@ function bind(){
  const rm=$('#rxMot');if(rm)rm.onchange=()=>{RX.motivo=rm.value.trim();if(esEstudio(RX.motivo)){RX.turno='pm';RX.hora=null}render()};
  const rt=$('#rxTel');if(rt)rt.onchange=()=>{RX.tel=rt.value.trim();render()};
  const rp=$('#rxPromo');if(rp)rp.onchange=()=>{RX.promos=rp.checked;render()};
- const gb=$('#gcalBtn');if(gb)gb.onclick=async()=>{if(!RX.pac.trim()){toast('Falta el nombre del paciente.');return}if(!RX.tel.trim()){toast('Escriba el teléfono del paciente.');$('#rxTel')?.focus();return}
+ const gb=$('#gcalBtn');if(gb)gb.onclick=async()=>{if(CITA_BUSY)return;if(!RX.pac.trim()){toast('Falta el nombre del paciente.');return}if(!RX.tel.trim()){toast('Escriba el teléfono del paciente.');$('#rxTel')?.focus();return}
+  if(tel10(RX.tel).length!==10){toast('El teléfono debe tener 10 dígitos (sin 52 ni espacios).');$('#rxTel')?.focus();return}
+  {const dd=(new Date(RX.cita+'T12:00:00')-TODAY)/864e5;if(dd>200&&CITA_LEJOS!==RX.cita){CITA_LEJOS=RX.cita;toast(`¿Seguro? La cita queda para ${fechaLarga(RX.cita).toLowerCase()} de ${RX.cita.slice(0,4)}, en ${Math.round(dd/30)} meses. Pulse otra vez para confirmar.`);return}}
+  CITA_BUSY=true;gb.disabled=true;try{
   if(rxFolio()==='SIN GUARDAR'&&sb&&!DEMO){await saveRx();if(rxFolio()==='SIN GUARDAR')return}
   if(CAL_DIRECTO){await citaDirecta(gb);return}
-  const u=gcalUrl();if(!u)return;const w=window.open(u,'gcal','width=980,height=760,left=80,top=60');if(!w)location.href=u;logDb('cita_agendada',{folio:RX.folio,calendario:RX.cal,inicio:slotDate(RX.cita,RX.hora).toISOString()});toast('Pulse «Guardar» en la ventana de Google Calendar; esta página sigue abierta.');setTimeout(()=>loadBusy(true),60000)};
+  const u=gcalUrl();if(!u)return;const w=window.open(u,'gcal','width=980,height=760,left=80,top=60');if(!w)location.href=u;logDb('cita_agendada',{folio:RX.folio,calendario:RX.cal,inicio:slotDate(RX.cita,RX.hora).toISOString()});toast('Pulse «Guardar» en la ventana de Google Calendar; esta página sigue abierta.');setTimeout(()=>loadBusy(true),60000)}finally{CITA_BUSY=false;const g=$('#gcalBtn');if(g)g.disabled=false}};
  M.querySelectorAll('[data-dx]').forEach(b=>b.onclick=()=>{RX.dx=b.dataset.dx;render()});
  M.querySelectorAll('[data-dose]').forEach(b=>b.onclick=()=>{const[i,d]=b.dataset.dose.split(':');const m=RX.meds[+i];if(isOft(m))m.dose=Math.min(3,Math.max(1,m.dose+(+d)));else{const st=m.uni==='tableta'?0.5:1;m.dose=Math.min(50,Math.max(st,Math.round((+m.dose+st*(+d))*2)/2))}render()});
  M.querySelectorAll('[data-via]').forEach(b=>b.onclick=()=>{const[i,v]=b.dataset.via.split(':');const m=RX.meds[+i];if((m.via||'oft')===v)return;m.via=v;if(v==='oft'){m.uni='gota';m.dose=Math.min(3,Math.max(1,Math.round(m.dose)));if(m.f===0)m.f=2;m.prn=false}else{m.taper=0;if(!m.uni||m.uni==='gota')m.uni=defUni(v)}render()});
@@ -1962,7 +1968,7 @@ async function citasLoad(){CIT.load=true;CIT.err='';CIT.gerr='';paintCitas();
   ((gd&&gd.agendas)||[]).forEach(ag=>{if(ag.error)CIT.gerr=(CIT.gerr?CIT.gerr+' · ':'')+ag.nombre+': '+ag.error;
    (ag.eventos||[]).forEach(ev=>{const t=(ev.titulo||'').trim();if(!t||/^(bloque|comida|cerrad|vacacion|no agendar|descanso|junta|prueba)/i.test(t))return;
     const ph=(t.match(/(?:\+?52)?\s*(\d[\d\s.-]{8,}\d)/)||t.match(/\s(S\/?N|SIN (?:NUMERO|NÚMERO|TEL[EÉ]FONO))(?=\s|$)/i)||[])[1],tel=ph&&/\d/.test(ph)?ph.replace(/\D/g,'').slice(-10):((ev.detalle||'').match(/Tel[eé]fono:\s*([\d\s.-]{10,})/i)||[])[1]?.replace(/\D/g,'').slice(-10)||'';
-    let nom=ph?t.slice(0,t.indexOf(ph)).trim():t,mot=((ev.detalle||'').match(/Motivo:\s*(.+)/i)||[])[1]||(ph?t.slice(t.indexOf(ph)+ph.length).trim():'');
+    let nom=(ph?t.slice(0,t.indexOf(ph)).trim():t).replace(/^[^A-Za-zÁÉÍÓÚÑáéíóúñ]+/,'').replace(/[,;:\s]+$/,''),mot=((ev.detalle||'').match(/Motivo:\s*(.+)/i)||[])[1]||(ph?t.slice(t.indexOf(ph)+ph.length).trim():'');
     if(!nom)nom=t;const kn=nrm(nom),w=kn.split(/\s+/).slice(0,2).join(' ');
     const m=rows.find(r=>{const kr=nrm(r.paciente);return kr&&(kr===kn||kn.includes(kr)||kr.includes(kn)||(w.length>5&&kr.startsWith(w)))});
     if(m){m.cita_inicio=m.cita_inicio||ev.inicio;m.cita_calendario=m.cita_calendario||ag.nombre;m.gid=m.gid||ev.id;if(!m.telefono&&tel)m.telefono=tel;return}
@@ -2131,7 +2137,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610281039';
+const APP_VER='202610281317';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
