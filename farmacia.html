@@ -503,6 +503,13 @@ body.locked .shell{visibility:hidden}
 .cttbl td{font-size:13px}.ctpend{margin:4px 0 6px 16px;padding:0;font-size:12.5px}.ctnota{font-size:12px;padding:4px 6px}.ctbtns{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.ctbtns .btn{text-decoration:none}
 .offbar{margin:0 0 12px;padding:10px 14px;border-radius:10px;background:#fff4e0;color:#6b4300;border:1px solid #f0c27a;font-size:13.5px;line-height:1.45}
 .side-foot .online{cursor:pointer}
+.pedrow{padding:10px 0;border-bottom:1px solid var(--line)}.pedrow:last-child{border-bottom:0}
+.pedline{list-style:none;margin:8px 0 6px;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.pedline li{border-top:3px solid var(--line);padding-top:5px;font-size:12.5px;color:var(--muted)}.pedline li.on{border-color:var(--accent);color:var(--ink)}
+.pedline li small{display:block;font-size:11.5px;color:var(--muted);line-height:1.3;margin-top:2px}.pedacts{display:flex;gap:6px;flex-wrap:wrap}.pedacts .btn{text-decoration:none}
+@media (max-width:700px){.pedline{grid-template-columns:1fr 1fr}}
+.rcwrap{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:6px 0 10px}.rctbl{width:100%;table-layout:fixed;border-collapse:collapse}.rctbl th,.rctbl td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;font-size:13px}.rctbl th{font-size:11px;text-transform:uppercase;color:var(--muted)}.rctbl th:nth-child(1){width:32%}.rctbl th:nth-child(2){width:9%}.rctbl th:nth-child(3){width:13%}.rctbl .num{text-align:right}.rctbl input{width:100%;min-width:0;padding:6px 8px}
+@media (max-width:640px){.rctbl th:nth-child(1){width:auto}}
 .citaok{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--ok-soft);color:var(--ok);font-weight:600}
 .strip2{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .almcal{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.almcal>div{flex:1;min-width:220px}
@@ -702,6 +709,11 @@ function alerts(){
  if(sc.length)a.push({id:'sc'+sc.length,k:'info',grp:'info',t:`${sc.length} producto${sc.length>1?'s':''} sin clasificar`,d:`${sc.map(p=>p.nm).join(', ')}: asigne principio activo y grupo para que aparezcan en sugerencias de receta.`,p:null,cls:1});
  const nm=nextMonday(),hoy=TODAY.getDay()===1,hecho=LAST_CONTEO&&LAST_CONTEO===ISO(TODAY);
  if(!hecho)a.push({id:'inv'+ISO(hoy?TODAY:nm),k:hoy?'warn':'info',grp:'info',t:hoy?'Hoy toca el conteo físico semanal':`Conteo físico: lunes ${nm.toLocaleDateString('es-MX',{day:'numeric',month:'short'})}`,d:`Último conteo firmado: ${LAST_CONTEO?fmtD(LAST_CONTEO):'ninguno todavía'}.`,p:null});
+ /* pedidos: sin autorizar, en camino (confirmar recepción) y rechazados */
+ PEDIDOS.forEach(p=>{if(p.est>=3)return;const I=pedInfo(p),lim=p.prio==='Urgente'?4:24,R=p.origen==='almacen';
+  if(I.rech){if(Date.now()-new Date(p.at)<7*864e5)a.push({id:`pr${p.dbid}`,k:'warn',grp:'ped',t:`${p.id} rechazado por Finanzas`,d:`${p.items}. ${I.F.map(f=>f.motivo).filter(Boolean).join(' · ')||'Sin motivo anotado.'} Si aún se necesita, haga una nueva solicitud.`,p:null});return}
+  if(p.est===0&&I.horas>lim)a.push({id:`pa${p.dbid}:${Math.floor(I.horas/lim)}`,k:I.horas>lim*2?'crit':'warn',grp:'ped',t:`${p.id} lleva ${I.horas<48?Math.round(I.horas)+' h':Math.round(I.horas/24)+' días'} sin autorizar`,d:`${p.items}. ${p.prio==='Urgente'?'Es urgente. ':''}Lo autoriza el Director en Finanzas.`,p:null,pedaut:1});
+  if(p.est>=1&&canRecib(p))a.push({id:`pe${p.dbid}:${p.est}`,k:'info',grp:'ped',t:`${p.id} ${p.est===2?'en camino':'autorizado'}`,d:`${p.items}. Cuando llegue, confirme la recepción con lote y caducidad.`,p:null,recib:p.dbid});});
  const o={dead:0,crit:1,warn:2,info:3};return a.sort((x,y)=>o[x.k]-o[y.k]);
 }
 
@@ -785,6 +797,7 @@ function alertRow(a){
   ${ATENDIDAS.has(a.id)?'<span class="chip c-ok">Atendida</span>':`<button class="btn sm" data-ok="${esc(a.id)}">Marcar atendida</button>`}</div></div>`;
 }
 function alertActs(a){const b=[];
+ if(a.recib)b.push(`<button class="btn sm pri" data-recib="${a.recib}">📦 Confirmar recepción</button>`);if(a.pedaut&&can('autorizar'))b.push(`<a class="btn sm pri" href="https://drvillegasta-beep.github.io/coe-finanzas.html/coe-finanzas-v3.html" target="_blank" rel="noopener">Autorizar en Finanzas ↗</a>`);
  if(a.esc&&a.p){if(can('almacen')&&stockA(a.p))b.push(`<button class="btn sm pri" data-tras="${a.p.id}|${Math.min(stockA(a.p),Math.max(a.p.min*2-stock(a.p),1))}|">Enviar del almacén</button>`);if(can('pedir'))b.push(`<button class="btn sm ${can('almacen')&&stockA(a.p)?'':'pri'}" data-ped="${a.p.id}">Generar pedido</button>`);else if(can('almacen'))b.push(`<button class="btn sm pri" data-palp="${a.p.id}|${Math.max(a.p.min*2-stock(a.p),1)}">Pedir al proveedor</button>`)}
  if(a.econt)b.push(`<button class="btn sm" data-goinvc="1">Ver conteo</button>`);
  if(a.grp==='stock'&&a.p&&can('pedir')&&stockA(a.p)&&!a.cov)b.push(`<button class="btn sm pri" data-palm="${a.p.id}">Pedir al almacén (${stockA(a.p)})</button>`);
@@ -799,12 +812,47 @@ function alertActs(a){const b=[];
  if(a.imp&&can('entrada'))b.push(`<button class="btn sm pri" data-imp="1">Importar eOptics</button>`);
  if(a.cls&&can('entrada'))b.push(`<button class="btn sm" data-goinv="sc">Clasificar</button>`);
  return b.join('')}
-function pedRow(p){
- return `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b class="mono">${p.id}</b><span>${p.prio==='Urgente'?'<span class="chip c-crit">Urgente</span>':''} <span class="mono">${p.monto?money(p.monto):'costo por definir'}</span></span></div>
-  <div>${esc(p.items)}</div>${p.nota?`<div class="note">Nota: ${esc(p.nota)}</div>`:''}<div class="note">${fmtD(p.fecha)} · ${esc(p.por)}${p.firma?' · firmado con PIN':''} · ${p.monto>3000?'Autoriza Director':'Autoriza Director o Dra. Rivera'}</div>
-  ${p.origen==='almacen'?'<div>'+chip(['info','Pedido del almacén'])+'</div>':''}<div class="steps">${PSTEPS.map((s,i)=>`<span class="${i<=p.est?'on':''}">${s}</span>`).join('')}</div>
-  ${can('autorizar')&&p.est<3?`<button class="btn sm" style="margin-top:6px" data-adv="${p.id}">Avanzar a “${PSTEPS[p.est+1]}”</button>`:''}</div>`;
+/* seguimiento del pedido: lo que pasa en Finanzas (autorización, compra) y la recepción en farmacia */
+const FEST={solicitado:'Por autorizar',autorizado:'Autorizado',enviado:'Pedido al proveedor',recibido:'Recibido',facturado:'Recibido',rechazado:'Rechazado',cancelado:'Cancelado'};
+const fdt=t=>t?new Date(t).toLocaleString('es-MX',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}):'';
+const canRecib=p=>p.origen==='almacen'?can('almacen'):(can('entrada')||can('pedir'));
+function pedInfo(p){const F=p.fin||[],vivos=F.filter(f=>!['rechazado','cancelado'].includes(f.estado));
+ const rech=F.length&&!vivos.length,aut=vivos.filter(f=>f.autorizado_at).sort((a,b)=>a.autorizado_at.localeCompare(b.autorizado_at))[0],env=vivos.filter(f=>f.enviado_at).sort((a,b)=>a.enviado_at.localeCompare(b.enviado_at))[0];
+ const horas=(Date.now()-new Date(p.at||p.fecha))/36e5;return{F,vivos,rech,aut,env,horas,listo:!rech&&p.est>=1&&p.est<3,provs:[...new Set(vivos.map(f=>f.proveedor).filter(Boolean))]}}
+function pedRow(p){const I=pedInfo(p),R=p.origen==='almacen';
+ const paso=(on,t,sub)=>`<li class="${on?'on':''}"><b>${t}</b>${sub?`<small>${sub}</small>`:''}</li>`;
+ const st=I.rech?chip(['crit','Rechazado por Finanzas']):p.est>=3?chip(['ok','Recibido']):p.est===2?chip(['info','En camino']):p.est===1?chip(['info','Autorizado']):chip([I.horas>(p.prio==='Urgente'?4:24)?'crit':'warn','Por autorizar']);
+ return `<div class="pedrow"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><span><b class="mono">${p.id}</b> ${st} ${p.prio==='Urgente'?chip(['crit','Urgente']):''} ${R?chip(['info','Almacén']):''}</span><span class="mono">${can('costos')?(p.monto?money(p.monto):'costo por definir'):''}</span></div>
+  <div style="margin:4px 0">${esc(p.items)}</div>${p.nota?`<div class="note">Nota: ${esc(p.nota)}</div>`:''}
+  <ol class="pedline">${paso(1,'Solicitado',`${fdt(p.at)} · ${esc(p.por)}${p.firma?' · con PIN':''}`)}
+   ${I.rech?paso(1,'Rechazado',esc(I.F.map(f=>f.folio+(f.motivo?': '+f.motivo:'')).join(' · '))):paso(p.est>=1,'Autorizado',I.aut?`${fdt(I.aut.autorizado_at)}${I.aut.autorizo?' · '+esc(I.aut.autorizo):''}${I.aut.firma2?' + '+esc(I.aut.firma2):''}`:(I.F.length?`Finanzas: ${esc(I.F.map(f=>f.folio).join(', '))} · espera ${I.horas<48?Math.round(I.horas)+' h':Math.round(I.horas/24)+' días'}`:'esperando a Finanzas'))}
+   ${I.rech?'':paso(p.est>=2,'Pedido al proveedor',I.env?`${fdt(I.env.enviado_at)}${I.provs.length?' · '+esc(I.provs.join(', ')):''}`:'')}
+   ${I.rech?'':paso(p.est>=3,'Recibido',p.recAt?`${fdt(p.recAt)} · ${esc(p.recPor||'')}`:'')}</ol>
+  <div class="pedacts">${I.listo&&canRecib(p)?`<button class="btn sm pri" data-recib="${p.dbid}">📦 Confirmar recepción</button>`:''}
+   ${!I.rech&&p.est===0&&can('autorizar')?`<a class="btn sm" href="https://drvillegasta-beep.github.io/coe-finanzas.html/coe-finanzas-v3.html" target="_blank" rel="noopener">Autorizar en Finanzas ↗</a>`:''}
+   ${p.est>=3&&p.rec?`<button class="btn sm" data-recver="${p.dbid}">Ver lo recibido</button>`:''}</div></div>`;
 }
+/* recepción: piezas que llegaron, lote y caducidad de cada producto; entra al inventario en un paso */
+function recibirDlg(dbid){const p=PEDIDOS.find(x=>x.dbid===dbid);if(!p)return;if(!needLive())return;const R=p.origen==='almacen';
+ const L=(p.det||[]).map(d=>({pid:+d.producto_id||null,nombre:d.nombre,pedido:+d.cantidad||0,recibido:+d.cantidad||0,lote:'',cad:'',costo:d.costo||null}));
+ dlg(`Confirmar recepción · ${p.id}`,`<form id="rcF" autocomplete="off"><p class="note" style="margin-top:0">Anote lo que <b>sí llegó</b>, con su lote y caducidad. ${R?'Entra al almacén.':'Entra al inventario de farmacia.'} Si llegó de menos, cambie la cantidad: queda anotado como faltante para Finanzas.</p>
+  <div class="rcwrap"><table class="rctbl"><thead><tr><th>Producto</th><th class="num">Pedido</th><th class="num">Llegó</th><th>Lote</th><th>Caducidad</th></tr></thead><tbody>
+  ${L.map((x,i)=>`<tr><td><b>${esc(x.nombre)}</b>${x.pid?'':'<div class="note">No está en catálogo: solo se anota</div>'}</td><td class="num">${x.pedido}</td><td class="num"><input type="number" min="0" data-rr="${i}" value="${x.recibido}" style="text-align:right"></td>
+   <td>${x.pid?`<input data-rl="${i}" placeholder="Lote">`:'—'}</td><td>${x.pid?`<input type="date" data-rc="${i}" min="${ISO(TODAY)}">`:'—'}</td></tr>`).join('')}
+  </tbody></table></div><label>Nota (factura, remisión, observaciones)<input id="rcN" placeholder="Opcional"></label>
+  ${pinHtml('Su PIN para confirmar','Confirmar recepción')}</form>`,true);
+ $('#rcF').onsubmit=async e=>{e.preventDefault();dErr('');const items=[];
+  for(let i=0;i<L.length;i++){const x=L[i],q=Math.max(0,parseInt($(`[data-rr="${i}"]`).value)||0);let lo='',ca='';
+   if(x.pid&&q>0){lo=$(`[data-rl="${i}"]`).value.trim().toUpperCase();ca=$(`[data-rc="${i}"]`).value;if(!lo||!ca){dErr(`${x.nombre}: escriba lote y caducidad.`);return}if(ca<ISO(TODAY)){dErr(`${x.nombre}: la caducidad ya pasó.`);return}}
+   items.push({producto_id:x.pid,nombre:x.nombre,pedido:x.pedido,recibido:q,lote:lo,caducidad:ca||null,costo:x.costo})}
+  if(!items.some(x=>x.recibido>0)){dErr('No marcó nada recibido.');return}
+  const pin=$('#dPin').value.trim();if(!/^\d{4,6}$/.test(pin)){dErr('Escriba su PIN (4 a 6 números).');$('#dPin').focus();return}
+  if(!needPin())return;
+  try{const r=await rpc('far_recibir_pedido',{p_token:ME.token,p_pin:pin,p_id:dbid,p_items:items,p_nota:$('#rcN').value.trim()||null});
+   $('#msgOvl').hidden=true;toast(`${r.folio} recibido: ${r.piezas} pieza(s) al ${R?'almacén':'inventario'}.${r.faltantes?' Faltantes: '+r.faltantes+'.':''}`);await reload()}
+  catch(er){dErr(er.message)}}}
+function recVer(dbid){const p=PEDIDOS.find(x=>x.dbid===dbid);if(!p||!p.rec)return;
+ showMsg(`Recibido · ${p.id}`,`<p class="note" style="margin-top:0">${fdt(p.recAt)} · ${esc(p.recPor||'')}</p><div class="pm-tbl"><table><thead><tr><th>Producto</th><th class="num">Pedido</th><th class="num">Llegó</th><th>Lote</th><th>Caducidad</th></tr></thead><tbody>${p.rec.map(x=>`<tr><td>${esc(x.nombre)}</td><td class="num">${x.pedido}</td><td class="num">${x.recibido<x.pedido?`<b style="color:var(--crit)">${x.recibido}</b>`:x.recibido}</td><td class="mono">${esc(x.lote||'—')}</td><td>${x.caducidad?fmtD(x.caducidad):'—'}</td></tr>`).join('')}</tbody></table></div>`)}
 
 let invFilter='all',invQ='';
 function vInv(){
@@ -924,9 +972,9 @@ let TPLS=[
 ];
 const EMOJIS=['👁️','🦠','🎯','💧','🩹','💊','🔥','🤧','🌸','⚡','🩸','🧪','🔬','🛡️','❄️','🌿','☀️','🌙','🧒','👴','⭐','🔴','🟢','🔵'];
 let TPL_EDIT=false,TPL_DB=false;
-const rxHash=()=>JSON.stringify([RX.pac,RX.edad,RX.dx,RX.med,RX.sede,RX.cita,RX.hora,RX.cal,RX.tel,RX.motivo,RX.promos,RX.meds.map(m=>[m.pid,m.eye,m.dose,m.f,m.fh,m.fx,m.d,m.dU,m.dN,m.taper,m.via,m.uni,m.prn,m.taper?fasesOf(m):0])]);
+const rxHash=()=>JSON.stringify([RX.pac,RX.edad,RX.dx,RX.med,RX.sede,RX.cita,RX.hora,RX.abierta,RX.abiertaTxt,RX.cal,RX.tel,RX.motivo,RX.promos,RX.meds.map(m=>[m.pid,m.eye,m.dose,m.f,m.fh,m.fx,m.d,m.dU,m.dN,m.taper,m.via,m.uni,m.prn,m.taper?fasesOf(m):0])]);
 const rxFolio=()=>RX.folio&&RX.saved===rxHash()?RX.folio:'SIN GUARDAR';
-let RX={hora:null,turno:null,cal:null,tel:'',motivo:'Subsecuente',promos:false,folio:null,saved:null,pac:'',edad:'',dx:'',med:'vil',sede:'tac',cita:'',meds:[],view:'std'};
+let RX={abierta:false,abiertaTxt:'',hora:null,turno:null,cal:null,tel:'',motivo:'Subsecuente',promos:false,folio:null,saved:null,pac:'',edad:'',dx:'',med:'vil',sede:'tac',cita:'',meds:[],view:'std'};
 function tplMeds(t){const miss=[];const meds=t.meds.map(m=>{const p=PROD.find(x=>x.cl===m.clave);if(!p){miss.push(m.clave);return null}return{pid:p.id,eye:m.ojo||'AO',dose:m.gotas,f:m.veces??2,d:m.dias||0,taper:m.reduccion?1:0,via:m.via||'oft',uni:m.unidad||(m.via&&m.via!=='oft'?defUni(m.via):'gota'),prn:!!m.prn,...(m.cada_horas?{fh:m.cada_horas}:{}),fx:m.frecuencia_libre||'',...(m.dur_unidad?{dU:m.dur_unidad,dN:m.dur_n}:{}),...(m.reduccion?{fases:JSON.parse(JSON.stringify(m.fases||defFases(m.gotas)))}:{})}}).filter(Boolean);return{meds,miss}}
 function loadTpl(id,quiet){const t=TPLS.find(x=>String(x.id)===String(id));if(!t)return;const{meds,miss}=tplMeds(t);RX.dx=t.dx||RX.dx;RX.meds=meds;if(!quiet){toast(miss.length?`Plantilla cargada. ${miss.length} medicamento(s) ya no están en el catálogo.`:`Plantilla «${t.nombre}» cargada.`);render()}}
 loadTpl('l1',true);
@@ -1070,13 +1118,13 @@ function vCita(){const cal=CALS.find(c=>String(c.id)===String(RX.cal))||null;if(
  <div class="field"><span class="lbl" style="margin-bottom:4px">1 · Agenda</span>${CALS.length?`<div class="seg2 sm wrap">${CALS.filter(c=>c.activo).map(c=>`<button type="button" data-cal="${c.id}" aria-pressed="${String(RX.cal)===String(c.id)}"><span class="dot" style="background:${esc(c.color||'#1d5873')}"></span>${esc(c.nombre)}</button>`).join('')}</div>`:'<p class="note">No hay agendas configuradas. El Director las agrega en Accesos.</p>'}</div>
  <div class="field"><span class="lbl" style="margin-bottom:4px">2 · Motivo</span><div class="chips sm">${MOTIVOS.map(m=>`<button type="button" data-motivo="${esc(m)}" aria-pressed="${RX.motivo===m}">${m==='Estudios'?'🔬 ':''}${esc(m)}</button>`).join('')}</div><input type="text" id="rxMot" value="${esc(RX.motivo)}" style="margin-top:6px" placeholder="Motivo de la cita (ej. OCT, campo visual)"></div>
  <div class="field"><span class="lbl" style="margin-bottom:4px">3 · Turno ${esEstudio(RX.motivo)?'<span class="note">· los estudios se agendan por la tarde</span>':''}</span><div class="seg2 sm">${Object.entries(TURNOS).map(([k,[t,a,b]])=>`<button type="button" data-turno="${k}" aria-pressed="${RX.turno===k}">${k==='am'?'☀️':'🌇'} ${t} <span class="note">${fmtH(a)}–${fmtH(b)}</span></button>`).join('')}</div></div>
- <div class="field"><span class="lbl" style="margin-bottom:4px">4 · Día ${estado}</span><div class="chips sm">${[[7,'1 sem'],[14,'2 sem'],[30,'1 mes'],[90,'3 meses']].map(([d,t])=>`<button type="button" data-cita="${d}" aria-pressed="${RX.cita===addDays(d)}">${t}</button>`).join('')}<input type="date" id="rxCita" value="${RX.cita}" min="${ISO(TODAY)}" style="width:auto;margin-left:4px" aria-label="Otra fecha"></div>
- ${cal?`<div class="days" style="margin-top:8px">${Array.from({length:22},(_,k)=>{const ds=addDays(k),d=new Date(ds+'T12:00:00');if(d.getDay()===0)return '';const s=calSlots(cal,ds,RX.turno),lib=s.some(x=>!x.busy&&!x.past),blk=(bz&&(bz.dias||[]).includes(ds)),n=turnoCitas(cal,ds,RX.turno);return `<button type="button" class="day ${lib?(n>=12?'few':''):'full'}" data-dia="${ds}" aria-pressed="${RX.cita===ds}" ${lib?'':'disabled'}><small>${d.toLocaleDateString('es-MX',{weekday:'short'})}</small><b>${d.getDate()}</b><em>${blk?'bloqueado':!lib?'lleno':n?n+' cita'+(n>1?'s':''):'libre'}</em></button>`}).join('')}</div>`:''}</div>
- ${cal&&RX.cita&&!okNow?(dayBlocked||RX.hora==null?`<p class="note" style="color:var(--warn)">${dayBlocked?'Ese día está bloqueado en Google Calendar.':`Ya no hay lugar en la ${tn} de ese día.`} Elija otro día${dayBlocked?'':' u otro turno'}.</p>`
+ <div class="field"><span class="lbl" style="margin-bottom:4px">4 · Día ${RX.abierta?'':estado}</span><div class="chips sm"><button type="button" id="rxAbierta" aria-pressed="${!!RX.abierta}" title="Sin fecha: el paciente regresa cuando lo necesite">🔓 Cita abierta</button>${[[7,'1 sem'],[14,'2 sem'],[30,'1 mes'],[90,'3 meses']].map(([d,t])=>`<button type="button" data-cita="${d}" aria-pressed="${!RX.abierta&&RX.cita===addDays(d)}">${t}</button>`).join('')}${RX.abierta?'':`<input type="date" id="rxCita" value="${RX.cita}" min="${ISO(TODAY)}" style="width:auto;margin-left:4px" aria-label="Otra fecha">`}</div>${RX.abierta?`<div class="citares" style="margin-top:8px">🔓 <b>Cita abierta</b>: no se agenda fecha; en la receta sale «Próxima cita: Abierta». <input type="text" id="rxAbTxt" value="${esc(RX.abiertaTxt)}" placeholder="Indicación opcional (ej. si persisten molestias, en 6 meses o antes)" style="margin-top:6px"></div>`:''}
+ ${cal&&!RX.abierta?`<div class="days" style="margin-top:8px">${Array.from({length:22},(_,k)=>{const ds=addDays(k),d=new Date(ds+'T12:00:00');if(d.getDay()===0)return '';const s=calSlots(cal,ds,RX.turno),lib=s.some(x=>!x.busy&&!x.past),blk=(bz&&(bz.dias||[]).includes(ds)),n=turnoCitas(cal,ds,RX.turno);return `<button type="button" class="day ${lib?(n>=12?'few':''):'full'}" data-dia="${ds}" aria-pressed="${RX.cita===ds}" ${lib?'':'disabled'}><small>${d.toLocaleDateString('es-MX',{weekday:'short'})}</small><b>${d.getDate()}</b><em>${blk?'bloqueado':!lib?'lleno':n?n+' cita'+(n>1?'s':''):'libre'}</em></button>`}).join('')}</div>`:''}</div>
+ ${cal&&RX.cita&&!okNow&&!RX.abierta?(dayBlocked||RX.hora==null?`<p class="note" style="color:var(--warn)">${dayBlocked?'Ese día está bloqueado en Google Calendar.':`Ya no hay lugar en la ${tn} de ese día.`} Elija otro día${dayBlocked?'':' u otro turno'}.</p>`
   :`<div class="citares"><div>📌 <b>${esc(new Date(RX.cita+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'}))}</b> · ${esc(TURNOS[RX.turno][0])} · llega a las <select id="rxHora" aria-label="Hora" style="width:auto;display:inline-block;padding:2px 6px">${sl.filter(x=>!x.busy&&!x.past).map(x=>`<option value="${x.m}" ${x.m===RX.hora?'selected':''}>${x.label}${x.n?` (${x.n} ya)`:''}</option>`).join('')}</select></div><div class="note">Se atienden hasta ${CAP} pacientes a la vez; la hora es aproximada.</div></div>`):''}
  <label class="chk"><input type="checkbox" id="rxPromo" ${RX.promos?'checked':''}> El paciente acepta recibir avisos y promociones de la clínica por WhatsApp</label>
- ${okNow?`<div class="citaok">✓ Cita guardada en Google Calendar · <b>${esc(CITA_OK.txt)}</b>${CITA_OK.liga?` · <a href="${esc(CITA_OK.liga)}" target="_blank" rel="noopener">Ver en Google Calendar ↗</a>`:''}</div>`:`<button type="button" class="btn pri gcal" id="gcalBtn" ${cal&&RX.hora!=null&&RX.cita?'':'disabled'}>📅 ${CAL_DIRECTO?'Agendar cita':'Agendar en Google Calendar'}${cal?' · '+esc(cal.nombre):''}</button>`}
- ${cal&&!RX.cita?'<p class="note">Elija el día.</p>':''}`}
+ ${RX.abierta?'':okNow?`<div class="citaok">✓ Cita guardada en Google Calendar · <b>${esc(CITA_OK.txt)}</b>${CITA_OK.liga?` · <a href="${esc(CITA_OK.liga)}" target="_blank" rel="noopener">Ver en Google Calendar ↗</a>`:''}</div>`:`<button type="button" class="btn pri gcal" id="gcalBtn" ${cal&&RX.hora!=null&&RX.cita?'':'disabled'}>📅 ${CAL_DIRECTO?'Agendar cita':'Agendar en Google Calendar'}${cal?' · '+esc(cal.nombre):''}</button>`}
+ ${cal&&!RX.cita&&!RX.abierta?'<p class="note">Elija el día o marque cita abierta.</p>':''}`}
 /* teléfono a 10 dígitos (quita lada de país 52/521, espacios y guiones) */
 const tel10=t=>{let d=String(t||'').replace(/\D/g,'');if(d.length>10&&/^(52|521|1)/.test(d))d=d.slice(-10);return d};
 let CITA_BUSY=false,CITA_LEJOS='';
@@ -1131,7 +1179,7 @@ function contactBlock(){return `<div class="p-contact">
   <div class="pc-col pc-wa"><span class="p-lab">Escríbanos por WhatsApp</span><div class="pc-big">${WA_SVG}(459) 134 55 29</div><div class="pc-small">Óptica, también WhatsApp: (459) 103 5121</div></div>
  </div>
  <div class="p-mini"><span><b>Paciente:</b> ${esc(RX.pac)}${RX.edad?` · ${esc(RX.edad)} años`:''}</span><span><b>Fecha:</b> ${fmtD(ISO(TODAY))}</span><span><b>Folio:</b> <span class="mono">${rxFolio()}</span></span><span class="dxs"><b>Dx:</b> ${esc(RX.dx)||'—'}</span></div>`}
-function citaTxt(){if(!RX.cita)return'—';let t=new Date(RX.cita+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});if(RX.hora!=null)t+=' · '+fmtH(RX.hora);return t.charAt(0).toUpperCase()+t.slice(1)}
+function citaTxt(){if(RX.abierta)return 'Abierta'+(RX.abiertaTxt&&RX.abiertaTxt.trim()?' · '+RX.abiertaTxt.trim():' · acudir cuando lo necesite');if(!RX.cita)return'—';let t=new Date(RX.cita+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});if(RX.hora!=null)t+=' · '+fmtH(RX.hora);return t.charAt(0).toUpperCase()+t.slice(1)}
 function head(){const d=DOCS[RX.med];return `<div class="p-head"><div class="p-iso" role="img" aria-label="Logo COE"></div><div class="p-brand">Centro Ocular Especializado<span>Oftalmología</span></div><div class="p-doc"><div class="nm">${esc(d.n)}</div><div class="es">Médico Oftalmólogo</div><div class="ce">${d.c}</div></div></div><hr class="p-rule"><hr class="p-rule thin">`}
 function qr(){let s=97,cells='';const N=21;
  const fin=(x,y)=>{for(const[a,b]of[[0,0],[14,0],[0,14]])if(x>=a&&x<a+7&&y>=b&&y<b+7){const dx=x-a,dy=y-b;return(dx===0||dx===6||dy===0||dy===6||(dx>=2&&dx<=4&&dy>=2&&dy<=4))?1:0}return -1};
@@ -1219,7 +1267,8 @@ function bind(){
  bindActs(M);bindAlm(M);
  const ni=$('#npInv');if(ni)ni.onclick=()=>newProdDlg();
  const sc=$('#scanBtn');if(sc)sc.onclick=()=>{const q=$('#invQ');q.value='';invQ='';q.focus();toast('Escanee el código de barras del producto.')};
- M.querySelectorAll('[data-adv]').forEach(b=>b.onclick=async()=>{const p=PEDIDOS.find(x=>x.id===b.dataset.adv);p.est++;if(sb){await db(sb.from('far_pedidos').update({estado:p.est,updated_at:new Date().toISOString()}).eq('id',p.dbid),'Pedido');await logDb('pedido_estado',{folio:p.id,estado:PSTEPS[p.est]})}toast(p.est===3?`${p.id} recibido. Registre la entrada con lote y caducidad en Inventario.`:`${p.id}: ${PSTEPS[p.est]}.`);render();if(p.est===3&&can('entrada')){const d=(p.det||[]).find(x=>x.producto_id);if(d)entradaDlg(d.producto_id,{qty:d.cantidad,doc:p.id})}});
+ M.querySelectorAll('[data-recib]').forEach(b=>b.onclick=()=>recibirDlg(+b.dataset.recib));
+ M.querySelectorAll('[data-recver]').forEach(b=>b.onclick=()=>recVer(+b.dataset.recver));
  M.querySelectorAll('[data-demo]').forEach(b=>b.onclick=()=>toast('En la app final: '+b.dataset.demo));
  const q=$('#invQ');if(q){q.oninput=e=>{invQ=e.target.value;const pos=e.target.selectionStart;render();const n=$('#invQ');n.focus();n.setSelectionRange(pos,pos)};q.onkeydown=e=>{if(e.key!=='Enter')return;const v=q.value.trim(),p=PROD.find(x=>x.cl===v);if(p&&can('entrada')){invQ='';entradaDlg(p.id)}}}
  const f=$('#invF');if(f)f.onchange=e=>{invFilter=e.target.value;render()};
@@ -1271,8 +1320,10 @@ function bind(){
  M.querySelectorAll('[data-sede]').forEach(b=>b.onclick=()=>{RX.sede=b.dataset.sede;render()});
  M.querySelectorAll('[data-age]').forEach(b=>b.onclick=()=>{RX.edad=Math.max(0,(+RX.edad||0)+(+b.dataset.age));render()});
  const rc=$('#rxCita');if(rc)rc.onchange=()=>{RX.cita=rc.value;RX.hora=null;render()};
- M.querySelectorAll('[data-cita]').forEach(b=>b.onclick=()=>{RX.cita=addDays(+b.dataset.cita);RX.hora=null;render()});
- M.querySelectorAll('[data-dia]').forEach(b=>b.onclick=()=>{RX.cita=b.dataset.dia;RX.hora=null;render()});
+ const ra=$('#rxAbierta');if(ra)ra.onclick=()=>{RX.abierta=!RX.abierta;if(RX.abierta){RX.hora=null}else if(!RX.cita)RX.cita=addDays(7);render()};
+ const rat=$('#rxAbTxt');if(rat)rat.onchange=()=>{RX.abiertaTxt=rat.value;render()};
+ M.querySelectorAll('[data-cita]').forEach(b=>b.onclick=()=>{RX.abierta=false;RX.cita=addDays(+b.dataset.cita);RX.hora=null;render()});
+ M.querySelectorAll('[data-dia]').forEach(b=>b.onclick=()=>{RX.abierta=false;RX.cita=b.dataset.dia;RX.hora=null;render()});
  M.querySelectorAll('[data-cal]').forEach(b=>b.onclick=()=>{RX.cal=+b.dataset.cal;RX.hora=null;render();loadBusy()});
  const rh=$('#rxHora');if(rh)rh.onchange=()=>{RX.hora=+rh.value;render()};
  M.querySelectorAll('[data-turno]').forEach(b=>b.onclick=()=>{RX.turno=b.dataset.turno;RX.hora=null;render()});
@@ -1322,6 +1373,7 @@ function bindActs(R){
  R.querySelectorAll('[data-baja]').forEach(b=>b.onclick=()=>{closePop();const v=b.dataset.baja.split('|');bajaDlg(+v[0],v[1],v[2])});
  R.querySelectorAll('[data-enta]').forEach(b=>b.onclick=()=>{closePop();const[id,sl]=b.dataset.enta.split('|');entradaDlg(+id||null,{alm:1,sinl:sl==='1'})});
  R.querySelectorAll('[data-tras]').forEach(b=>b.onclick=()=>{closePop();const[id,q,so]=b.dataset.tras.split('|');trasDlg(+id,+q,+so||null)});
+ R.querySelectorAll('[data-recib]').forEach(b=>b.onclick=()=>{closePop();recibirDlg(+b.dataset.recib)});
  R.querySelectorAll('[data-palm]').forEach(b=>b.onclick=()=>{closePop();const p=PROD.find(x=>x.id==b.dataset.palm);almReqDlg([{pid:p.id,cant:Math.min(stockA(p),Math.max((p.min||1)*2-stock(p),1))}])});
  R.querySelectorAll('[data-palp]').forEach(b=>b.onclick=()=>{closePop();const[id,c]=b.dataset.palp.split('|');const p=PROD.find(x=>x.id==id);reqDlg(p?[{pid:p.id,nombre:p.nm,cant:+c||Math.max((p.minA||1)*2-stockA(p),1)}]:[],true)});
  R.querySelectorAll('[data-rech]').forEach(b=>b.onclick=async()=>{if(!needLive())return;try{await rpc('far_cerrar_solicitud',{p_token:ME.token,p_id:+b.dataset.rech,p_estado:'rechazada'});toast('Pedido de farmacia rechazado.');await reload()}catch(e){toast(e.message)}});
@@ -1513,7 +1565,8 @@ function popEvents(){
  if(tabsFor().includes('alert'))alerts().filter(a=>a.grp&&a.grp!=='info'&&!((a.imp||a.sinl)&&!can('entrada'))&&!(a.grp==='stock'&&a.cov)).map(a=>a.grp==='stock'&&nag?{...a,id:a.id+bk}:a).filter(a=>!ATENDIDAS.has(a.id)).forEach(a=>ev.push(a));
  if(can('autorizar')||eff()==='dir')escEvents().filter(a=>!ATENDIDAS.has(a.id)).forEach(a=>ev.push(a));
  if(can('almacen'))alertsAlm().filter(a=>!ATENDIDAS.has(a.id)).forEach(a=>ev.push(a));
- if(can('autorizar'))PEDIDOS.filter(p=>p.est===0&&p.por!==ME.nombre).forEach(p=>ev.push({id:'p'+p.id,k:p.prio==='Urgente'?'crit':'warn',grp:'ped',t:`Solicitud ${p.id} por autorizar${p.prio==='Urgente'?' · URGENTE':''}`,d:`${p.items} · ${p.monto?money(p.monto):'costo por definir'} · ${p.por}${p.nota?' · '+p.nota:''}`}));
+ PEDIDOS.filter(p=>p.est>=1&&p.est<3&&!pedInfo(p).rech&&canRecib(p)).forEach(p=>ev.push({id:'pe'+p.id+':'+p.est,k:'info',grp:'ped',t:`${p.id} ${p.est===2?'en camino':'autorizado por Finanzas'}`,d:`${p.items}. Cuando llegue, confirme la recepción con lote y caducidad.`,recib:p.dbid}));
+ if(can('autorizar'))PEDIDOS.filter(p=>p.est===0&&p.por!==ME.nombre&&!pedInfo(p).rech).forEach(p=>ev.push({pedaut:1,id:'p'+p.id,k:p.prio==='Urgente'?'crit':'warn',grp:'ped',t:`Solicitud ${p.id} por autorizar${p.prio==='Urgente'?' · URGENTE':''}`,d:`${p.items} · ${p.monto?money(p.monto):'costo por definir'} · ${p.por}${p.nota?' · '+p.nota:''}`}));
  return ev;
 }
 function closePop(){const o=$('#popOvl');if(o)o.hidden=true}
@@ -1796,14 +1849,16 @@ async function loadAll(){
   sb.from('far_solicitudes_alm').select('*').in('estado',['pendiente','parcial']).order('id'),
   sb.from('far_conteos').select('fecha').eq('ubicacion','almacen').order('fecha',{ascending:false}).limit(1),
   sb.rpc('far_almacen_dia'),
-  sb.rpc('far_revisar_bajo')]);
+  sb.rpc('far_revisar_bajo'),
+  (ME&&ME.token?sb.rpc('far_pedidos_seguimiento',{p_token:ME.token}):Promise.resolve({data:[]}))]);
  R.forEach((r,k)=>{if(r.error&&k!==6&&k<8)throw r.error});TPL_DB=!R[6].error;
  const [p,l,pe,pm,at,us,pl,rh,mv,cp,lc,li,so,lca]=R.map(r=>r.data||[]);BAJO=R[15]&&!R[15].error?Object.fromEntries((R[15].data||[]).map(b=>[b.producto_id,b])):{};SOLS=so;LAST_CONTEO_A=lca[0]?lca[0].fecha:null;if(R[14]&&!R[14].error&&R[14].data!=null)ALM_DIA=+R[14].data;
  CONTEOS_PEND=cp.filter(c=>c.conteo!==c.existencia);LAST_CONTEO=lc[0]?lc[0].fecha:null;LAST_IMPORT=li[0]?li[0].created_at:null;LAST_IMPORT_N=li[0]&&li[0].detalle?li[0].detalle.claves:0;HAS_SALIDAS=mv.length>0;
  const SAL={};mv.forEach(m=>{SAL[m.producto_id]=(SAL[m.producto_id]||0)-m.cantidad});RXHOY=rh;if(TPL_DB)TPLS=pl.map(r=>({id:r.id,nombre:r.nombre,icono:r.icono,dx:r.diagnostico||'',meds:r.medicamentos||[]}));
  if(!p.length)throw new Error('vacio');
  PROD=p.map(r=>({id:r.id,cl:r.clave,d:r.descripcion,nm:r.nombre,pa:r.principio||'',g:r.grupo,cat:r.categoria,min:r.minimo,cri:r.critico,c:+r.costo,v:+r.venta,sal:SAL[r.id]||0,srv:r.servicio,ejp:r.ejemplo_parametros,cat0:r.categoria,via:r.via||null,uni:r.presentacion||null,minA:r.minimo_alm||0,cap:l.some(x=>x.producto_id===r.id&&x.ubicacion!=='almacen'),capA:l.some(x=>x.producto_id===r.id&&x.ubicacion==='almacen'),lotes:l.filter(x=>x.producto_id===r.id&&x.cantidad>0&&x.ubicacion!=='almacen').map(x=>({id:x.id,l:x.lote,cad:x.caducidad,q:x.cantidad})),alm:l.filter(x=>x.producto_id===r.id&&x.cantidad>0&&x.ubicacion==='almacen').map(x=>({id:x.id,k:x.lote,l:x.lote.replace(' ·ALM',''),cad:x.caducidad,q:x.cantidad}))}));
- PEDIDOS=pe.map(r=>({id:r.folio,dbid:r.id,items:r.items,monto:+r.monto,prio:r.prioridad,est:r.estado,por:r.solicitante||'',fecha:r.created_at.slice(0,10),nota:r.nota,firma:!!r.firmado_por,det:r.detalle||[],origen:r.origen}));
+ const FINP={};((R[16]&&!R[16].error&&R[16].data)||[]).forEach(f=>{(FINP[f.far_id]=FINP[f.far_id]||[]).push(f)});
+ PEDIDOS=pe.map(r=>({id:r.folio,dbid:r.id,items:r.items,monto:+r.monto,prio:r.prioridad,est:r.estado,por:r.solicitante||'',fecha:r.created_at.slice(0,10),at:r.created_at,nota:r.nota,firma:!!r.firmado_por,det:r.detalle||[],origen:r.origen,fin:FINP[r.id]||[],recPor:r.recibido_por,recAt:r.recibido_at,rec:r.recepcion}));
  pm.forEach(r=>{PERMS[r.perfil]=r.permisos});
  ATENDIDAS=new Set(at.map(r=>r.alerta_id));
  if(us.length)USERS=us.map(r=>({dbid:r.id,n:r.nombre,u:r.usuario,p:r.perfil,a:r.activo?1:0,dc:r.debe_cambiar,dp:r.debe_pin,ua:r.ultimo_acceso}));
@@ -1848,7 +1903,7 @@ async function saveRx(){
  if(!RX.meds.length){toast('Agregue al menos un medicamento.');return}
  if(!sb){RX.folio='DEMO-'+String(Date.now()).slice(-5);RX.saved=rxHash();toast('Modo demostración: la receta no se guardó en la base de datos.');render();return}
  const meds=RX.meds.map(m=>{const p=PROD.find(x=>x.id===m.pid);return{clave:p.cl,producto:p.nm,principio:p.pa,via:m.via||'oft',unidad:isOft(m)?'gota':m.uni,prn:!!m.prn,dosis:m.dose,cada_horas:m.fh||null,frecuencia:fqTxt(m),duracion:m.d?durLbl(m):null,ojo:isOft(m)?m.eye:null,gotas:m.dose,veces_dia:m.taper?null:m.f,dias:m.taper?fasesDias(m):m.d,reduccion:!!m.taper,...(m.taper?{fases:fasesOf(m)}:{})}});
- const d=await db(sb.from('rec_recetas').insert({paciente:RX.pac,edad:+RX.edad||null,diagnostico:RX.dx,medico:DOCS[RX.med].n,sede:RX.sede==='tac'?'Tacámbaro':'Morelia',proxima_cita:RX.cita||null,telefono:RX.tel||null,motivo_cita:RX.motivo||null,cita_inicio:RX.hora!=null?slotDate(RX.cita,RX.hora).toISOString():null,cita_calendario:(CALS.find(c=>String(c.id)===String(RX.cal))||{}).nombre||null,acepta_promos:!!RX.promos,medicamentos:meds,creada_por:ME?ME.nombre:PERFILES[eff()]}).select().single(),'Receta');
+ const d=await db(sb.from('rec_recetas').insert({paciente:RX.pac,edad:+RX.edad||null,diagnostico:RX.dx,medico:DOCS[RX.med].n,sede:RX.sede==='tac'?'Tacámbaro':'Morelia',proxima_cita:RX.abierta?null:(RX.cita||null),cita_abierta:!!RX.abierta,telefono:RX.tel||null,motivo_cita:RX.motivo||null,cita_inicio:!RX.abierta&&RX.hora!=null?slotDate(RX.cita,RX.hora).toISOString():null,cita_calendario:(CALS.find(c=>String(c.id)===String(RX.cal))||{}).nombre||null,acepta_promos:!!RX.promos,medicamentos:meds,creada_por:ME?ME.nombre:PERFILES[eff()]}).select().single(),'Receta');
  if(!d)return;RX.folio=d.folio;RX.saved=rxHash();RXHOY.unshift(d);logDb('receta_emitida',{folio:d.folio});toast(String(d.folio).startsWith('PEND-')?`Receta guardada sin red (folio provisional ${d.folio}). Se sube sola al volver la conexión.`:`Receta ${d.folio} guardada.`);render();
 }
 /* ===== sesión: usuario + contraseña, cierres 14:30 y 18:30 ===== */
@@ -2059,7 +2114,7 @@ const OFF={q:[],fails:[],map:{},busy:false,net:true,ready:false};
 const IDB=(()=>{let p;const open=()=>p||(p=new Promise((res,rej)=>{const r=indexedDB.open('coe-farmacia-off',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
  const tx=async(m,f)=>{const d=await open();return new Promise((res,rej)=>{const t=d.transaction('kv',m),q=f(t.objectStore('kv'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})};
  return{get:k=>tx('readonly',s=>s.get(k)).catch(()=>undefined),set:(k,v)=>tx('readwrite',s=>s.put(v,k)).catch(()=>{})}})();
-const RD_RPC=/\/rpc\/(far_sesion|far_revisar_bajo|far_almacen_dia|far_calendarios_lista|far_cal_directo)$/;
+const RD_RPC=/\/rpc\/(far_pedidos_seguimiento|far_sesion|far_revisar_bajo|far_almacen_dia|far_calendarios_lista|far_cal_directo)$/;
 const QW=/^\/rest\/v1\/(rec_recetas|far_log|far_alertas_atendidas|cit_confirmaciones|far_conteos)(\?|$)/;
 const jres=(o,s=200)=>new Response(JSON.stringify(o),{status:s,headers:{'content-type':'application/json'}});
 const withTO=(p,ms)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new TypeError('timeout')),ms))]);
@@ -2137,7 +2192,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610281317';
+const APP_VER='202610291811';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
