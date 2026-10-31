@@ -1041,7 +1041,7 @@ function vRx(){
   </fieldset></section>
   <section style="min-width:0">
    <div class="toolbar"><div class="seg"><button aria-pressed="${RX.view==='std'}" data-view="std">Receta</button><button aria-pressed="${RX.view==='il'}" data-view="il">Receta ilustrada</button></div>
-    <span class="note">Vista previa tamaño carta.</span><span class="spacer"></span>${rxFolio()==="SIN GUARDAR"?`<button class="btn pri" id="saveRx">Guardar receta</button>`:`<span class="chip c-ok">Guardada · ${RX.folio}</span>`}<div class="printbar"><span class="note">Imprimir:</span><button type="button" class="btn pri" data-print="std">🖨️ Receta</button><button type="button" class="btn" data-print="il">🖨️ Ilustrada</button><button type="button" class="btn" data-print="both">🖨️ Ambas</button><button type="button" class="btn" id="copyRx">📋 Copiar receta</button></div></div>
+    <span class="note">Vista previa tamaño carta.</span><span class="spacer"></span>${can('recetar')?`<button type="button" class="btn" id="newRx" title="Borra todos los datos para iniciar una receta nueva">🆕 Nueva receta</button>`:''}${rxFolio()==="SIN GUARDAR"?`<button class="btn pri" id="saveRx">Guardar receta</button>`:`<span class="chip c-ok">Guardada · ${RX.folio}</span>`}<div class="printbar"><span class="note">Imprimir:</span><button type="button" class="btn pri" data-print="std">🖨️ Receta</button><button type="button" class="btn" data-print="il">🖨️ Ilustrada</button><button type="button" class="btn" data-print="both">🖨️ Ambas</button><button type="button" class="btn" id="copyRx">📋 Copiar receta</button></div></div>
    <div class="paperwrap">${RX.view==='std'?paperStd():paperIl()}</div>
   </section></div>${vModal()}`;
 }
@@ -1307,6 +1307,7 @@ function bind(){
  const gc=$('#gasCfg');if(gc)gc.onclick=gasDlg;
  const nc=$('#newCal');if(nc)nc.onclick=()=>calDlg(null);
  const sv=$('#saveRx');if(sv)sv.onclick=saveRx;
+ const nr=$('#newRx');if(nr)nr.onclick=newRx;
  M.querySelectorAll('[data-print]').forEach(b=>b.onclick=()=>printRx(b.dataset.print));
  const cr=$('#copyRx');if(cr)cr.onclick=copyRx;
  const am=$('#addMed');if(am)am.onclick=()=>{if(RX.meds.length>=8){toast('Máximo 8 medicamentos por receta.');return}MODAL={add:1,q:'',sel:[]};render()};
@@ -1897,6 +1898,14 @@ async function printRx(mode){
  setTimeout(()=>{window.print();},150);
 }
 window.addEventListener('afterprint',()=>{const pa=$('#printArea');if(pa)pa.innerHTML=''});
+function newRx(){
+ const hay=RX.pac||RX.edad||RX.dx||RX.tel||RX.meds.length||RX.cita;
+ if(hay&&rxFolio()==='SIN GUARDAR'&&!confirm('La receta actual NO está guardada.\n¿Borrar todos los datos e iniciar una receta nueva?'))return;
+ const keep={med:RX.med,sede:RX.sede,cal:RX.cal};
+ RX={abierta:false,abiertaTxt:'',hora:null,turno:null,cal:keep.cal,tel:'',motivo:'Subsecuente',promos:false,folio:null,saved:null,pac:'',edad:'',dx:'',med:keep.med,sede:keep.sede,cita:'',meds:[],view:'std'};
+ CITA_OK=null;MODAL=null;render();window.scrollTo(0,0);
+ const pi=document.getElementById('rxPac');if(pi)pi.focus();
+ toast('Receta nueva: se borraron los datos anteriores.')}
 async function saveRx(){
  if(!RX.dx.trim()){toast('Falta el diagnóstico.');$('#rxDx')?.focus();return}
  if(!RX.pac.trim()){toast('Falta el nombre del paciente.');return}
@@ -2192,7 +2201,7 @@ async function boot(){
  sSet(null);loadLoginUsers();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
-const APP_VER='202610291811';
+const APP_VER='202610311045';
 async function checkVer(){try{const t=await (await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_VER='(\d+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('verBar')){const d=document.createElement('div');d.id='verBar';d.className='verbar';d.innerHTML='Hay una versión nueva de la app. <button class="btn sm pri">Actualizar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setInterval(checkVer,5*60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer()});
 boot();
