@@ -945,12 +945,51 @@ const fmtN=n=>{n=+n;const w=Math.floor(n),h=n-w>0.001;return w===0&&h?'½':h?w+'
 const uniTxt=(u,n)=>(+n>1&&UNI_PL[u])?UNI_PL[u]:u;
 const defUni=v=>v==='oral'||v==='sl'?'tableta':['im','iv','sc'].includes(v)?'ampolleta':v==='top'?'aplicación':'gota';
 function viaDef(p){if(p&&p.via&&p.via!=='oft')return{via:p.via,uni:p.uni||defUni(p.via)};if(p&&['oral','analgesico'].includes(p.g))return{via:'oral',uni:/CAPS/i.test(p.d||'')?'cápsula':'tableta'};if(p&&p.g==='inyectable')return{via:'im',uni:'ampolleta'};return{via:'oft',uni:'gota'}}
-function newMed(p){const v=viaDef(p);return v.via==='oft'?{pid:p.id,eye:'AO',dose:1,f:2,d:7,taper:0,via:'oft'}:{pid:p.id,eye:'AO',dose:1,f:3,d:5,taper:0,via:v.via,uni:v.uni,prn:false}}
+// Dosis automáticas (tabla del Director). Se busca por nombre, descripción o principio activo; el primer patrón que coincide gana.
+// f: 1=24h 2=12h 3=8h 4=6h 6=4h · fh: cada N horas · d: días (0 = no suspender) · dU/dN: semanas/meses · fx: indicación libre · ung: ungüento/gel dentro del párpado
+const DOSIS=[
+ [/CONFORGEL/,{via:'oft',ung:1,f:1,fx:'por las noches antes de dormir',d:0}],
+ [/\bACICLOVIR.*(UNG|OFT)/,{via:'oft',ung:1,f:4,d:0}],
+ [/VIRGANGEL|GANCICLOVIR/,{via:'oft',ung:1,f:4,d:0}],
+ [/PREMID.*UNG/,{via:'oft',ung:1,f:3,d:7}],
+ [/TEMPRA|PARACETAMOL/,{via:'oral',uni:'tableta',dose:1,f:3,d:0,prn:1}],
+ [/KETOROLACO/,{via:'sl',uni:'tableta',dose:1,f:2,d:0,prn:1}],
+ [/\bACICLOVIR/,{via:'oral',uni:'tableta',dose:1,f:4}],
+ [/KEFLEX|CEFALEXINA/,{via:'oral',uni:'tableta',dose:1,f:2,d:7}],
+ [/RIBOTRIPSIN|TRIPSINA/,{via:'oral',uni:'tableta',dose:2,f:3,d:15}],
+ [/BROMELINA/,{via:'oral',uni:'tableta',dose:1,f:3,d:90,dU:'m',dN:3}],
+ [/MACUHEALTH|LUTEINA|ZEAXANT/,{via:'oral',uni:'cápsula',dose:1,f:1,d:90,dU:'m',dN:3}],
+ [/PREGABALINA/,{via:'oral',uni:'cápsula',dose:1,f:1,fx:'todas las noches',d:0}],
+ [/GABAPENTINA/,{via:'oral',uni:'tableta',dose:1,f:1,fx:'todos los días por la noche',d:0}],
+ [/ACETA ?DIAZOL|ACETAZOLAMIDA/,{via:'oral',uni:'tableta',dose:1,f:3}],
+ [/SALES DE POTASIO/,{via:'oral',uni:'sobre',dose:1,f:3,fx:'cada 8 horas, disuelto en agua'}],
+ [/KLIMI|LIMPIEZA PALPEBRAL/,{via:'top',uni:'aplicación',dose:1,f:2,fx:'limpieza de párpados en la mañana y en la noche',d:0}],
+ [/AUROFORT/,{f:6,d:15,fases:[{n:'Fase 1',d:7,g:1,f:6},{n:'Fase 2',d:3,g:1,f:3},{n:'Fase 3',d:3,g:1,f:2},{n:'Fase 4',d:3,g:1,f:1}]}],
+ [/OLOFCON|OLOPATADINA|BETHALAST|BEPOTASTINA/,{f:2,d:42,dU:'s',dN:6}],
+ [/NOXAVIL|OBRYDEX|TOBRAMICINA|NETIRA|NETILMICINA|NETEX|DROXPAN|PREMID|SULFACETAMIDA/,{f:6,d:7}],
+ [/VIGAMOXI|MOXIFLOXACINO/,{f:6}],
+ [/CLORANFENICOL/,{f:4,d:10}],
+ [/HIPERTON/,{f:6,d:1}],
+ [/LUBTANE|REFRESH|SYSTANE|NANODROP|THEALOZ|LUBRICANTE/,{f:6,d:0}],
+ [/KRITANTEK|KRYTANTEK|KRYTAN TEK/,{f:2,d:0}],
+ [/MONOLATAN|LATANOPROST|GAAP OFTENO/,{f:1,fx:'una vez al día, por las noches',d:0}],
+ [/ZEBESTEN|BROMFENACO|NAVANAC|NEPAFENACO/,{f:4}],
+ [/MODUSIK|CICLOSPORINA|DAEQOS|DORZOLAMIDA|IOPZOX/,{f:2}],
+ [/FLUMETOL/,{f:3}]
+];
+const normTx=t=>String(t||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+function dosisDe(p){const t=normTx([p.nm,p.d,p.pa].join(' '));const r=DOSIS.find(([re])=>re.test(t));return r?r[1]:null}
+function newMed(p){const v=viaDef(p),r=dosisDe(p)||{},via=r.via||v.via;
+ // Gotas/ungüentos oftálmicos: el ojo queda en blanco y es obligatorio elegirlo.
+ if(via==='oft'){const m={pid:p.id,eye:'',dose:1,f:r.f??2,d:r.d??7,taper:0,via:'oft',uni:r.ung?'ung':'gota'};if(r.fx)m.fx=r.fx;if(r.fh)m.fh=r.fh;if(r.dU){m.dU=r.dU;m.dN=r.dN}if(r.fases)m.fases=JSON.parse(JSON.stringify(r.fases));return m}
+ const m={pid:p.id,eye:'AO',dose:r.dose??1,f:r.f??3,d:r.d??5,taper:0,via,uni:r.uni||(r.via?defUni(via):v.uni),prn:!!r.prn};if(r.fx)m.fx=r.fx;if(r.fh)m.fh=r.fh;if(r.dU){m.dU=r.dU;m.dN=r.dN}return m}
+const gtTxt=m=>m.uni==='ung'?'Aplicar dentro del párpado':`${m.dose} gota${m.dose>1?'s':''}`;
+const faltaOjo=()=>RX.meds.map((m,i)=>isOft(m)&&!m.eye?i+1:0).filter(Boolean);
 function fqTxt(m){if(m.fx&&m.fx.trim())return m.fx.trim();if(m.fh){const h=+m.fh;return h===24?'una vez al día':h>24&&h%24===0?`cada ${h/24} días`:`cada ${h} hora${h>1?'s':''}`}return FREQ[m.f]||''}
 function hrsOf(m){if(m.fx&&m.fx.trim())return null;if(m.fh){const h=+m.fh;if(h>=4&&h<=24&&24%h===0){const o=[];for(let t=0;t<24;t+=h){const x=(8+t)%24;o.push(x===0?'12 am':x===12?'12 pm':x<12?x+' am':(x-12)+' pm')}return o}return null}return HOURS[m.f]||null}
 function slotsOf(m){if(m.fx&&m.fx.trim())return[];if(m.fh){const h=+m.fh;if(h>24)return['man'];const n=Math.round(24/h);return SLOTS[n]||(n>6?SLOTS[6]:['man'])}return SLOTS[+m.f]||['man']}
 const fqLbl=m=>m.fx&&m.fx.trim()?m.fx.trim().toUpperCase():(m.fh&&(+m.fh>24||+m.fh<4))?fqTxt(m).toUpperCase():'';
-function posTxt(m){if(isOft(m))return `${m.dose} gota${m.dose>1?'s':''} ${fqTxt(m)}`;
+function posTxt(m){if(isOft(m))return `${gtTxt(m)} ${fqTxt(m)}`;
  return `${VERBO[m.via]||'Usar'} ${fmtN(m.dose)} ${uniTxt(m.uni||'tableta',m.dose)} ${+m.f===0&&!m.fh&&!m.fx?'en una sola dosis':fqTxt(m)}${m.prn?' solo si hay dolor':''}`}
 const DUN={d:['día','días',1],s:['semana','semanas',7],m:['mes','meses',30]};
 function durLbl(m){const u=DUN[m.dU]?m.dU:'d';if(u!=='d'&&m.dN){const n=+m.dN;return `${n} ${n>1?DUN[u][1]:DUN[u][0]}`}return `${m.d} ${+m.d===1?'día':'días'}`}
@@ -1021,7 +1060,7 @@ function vRx(){
    ${RX.meds.map((m,i)=>{const p=PROD.find(x=>x.id===m.pid),h=hint(m);return `<div class="medcard">
     <div class="mc-h"><span class="num">${i+1}</span><div class="mc-n"><b>${esc(p.nm)}</b><small>${esc(p.pa&&p.pa!=='—'?p.pa:GRUPOS[p.g])} · ${chip(stockState(p))}</small></div><button class="btn sm" data-chg="${i}">Cambiar</button><button class="icon-btn" data-del="${i}" aria-label="Quitar ${esc(p.nm)}">✕</button></div>
     <div class="mc-row"><span class="lbl">Vía</span><div class="chips">${VIAS.map(([k,t])=>`<button data-via="${i}:${k}" aria-pressed="${(m.via||'oft')===k}">${t}</button>`).join('')}</div></div>
-    ${isOft(m)?`<div class="mc-row"><span class="lbl">Ojo</span><div class="seg2">${['OD','OI','AO'].map(e=>`<button data-e="${e}" data-eye="${i}" aria-pressed="${m.eye===e}"><b>${e}</b><small>${{OD:'Derecho',OI:'Izquierdo',AO:'Ambos'}[e]}</small></button>`).join('')}</div></div>
+    ${isOft(m)?`<div class="mc-row"${m.eye?'':' style="outline:2px solid var(--crit);outline-offset:4px;border-radius:10px"'}><span class="lbl">Ojo <span class="req">obligatorio</span></span><div class="seg2">${['OD','OI','AO'].map(e=>`<button data-e="${e}" data-eye="${i}" aria-pressed="${m.eye===e}"><b>${e}</b><small>${{OD:'Derecho',OI:'Izquierdo',AO:'Ambos'}[e]}</small></button>`).join('')}</div></div>
     <div class="mc-row"><span class="lbl">Dosis</span><div class="stepper"><button data-dose="${i}:-1" aria-label="Menos gotas">−</button><span>${m.dose} gota${m.dose>1?'s':''}</span><button data-dose="${i}:1" aria-label="Más gotas">+</button></div>
      <label class="sw"><input type="checkbox" id="mr${i}" data-taper="${i}" ${m.taper?'checked':''}><span class="tr"></span>Esquema decreciente</label></div>`
     :`<div class="mc-row"><span class="lbl">Dosis</span><div class="stepper"><button data-dose="${i}:-1" aria-label="Menos">−</button><span>${fmtN(m.dose)}</span><button data-dose="${i}:1" aria-label="Más">+</button></div>
@@ -1171,7 +1210,7 @@ function vModal(){
 }
 const DOCS={vil:{n:'Dr. José Antonio Villegas Ávila',c:'Céd. Prof. 7256707 · Céd. Esp. 9457035'},riv:{n:'Dra. Mónica Araceli Rivera Bustos',c:'Céd. Prof. ________ · Céd. Esp. ________'}};
 const SEDES={tac:'Av. Luis Donaldo Colosio 151, Col. La Purísima, Tacámbaro, Michoacán',mor:'Hospital Victoria, Consultorio 1206, Piso 12 · Av. Acueducto 2800, Morelia, Mich.'};
-const EYE={OD:'OJO DERECHO',OI:'OJO IZQUIERDO',AO:'AMBOS OJOS'};
+const EYE={'':'OJO: ____',OD:'OJO DERECHO',OI:'OJO IZQUIERDO',AO:'AMBOS OJOS'};
 const WA_SVG='<svg class="wa" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3z" fill="none" stroke="#111" stroke-width="2.6" stroke-linejoin="round"/><path d="M11.5 9.6c.4-.4 1.1-.4 1.4.1l1.3 2.4c.2.4.1.9-.2 1.2l-.9.9c.8 1.9 2.4 3.5 4.3 4.3l.9-.9c.3-.3.8-.4 1.2-.2l2.4 1.3c.5.3.5 1 .1 1.4l-1 1c-.8.8-2 1-3 .6-3.9-1.5-7-4.6-8.5-8.5-.4-1-.2-2.2.6-3z" fill="#111"/></svg>';
 const TEL_SVG='<svg class="wa" viewBox="0 0 32 32" aria-hidden="true"><path d="M9 4.5c.6-.6 1.6-.5 2.1.2l2.6 3.8c.4.6.3 1.4-.2 1.9l-1.7 1.7c1.3 3.1 3.8 5.6 6.9 6.9l1.7-1.7c.5-.5 1.3-.6 1.9-.2l3.8 2.6c.7.5.8 1.5.2 2.1l-2 2c-1.2 1.2-3 1.6-4.6 1-6.2-2.2-11.1-7.1-13.3-13.3-.6-1.6-.2-3.4 1-4.6z" fill="#111"/></svg>';
 function contactBlock(){return `<div class="p-contact">
@@ -1195,7 +1234,7 @@ function paperStd(){
   ${RX.meds.map((m,i)=>{const p=PROD.find(x=>x.id===m.pid);
    const oft=isOft(m),dur=m.taper?'':oft?(m.d?`Durante <b>${durLbl(m)}</b>`:'<b>No suspender</b> hasta nueva indicación'):`<b>${durTxt(m)}</b>`;
    return `<div class="p-med"><div class="n">${i+1}</div><div class="nm">${esc(p.nm)} ${p.pa&&p.pa!=='—'?`<small>(${esc(p.pa)})</small>`:''}</div>
-    <div class="how"><span class="p-eye">${oft?EYE[m.eye]:VIA_LBL[m.via]}</span>${m.taper?'<b>Esquema decreciente</b>':oft?`<b>${m.dose} gota${m.dose>1?'s':''}</b> <b>${esc(fqTxt(m))}</b>`:`<b>${esc(posTxt(m))}</b>`}</div>
+    <div class="how"><span class="p-eye">${oft?EYE[m.eye]:VIA_LBL[m.via]}</span>${m.taper?'<b>Esquema decreciente</b>':oft?`<b>${gtTxt(m)}</b> <b>${esc(fqTxt(m))}</b>`:`<b>${esc(posTxt(m))}</b>`}</div>
     ${m.taper?`<table class="p-esq">${fasesOf(m).map(ph=>`<tr><td>${esc(ph.n)}</td><td>${ph.d} días</td><td><b>${fasePos(ph)}</b></td></tr>`).join('')}</table><div class="how" style="font-size:16px">Después suspender. Total ${fasesDias(m)} días.</div>`:`<div class="how">${(oft||(!m.prn&&(+m.f||m.fh)))&&hrsOf(m)?`Horario: ${hrsOf(m).join(' · ')}. `:''}${dur}.</div>`}</div>`}).join('')}
   <div class="p-gen"><b>INDICACIONES:</b> ${genTxt()}</div>
   <div class="p-foot"><div class="p-next"><span class="p-lab">Próxima cita</span><span class="p-val">${citaTxt()}</span></div><div class="p-sign"><b>${esc(DOCS[RX.med].n)}</b><br>${DOCS[RX.med].c}</div>${qr()}</div>
@@ -1234,7 +1273,7 @@ function paperIl(){
     ${m.taper?`<div class="il-phs">${fasesOf(m).map(ph=>`<div class="il-ph"><span class="il-phn">${esc(ph.n)}<small>${ph.d} días</small></span><div class="il-times sm">${SLOTS[ph.f].map(k=>`<div class="il-t">${ICON[k]}<div class="il-drops">${dropsN(ph.g)}</div></div>`).join('')}</div></div>`).join('')}</div>`
      :`<div class="il-times">${m.prn?'<div class="il-prn">SOLO SI HAY DOLOR</div>':''}${lb?`<div class="il-prn">${esc(lb)}</div>`:''}${sl.map(k=>`<div class="il-t">${ICON[k]}<div class="il-drops">${oft?dropsN(m.dose):doseIcons(m)}</div></div>`).join('')}</div>`}
     <div class="il-cal">${m.taper||!(DUN[m.dU]&&m.dU!=='d'&&m.dN)?cal(m.taper?fasesDias(m):(!oft&&f===0&&!m.fh&&!m.fx)?1:+m.d):cal(+m.dN)+`<div class="il-calu">${(+m.dN>1?DUN[m.dU][1]:DUN[m.dU][0]).toUpperCase()}</div>`}</div>
-    <div class="il-fam">${esc(PROD.find(x=>x.id===m.pid).nm)} · ${oft?EYE[m.eye].toLowerCase():VIA_LBL[m.via].toLowerCase()} · ${!oft?posTxt(m)+' · '+durTxt(m).toLowerCase():m.taper?'esquema decreciente: '+fasesOf(m).map(ph=>`${ph.n} ${fasePos(ph)}`).join('; '):`${m.dose} gota${m.dose>1?'s':''} ${esc(fqTxt(m))}${f===6&&!m.fh&&!m.fx?' (también a medianoche y madrugada)':''} · ${m.taper?fasesDias(m)+' días':(+m.d?durLbl(m):'no suspender')}`}</div></div>`}).join('')}
+    <div class="il-fam">${esc(PROD.find(x=>x.id===m.pid).nm)} · ${oft?EYE[m.eye].toLowerCase():VIA_LBL[m.via].toLowerCase()} · ${!oft?posTxt(m)+' · '+durTxt(m).toLowerCase():m.taper?'esquema decreciente: '+fasesOf(m).map(ph=>`${ph.n} ${fasePos(ph)}`).join('; '):`${gtTxt(m)} ${esc(fqTxt(m))}${f===6&&!m.fh&&!m.fx?' (también a medianoche y madrugada)':''} · ${m.taper?fasesDias(m)+' días':(+m.d?durLbl(m):'no suspender')}`}</div></div>`}).join('')}
   <div class="p-foot" style="grid-template-columns:1fr auto"><div class="p-next"><span class="p-lab">Próxima cita</span><span class="p-val">${citaTxt()}</span></div>${qr()}</div>
   <div class="p-addr">${esc(SEDES[RX.sede])}</div></div>`;
 }
@@ -1313,7 +1352,7 @@ function bind(){
  const am=$('#addMed');if(am)am.onclick=()=>{if(RX.meds.length>=8){toast('Máximo 8 medicamentos por receta.');return}MODAL={add:1,q:'',sel:[]};render()};
  M.querySelectorAll('[data-chg]').forEach(b=>b.onclick=()=>{MODAL={i:+b.dataset.chg,q:''};render()});
  const np=$('#npRx');if(np)np.onclick=()=>{const add=MODAL&&MODAL.add,idx=MODAL&&MODAL.i;MODAL=null;render();newProdDlg(p=>{if(add)RX.meds.push(newMed(p));else if(idx!=null)RX.meds[idx]=newMed(p);render()})};
- M.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{const pid=+b.dataset.pick,nm=PROD.find(x=>x.id===pid).nm;if(MODAL.add){const S=MODAL.sel=MODAL.sel||[];const k=S.indexOf(pid);if(k>=0)S.splice(k,1);else{if(RX.meds.length+S.length>=8){toast('Máximo 8 medicamentos por receta.');return}S.push(pid)}const sc=document.querySelector('#ovl .dlg-b')?.scrollTop;render();const db=document.querySelector('#ovl .dlg-b');if(db&&sc!=null)db.scrollTop=sc;return}else{const o=RX.meds[MODAL.i],nv=PROD.find(x=>x.id===pid),dv=viaDef(nv);if((o.via||'oft')!==dv.via)RX.meds[MODAL.i]={...newMed(nv),d:o.d};else RX.meds[MODAL.i].pid=pid;toast('Cambiado a '+nm+'. Queda registrado con su usuario.')}MODAL=null;render()});
+ M.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{const pid=+b.dataset.pick,nm=PROD.find(x=>x.id===pid).nm;if(MODAL.add){const S=MODAL.sel=MODAL.sel||[];const k=S.indexOf(pid);if(k>=0)S.splice(k,1);else{if(RX.meds.length+S.length>=8){toast('Máximo 8 medicamentos por receta.');return}S.push(pid)}const sc=document.querySelector('#ovl .dlg-b')?.scrollTop;render();const db=document.querySelector('#ovl .dlg-b');if(db&&sc!=null)db.scrollTop=sc;return}else{const o=RX.meds[MODAL.i],nv=PROD.find(x=>x.id===pid),dv=viaDef(nv);{const nm2=newMed(nv);RX.meds[MODAL.i]=isOft(nm2)&&isOft(o)?{...nm2,eye:o.eye}:nm2}toast('Cambiado a '+nm+'. Queda registrado con su usuario.')}MODAL=null;render()});
  const dx=$('#dlgX');if(dx)dx.onclick=()=>{MODAL=null;render()};
  const asl=$('#addSel');if(asl)asl.onclick=()=>{const S=MODAL.sel||[];S.forEach(id=>RX.meds.push(newMed(PROD.find(x=>x.id===id))));toast(S.length>1?S.length+' medicamentos agregados.':'Medicamento agregado.');MODAL=null;render()};
  const ov=$('#ovl');if(ov){ov.onclick=e=>{if(e.target===ov){MODAL=null;render()}};const dq=$('#dlgQ');dq.oninput=()=>{MODAL.q=dq.value;const p=dq.selectionStart;render();const n=$('#dlgQ');n.focus();n.setSelectionRange(p,p)}}
@@ -1341,7 +1380,7 @@ function bind(){
   const u=gcalUrl();if(!u)return;const w=window.open(u,'gcal','width=980,height=760,left=80,top=60');if(!w)location.href=u;logDb('cita_agendada',{folio:RX.folio,calendario:RX.cal,inicio:slotDate(RX.cita,RX.hora).toISOString()});toast('Pulse «Guardar» en la ventana de Google Calendar; esta página sigue abierta.');setTimeout(()=>loadBusy(true),60000)}finally{CITA_BUSY=false;const g=$('#gcalBtn');if(g)g.disabled=false}};
  M.querySelectorAll('[data-dx]').forEach(b=>b.onclick=()=>{RX.dx=b.dataset.dx;render()});
  M.querySelectorAll('[data-dose]').forEach(b=>b.onclick=()=>{const[i,d]=b.dataset.dose.split(':');const m=RX.meds[+i];if(isOft(m))m.dose=Math.min(3,Math.max(1,m.dose+(+d)));else{const st=m.uni==='tableta'?0.5:1;m.dose=Math.min(50,Math.max(st,Math.round((+m.dose+st*(+d))*2)/2))}render()});
- M.querySelectorAll('[data-via]').forEach(b=>b.onclick=()=>{const[i,v]=b.dataset.via.split(':');const m=RX.meds[+i];if((m.via||'oft')===v)return;m.via=v;if(v==='oft'){m.uni='gota';m.dose=Math.min(3,Math.max(1,Math.round(m.dose)));if(m.f===0)m.f=2;m.prn=false}else{m.taper=0;if(!m.uni||m.uni==='gota')m.uni=defUni(v)}render()});
+ M.querySelectorAll('[data-via]').forEach(b=>b.onclick=()=>{const[i,v]=b.dataset.via.split(':');const m=RX.meds[+i];if((m.via||'oft')===v)return;m.via=v;if(v==='oft'){m.uni='gota';m.eye='';m.dose=Math.min(3,Math.max(1,Math.round(m.dose)));if(m.f===0)m.f=2;m.prn=false}else{m.taper=0;if(!m.uni||m.uni==='gota'||m.uni==='ung')m.uni=defUni(v)}render()});
  M.querySelectorAll('[data-uni]').forEach(s=>s.onchange=()=>{const m=RX.meds[+s.dataset.uni];m.uni=s.value;if(m.uni!=='tableta')m.dose=Math.max(1,Math.round(m.dose));render()});
  M.querySelectorAll('[data-prn]').forEach(c=>c.onchange=()=>{const m=RX.meds[+c.dataset.prn];m.prn=c.checked;if(m.prn&&m.f===0)m.f=3;render()});
  M.querySelectorAll('[data-fq]').forEach(b=>b.onclick=()=>{const[i,v]=b.dataset.fq.split(':');const m=RX.meds[+i];m.f=+v;delete m.fh;m.fx='';render()});
@@ -1876,7 +1915,7 @@ function rxText(){const d=DOCS[RX.med];const L=[];
  RX.meds.forEach((m,i)=>{const p=PROD.find(x=>x.id===m.pid);const nm=`${i+1}. ${p.nm}${p.pa&&p.pa!=='—'?` (${p.pa})`:''} — ${isOft(m)?EYE[m.eye]:VIA_LBL[m.via]}`;
   if(!isOft(m)){L.push(`${nm}: ${posTxt(m)}${!m.prn&&hrsOf(m)&&(+m.f||m.fh)?` (${hrsOf(m).join(' · ')})`:''}. ${durTxt(m)}.`);return}
   if(m.taper){L.push(nm+', esquema decreciente:');fasesOf(m).forEach(ph=>L.push(`   • ${ph.n} (${ph.d} días): ${fasePos(ph)}`));L.push(`   Después suspender. Total ${fasesDias(m)} días.`)}
-  else L.push(`${nm}: ${m.dose} gota${m.dose>1?'s':''} ${fqTxt(m)}${hrsOf(m)?` (${hrsOf(m).join(' · ')})`:''}, ${m.d?`durante ${durLbl(m)}`:'no suspender hasta nueva indicación'}.`)});
+  else L.push(`${nm}: ${gtTxt(m)} ${fqTxt(m)}${hrsOf(m)?` (${hrsOf(m).join(' · ')})`:''}, ${m.d?`durante ${durLbl(m)}`:'no suspender hasta nueva indicación'}.`)});
  L.push('');L.push('Indicaciones: '+genTxt());
  L.push(`Próxima cita: ${citaTxt()}`);L.push('');L.push('Citas e informes: (459) 100 0431 · WhatsApp: (459) 134 55 29');return L.join('\n')}
 async function copyRx(){const t=rxText();try{await navigator.clipboard.writeText(t);toast('Receta copiada. Péguela en WhatsApp, correo o el expediente.')}
@@ -1884,6 +1923,7 @@ async function copyRx(){const t=rxText();try{await navigator.clipboard.writeText
   if(ok)toast('Receta copiada.');else showMsg('Copiar receta',`<textarea id="cpT" rows="14" style="width:100%;font-family:var(--f-mono);font-size:12px">${esc(t)}</textarea><p class="note">Seleccione todo y copie.</p>`)}
  logDb('receta_copiada',{folio:RX.folio})}
 async function printRx(mode){
+ {const fo=faltaOjo();if(fo.length){toast(`Falta elegir el ojo (OD, OI o AO) en el medicamento ${fo.join(', ')}.`);return}}
  if(rxFolio()==='SIN GUARDAR'){if(sb&&!DEMO){await saveRx();if(rxFolio()==='SIN GUARDAR')return}}
  const pa=$('#printArea');pa.innerHTML=(mode==='il'?'':paperStd())+(mode==='std'?'':paperIl());
  // Cada hoja va en una caja fija de 7.5 × 9.6 pulgadas (cabe en carta aun con márgenes de 0.5"); si el contenido es más alto, se escala para caber.
@@ -1910,6 +1950,7 @@ async function saveRx(){
  if(!RX.dx.trim()){toast('Falta el diagnóstico.');$('#rxDx')?.focus();return}
  if(!RX.pac.trim()){toast('Falta el nombre del paciente.');return}
  if(!RX.meds.length){toast('Agregue al menos un medicamento.');return}
+ {const fo=faltaOjo();if(fo.length){toast(`Falta elegir el ojo (OD, OI o AO) en el medicamento ${fo.join(', ')}.`);return}}
  if(!sb){RX.folio='DEMO-'+String(Date.now()).slice(-5);RX.saved=rxHash();toast('Modo demostración: la receta no se guardó en la base de datos.');render();return}
  const meds=RX.meds.map(m=>{const p=PROD.find(x=>x.id===m.pid);return{clave:p.cl,producto:p.nm,principio:p.pa,via:m.via||'oft',unidad:isOft(m)?'gota':m.uni,prn:!!m.prn,dosis:m.dose,cada_horas:m.fh||null,frecuencia:fqTxt(m),duracion:m.d?durLbl(m):null,ojo:isOft(m)?m.eye:null,gotas:m.dose,veces_dia:m.taper?null:m.f,dias:m.taper?fasesDias(m):m.d,reduccion:!!m.taper,...(m.taper?{fases:fasesOf(m)}:{})}});
  const d=await db(sb.from('rec_recetas').insert({paciente:RX.pac,edad:+RX.edad||null,diagnostico:RX.dx,medico:DOCS[RX.med].n,sede:RX.sede==='tac'?'Tacámbaro':'Morelia',proxima_cita:RX.abierta?null:(RX.cita||null),cita_abierta:!!RX.abierta,telefono:RX.tel||null,motivo_cita:RX.motivo||null,cita_inicio:!RX.abierta&&RX.hora!=null?slotDate(RX.cita,RX.hora).toISOString():null,cita_calendario:(CALS.find(c=>String(c.id)===String(RX.cal))||{}).nombre||null,acepta_promos:!!RX.promos,medicamentos:meds,creada_por:ME?ME.nombre:PERFILES[eff()]}).select().single(),'Receta');
