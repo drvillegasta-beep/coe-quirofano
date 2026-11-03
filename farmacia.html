@@ -510,6 +510,8 @@ body.locked .shell{visibility:hidden}
 @media (max-width:700px){.pedline{grid-template-columns:1fr 1fr}}
 .rcwrap{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:6px 0 10px}.rctbl{width:100%;table-layout:fixed;border-collapse:collapse}.rctbl th,.rctbl td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;font-size:13px}.rctbl th{font-size:11px;text-transform:uppercase;color:var(--muted)}.rctbl th:nth-child(1){width:32%}.rctbl th:nth-child(2){width:9%}.rctbl th:nth-child(3){width:13%}.rctbl .num{text-align:right}.rctbl input{width:100%;min-width:0;padding:6px 8px}
 @media (max-width:640px){.rctbl th:nth-child(1){width:auto}}
+.rctbl.c4 th:nth-child(1){width:52%}.rctbl.c4 th:nth-child(2),.rctbl.c4 th:nth-child(3),.rctbl.c4 th:nth-child(4){width:16%}
+.cuadre-dir{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:14px;border:2px solid var(--accent)}.cuadrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line)}.cuadrow:last-child{border-bottom:0}
 .citaok{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--ok-soft);color:var(--ok);font-weight:600}
 .strip2{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .almcal{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.almcal>div{flex:1;min-width:220px}
@@ -709,6 +711,8 @@ function alerts(){
  if(sc.length)a.push({id:'sc'+sc.length,k:'info',grp:'info',t:`${sc.length} producto${sc.length>1?'s':''} sin clasificar`,d:`${sc.map(p=>p.nm).join(', ')}: asigne principio activo y grupo para que aparezcan en sugerencias de receta.`,p:null,cls:1});
  const nm=nextMonday(),hoy=TODAY.getDay()===1,hecho=LAST_CONTEO&&LAST_CONTEO===ISO(TODAY);
  if(!hecho)a.push({id:'inv'+ISO(hoy?TODAY:nm),k:hoy?'warn':'info',grp:'info',t:hoy?'Hoy toca el conteo físico semanal':`Conteo físico: lunes ${nm.toLocaleDateString('es-MX',{day:'numeric',month:'short'})}`,d:`Último conteo firmado: ${LAST_CONTEO?fmtD(LAST_CONTEO):'ninguno todavía'}.`,p:null});
+ CUADRES.filter(c=>!c.confirmado_at).forEach(c=>{if(puedeConfCuadre())a.push({id:'cq'+c.id,k:'warn',grp:'disc',t:`El Director cuadró el inventario (#${c.id})`,d:`${c.productos} producto(s) cambiaron, ${c.piezas} pza. Revise los cambios y firme de enterado o en desacuerdo.`,p:null,cuad:c.id});
+  else if(esDirector())a.push({id:'cqd'+c.id,k:'info',grp:'disc',t:`Cuadre #${c.id}: falta firma de mostrador`,d:`Firmado ${fdt(c.firmado_at)}. Mostrador aún no confirma.`,p:null,cuadv:c.id})});
  /* pedidos: sin autorizar, en camino (confirmar recepción) y rechazados */
  PEDIDOS.forEach(p=>{if(p.est>=3)return;const I=pedInfo(p),lim=p.prio==='Urgente'?4:24,R=p.origen==='almacen';
   if(I.rech){if(Date.now()-new Date(p.at)<7*864e5)a.push({id:`pr${p.dbid}`,k:'warn',grp:'ped',t:`${p.id} rechazado por Finanzas`,d:`${p.items}. ${I.F.map(f=>f.motivo).filter(Boolean).join(' · ')||'Sin motivo anotado.'} Si aún se necesita, haga una nueva solicitud.`,p:null});return}
@@ -797,6 +801,7 @@ function alertRow(a){
   ${ATENDIDAS.has(a.id)?'<span class="chip c-ok">Atendida</span>':`<button class="btn sm" data-ok="${esc(a.id)}">Marcar atendida</button>`}</div></div>`;
 }
 function alertActs(a){const b=[];
+ if(a.cuad)b.push(`<button class="btn sm pri" data-cuadconf="${a.cuad}">Revisar y firmar</button>`);if(a.cuadv)b.push(`<button class="btn sm" data-cuadver="${a.cuadv}">Ver</button>`);
  if(a.recib)b.push(`<button class="btn sm pri" data-recib="${a.recib}">📦 Confirmar recepción</button>`);if(a.pedaut&&can('autorizar'))b.push(`<a class="btn sm pri" href="https://drvillegasta-beep.github.io/coe-finanzas.html/coe-finanzas-v3.html" target="_blank" rel="noopener">Autorizar en Finanzas ↗</a>`);
  if(a.esc&&a.p){if(can('almacen')&&stockA(a.p))b.push(`<button class="btn sm pri" data-tras="${a.p.id}|${Math.min(stockA(a.p),Math.max(a.p.min*2-stock(a.p),1))}|">Enviar del almacén</button>`);if(can('pedir'))b.push(`<button class="btn sm ${can('almacen')&&stockA(a.p)?'':'pri'}" data-ped="${a.p.id}">Generar pedido</button>`);else if(can('almacen'))b.push(`<button class="btn sm pri" data-palp="${a.p.id}|${Math.max(a.p.min*2-stock(a.p),1)}">Pedir al proveedor</button>`)}
  if(a.econt)b.push(`<button class="btn sm" data-goinvc="1">Ver conteo</button>`);
@@ -882,13 +887,51 @@ function vInv(){
 }
 
 let CNTF='all';
+/* ===== Cuadre del Director: solo él captura y firma; mostrador firma de enterado ===== */
+let CUADRES=[],CUAD={q:'',v:{}};
+const esDirector=()=>!!(ME&&String(ME.usuario||'').toLowerCase()==='drvillegas'&&!viewAs);
+const puedeConfCuadre=()=>!!(ME&&String(ME.usuario||'').toLowerCase()!=='drvillegas'&&(can('pedir')||can('entrada')));
+function cuadreDlg(){if(!esDirector()){toast('Solo el Director.');return}if(!needLive())return;CUAD={q:'',v:{}};
+ dlg('🔒 Cuadrar inventario con mi conteo','<form id="cqF" autocomplete="off"><div id="cqBox"></div></form>',true);$('#msgOvl .dlg').classList.add('xwide');paintCuad()}
+function paintCuad(){const B=$('#cqBox');if(!B)return;const PR=PROD.filter(p=>!p.srv).sort((a,b)=>a.nm.localeCompare(b.nm));
+ const L=CUAD.q?PR.filter(p=>(p.nm+p.cl+p.d).toLowerCase().includes(CUAD.q.toLowerCase())):PR;
+ const cap=Object.entries(CUAD.v).filter(([k,v])=>v!==''&&v!=null),aj=cap.filter(([k,v])=>{const p=PROD.find(x=>x.id===+k);return p&&+v!==sistema(p)});
+ B.innerHTML=`<p class="note" style="margin-top:0">Escriba solo lo que usted contó. Los productos que deje en blanco <b>no se tocan</b>. Al firmar, el sistema queda igual a su conteo: si hay de menos se descuenta del lote que caduca primero; si hay de más entra como «sin lote».</p>
+ <div class="toolbar" style="margin:0 0 8px"><input type="search" id="cqQ" placeholder="Buscar producto" value="${esc(CUAD.q)}" style="max-width:260px"><span class="spacer"></span>${chip(['info',cap.length+' capturado(s)'])}${aj.length?chip(['warn',aj.length+' cambian']):''}</div>
+ <div class="rcwrap" style="max-height:52vh;overflow:auto"><table class="rctbl c4"><thead><tr><th>Producto</th><th class="num">Sistema</th><th class="num">Mi conteo</th><th class="num">Diferencia</th></tr></thead><tbody>
+ ${L.map(p=>{const s=sistema(p),v=CUAD.v[p.id],d=v===''||v==null?null:+v-s;return `<tr><td><b>${esc(p.nm)}</b><div class="note mono" style="font-size:11px">${esc(p.cl)}</div></td><td class="num">${s}</td><td class="num"><input type="number" min="0" data-cq="${p.id}" value="${v??''}" placeholder="—" style="text-align:right"></td><td class="num">${d==null?'<span class="note">sin cambio</span>':d===0?'<span class="cnt-ok">✓ igual</span>':`<b style="color:var(--${d<0?'crit':'warn'})">${d>0?'+':''}${d}</b>`}</td></tr>`}).join('')}
+ </tbody></table></div><label>Nota del cuadre (opcional)<input id="cqN" placeholder="Ej. conteo personal del 3 de noviembre"></label>
+ ${pinHtml('Su PIN de Director para firmar','Firmar cuadre')}`;
+ $('#cqQ').oninput=e=>{CUAD.q=e.target.value;const pos=e.target.selectionStart;paintCuad();const n=$('#cqQ');n.focus();n.setSelectionRange(pos,pos)};
+ B.querySelectorAll('[data-cq]').forEach(i=>i.onchange=()=>{const v=i.value.trim();CUAD.v[i.dataset.cq]=v===''?'':Math.max(0,parseInt(v)||0);paintCuad()});
+ $('#cqF').onsubmit=async e=>{e.preventDefault();dErr('');const items=Object.entries(CUAD.v).filter(([k,v])=>v!==''&&v!=null).map(([k,v])=>({producto_id:+k,conteo:+v}));
+  if(!items.length){dErr('Capture al menos un producto.');return}
+  const pin=$('#dPin').value.trim();if(!/^\d{4,6}$/.test(pin)){dErr('Escriba su PIN.');$('#dPin').focus();return}if(!needPin())return;
+  try{const r=await rpc('far_cuadre_director',{p_token:ME.token,p_pin:pin,p_items:items,p_nota:$('#cqN').value.trim()||null});
+   $('#msgOvl').hidden=true;toast(`Cuadre #${r.cuadre} firmado: ${r.ajustados} producto(s) ajustado(s), ${r.piezas} pza. Mostrador debe firmar de enterado.`);await reload()}catch(er){dErr(er.message)}}}
+function cuadVer(id,firmar){const c=CUADRES.find(x=>x.id===id);if(!c)return;const it=(c.items||[]).filter(x=>x.dif!==0),igual=(c.items||[]).length-it.length;
+ dlg(`Cuadre del Director #${c.id}`,`<form id="ccF" autocomplete="off"><p class="note" style="margin-top:0">Firmado por <b>${esc(c.director)}</b> el ${fdt(c.firmado_at)}${c.nota?' · '+esc(c.nota):''}. ${igual?igual+' producto(s) quedaron igual.':''}</p>
+  <div class="rcwrap"><table class="rctbl c4"><thead><tr><th>Producto</th><th class="num">Antes</th><th class="num">Ahora</th><th class="num">Cambio</th></tr></thead><tbody>${it.map(x=>`<tr><td>${esc(x.nombre)}</td><td class="num">${x.antes}</td><td class="num"><b>${x.ahora}</b></td><td class="num" style="color:var(--${x.dif<0?'crit':'warn'})">${x.dif>0?'+':''}${x.dif}</td></tr>`).join('')||'<tr><td colspan="4" class="note">Sin cambios.</td></tr>'}</tbody></table></div>
+  ${c.confirmado_at?`<p>${chip([c.conforme?'ok':'crit',c.conforme?'Enterado':'En desacuerdo'])} ${esc(c.confirmado_por)} · ${fdt(c.confirmado_at)}${c.confirmacion_nota?' · '+esc(c.confirmacion_nota):''}</p>`:firmar?`
+  <div class="seg2 sm" style="margin:8px 0"><button type="button" data-ccc="1" aria-pressed="true">✓ Enterado y de acuerdo</button><button type="button" data-ccc="0" aria-pressed="false">✗ No estoy de acuerdo</button></div>
+  <label>Comentario <span class="note">(obligatorio si no está de acuerdo)</span><input id="ccN" placeholder="Ej. el Systane sí está en el anaquel de abajo"></label>${pinHtml('Su PIN para firmar','Firmar')}`:'<p class="note">Falta la firma de enterado de mostrador.</p>'}</form>`,true);
+ if(!firmar||c.confirmado_at)return;let ok=true;
+ document.querySelectorAll('[data-ccc]').forEach(b=>b.onclick=()=>{ok=b.dataset.ccc==='1';document.querySelectorAll('[data-ccc]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))});
+ $('#ccF').onsubmit=async e=>{e.preventDefault();dErr('');const nota=$('#ccN').value.trim();if(!ok&&!nota){dErr('Explique en qué no está de acuerdo.');return}
+  const pin=$('#dPin').value.trim();if(!/^\d{4,6}$/.test(pin)){dErr('Escriba su PIN.');$('#dPin').focus();return}if(!needPin())return;
+  try{await rpc('far_cuadre_confirmar',{p_token:ME.token,p_pin:pin,p_id:id,p_conforme:ok,p_nota:nota||null});$('#msgOvl').hidden=true;toast(ok?'Firmado de enterado.':'Firmado en desacuerdo: se avisó al Director.');await reload()}catch(er){dErr(er.message)}}}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-cuadconf],[data-cuadver],#cuadBtn');if(!a)return;if(a.id==='cuadBtn')return cuadreDlg();if(typeof closePop==='function'&&$('#popOvl')&&!$('#popOvl').hidden)closePop();
+ if(a.dataset.cuadconf)cuadVer(+a.dataset.cuadconf,true);else cuadVer(+a.dataset.cuadver,false)});
 function vConteo(){
  const PR=PROD.filter(p=>!p.srv),cats={col:[0,0],med:[0,0],var:[0,0]};
  PR.forEach(p=>{const k=cats[p.cat]?p.cat:'var';cats[k][0]+=CONTEO[p.id];cats[k][1]+=sistema(p)});
  const pending=PR.filter(p=>CONTEO[p.id]!==sistema(p)&&!(JUST[p.id]||'').trim()).length;
  const noC=PR.filter(p=>CONTEO[p.id]!==sistema(p)),bajo=PR.filter(p=>p.cap&&p.min>0&&stock(p)<=p.min),cad=PR.filter(p=>p.lotes.some(l=>l.cad&&days(l.cad)<=90));
  let L=PR;if(CNTF==='no')L=noC;if(CNTF==='bajo')L=bajo;if(CNTF==='cad')L=cad;
+ const sinConf=CUADRES.filter(c=>!c.confirmado_at);
  return `<h2>Conteo del lunes · toma de inventario</h2>
+ ${esDirector()?`<div class="panel cuadre-dir"><div style="flex:1;min-width:240px"><h3 style="margin:0 0 4px">🔒 Cuadrar inventario con mi conteo</h3><p class="note" style="margin:0">Solo usted lo ve. El sistema queda igual a lo que <b>usted capture</b>, con su PIN. Mostrador recibe el aviso y firma de enterado; cualquier desacuerdo le llega como pendiente en COE Finanzas.</p></div><button class="btn pri" id="cuadBtn">Cuadrar inventario</button></div>`:''}
+ ${CUADRES.length&&(esDirector()||sinConf.length)?`<div class="panel" style="margin-bottom:14px"><h3 style="margin-bottom:6px">Cuadres del Director</h3>${CUADRES.slice(0,5).map(c=>`<div class="cuadrow"><span><b>#${c.id}</b> · ${fdt(c.firmado_at)} · ${c.productos} producto(s) ajustado(s), ${c.piezas} pza</span><span>${c.confirmado_at?chip([c.conforme?'ok':'crit',(c.conforme?'Enterado: ':'En desacuerdo: ')+c.confirmado_por]):chip(['warn','Falta firma de mostrador'])}</span><span>${!c.confirmado_at&&puedeConfCuadre()?`<button class="btn sm pri" data-cuadconf="${c.id}">Revisar y firmar</button>`:`<button class="btn sm" data-cuadver="${c.id}">Ver</button>`}</span></div>`).join('')}</div>`:''}
  <p class="note">Escriba lo que hay físicamente en el anaquel, o cárguelo desde la foto o el archivo de la toma de inventario de eOptics. Toda diferencia pide una explicación antes de firmar y queda pendiente de autorizar por el Director.</p>
  <div class="toolbar"><button class="btn pri" id="cntImp">📷 Cargar conteo desde foto o archivo</button>
   <div class="cur">${chip(['ok',(PR.length-noC.length)+' cuadran'])}${noC.length?chip(['crit',noC.length+' no cuadran']):''}${bajo.length?chip(['warn',bajo.length+' en mínimo o menos']):''}${cad.length?chip(['warn',cad.length+' caducan ≤90 días']):''}</div>
@@ -1601,6 +1644,8 @@ function popMark(ids){ids.forEach(i=>POP_MEM.add(i));try{sessionStorage.setItem(
 function popEvents(){
  if(!ME||DEMO||viewAs||!LOADED)return[];
  const ev=[];
+ CUADRES.forEach(c=>{if(!c.confirmado_at&&puedeConfCuadre())ev.push({id:'cq'+c.id,k:'warn',grp:'disc',t:`El Director cuadró el inventario`,d:`${c.productos} producto(s) cambiaron. Revise y firme de enterado.`,cuad:c.id});
+  if(c.confirmado_at&&esDirector()&&Date.now()-new Date(c.confirmado_at)<3*864e5)ev.push({id:'cqok'+c.id,k:c.conforme?'info':'crit',grp:'disc',t:c.conforme?`Mostrador firmó de enterado el cuadre #${c.id}`:`Mostrador NO está de acuerdo con el cuadre #${c.id}`,d:`${c.confirmado_por} · ${fdt(c.confirmado_at)}${c.confirmacion_nota?' · '+c.confirmacion_nota:''}`,cuadv:c.id})});
  const bk='@'+Math.floor(Date.now()/72e5),nag=can('pedir')&&!can('autorizar');
  if(tabsFor().includes('alert'))alerts().filter(a=>a.grp&&a.grp!=='info'&&!((a.imp||a.sinl)&&!can('entrada'))&&!(a.grp==='stock'&&a.cov)).map(a=>a.grp==='stock'&&nag?{...a,id:a.id+bk}:a).filter(a=>!ATENDIDAS.has(a.id)).forEach(a=>ev.push(a));
  if(can('autorizar')||eff()==='dir')escEvents().filter(a=>!ATENDIDAS.has(a.id)).forEach(a=>ev.push(a));
@@ -1890,13 +1935,15 @@ async function loadAll(){
   sb.from('far_conteos').select('fecha').eq('ubicacion','almacen').order('fecha',{ascending:false}).limit(1),
   sb.rpc('far_almacen_dia'),
   sb.rpc('far_revisar_bajo'),
-  (ME&&ME.token?sb.rpc('far_pedidos_seguimiento',{p_token:ME.token}):Promise.resolve({data:[]}))]);
+  (ME&&ME.token?sb.rpc('far_pedidos_seguimiento',{p_token:ME.token}):Promise.resolve({data:[]})),
+  sb.from('far_cuadres').select('*').order('id',{ascending:false}).limit(15)]);
  R.forEach((r,k)=>{if(r.error&&k!==6&&k<8)throw r.error});TPL_DB=!R[6].error;
  const [p,l,pe,pm,at,us,pl,rh,mv,cp,lc,li,so,lca]=R.map(r=>r.data||[]);BAJO=R[15]&&!R[15].error?Object.fromEntries((R[15].data||[]).map(b=>[b.producto_id,b])):{};SOLS=so;LAST_CONTEO_A=lca[0]?lca[0].fecha:null;if(R[14]&&!R[14].error&&R[14].data!=null)ALM_DIA=+R[14].data;
  CONTEOS_PEND=cp.filter(c=>c.conteo!==c.existencia);LAST_CONTEO=lc[0]?lc[0].fecha:null;LAST_IMPORT=li[0]?li[0].created_at:null;LAST_IMPORT_N=li[0]&&li[0].detalle?li[0].detalle.claves:0;HAS_SALIDAS=mv.length>0;
  const SAL={};mv.forEach(m=>{SAL[m.producto_id]=(SAL[m.producto_id]||0)-m.cantidad});RXHOY=rh;if(TPL_DB)TPLS=pl.map(r=>({id:r.id,nombre:r.nombre,icono:r.icono,dx:r.diagnostico||'',meds:r.medicamentos||[]}));
  if(!p.length)throw new Error('vacio');
  PROD=p.map(r=>({id:r.id,cl:r.clave,d:r.descripcion,nm:r.nombre,pa:r.principio||'',g:r.grupo,cat:r.categoria,min:r.minimo,cri:r.critico,c:+r.costo,v:+r.venta,sal:SAL[r.id]||0,srv:r.servicio,ejp:r.ejemplo_parametros,cat0:r.categoria,via:r.via||null,uni:r.presentacion||null,minA:r.minimo_alm||0,cap:l.some(x=>x.producto_id===r.id&&x.ubicacion!=='almacen'),capA:l.some(x=>x.producto_id===r.id&&x.ubicacion==='almacen'),lotes:l.filter(x=>x.producto_id===r.id&&x.cantidad>0&&x.ubicacion!=='almacen').map(x=>({id:x.id,l:x.lote,cad:x.caducidad,q:x.cantidad})),alm:l.filter(x=>x.producto_id===r.id&&x.cantidad>0&&x.ubicacion==='almacen').map(x=>({id:x.id,k:x.lote,l:x.lote.replace(' ·ALM',''),cad:x.caducidad,q:x.cantidad}))}));
+ CUADRES=(R[17]&&!R[17].error&&R[17].data)||[];
  const FINP={};((R[16]&&!R[16].error&&R[16].data)||[]).forEach(f=>{(FINP[f.far_id]=FINP[f.far_id]||[]).push(f)});
  PEDIDOS=pe.map(r=>({id:r.folio,dbid:r.id,items:r.items,monto:+r.monto,prio:r.prioridad,est:r.estado,por:r.solicitante||'',fecha:r.created_at.slice(0,10),at:r.created_at,nota:r.nota,firma:!!r.firmado_por,det:r.detalle||[],origen:r.origen,fin:FINP[r.id]||[],recPor:r.recibido_por,recAt:r.recibido_at,rec:r.recepcion}));
  pm.forEach(r=>{PERMS[r.perfil]=r.permisos});
