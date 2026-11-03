@@ -352,7 +352,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.26';
+const VERSION='3.27';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -2553,7 +2553,7 @@ function vCampana(){
     return `<div class="card"><div class="ph3"><h3>${h(g.t)}</h3><span class="muted">${l.length}${g.cupo?' / '+g.cupo+' cupo':''} ojos · ${l.filter(x=>x.liq).length} liquidados</span></div>
     ${l.map(({p,est,cls,pag,saldo,tot})=>`<div class="cprow"><div class="grow"><b>${h(p.paciente_nombre)}</b> <span class="pill p-azul">${h(p.ojo||'')}</span>${telsCamp(p).map(t=>` <a class="cptel" href="tel:${h(String(t).replace(/\D/g,''))}" onclick="event.stopPropagation()">📞 ${h(fmtTel(t))}</a>`).join('')} <span class="pill ${cls}">${est}${!['Liquidado'].includes(est)&&tot?' · saldo '+money(saldo):''}</span>
       <div class="muted">${h(p.procedimiento||'')}${lioCamp(p)?' · LIO <b style="color:var(--ink)">'+h(lioCamp(p))+'</b> '+(st[p.id]?'<span class="pill p-verde">en stock</span>':st[p.id]===null?'<span class="pill p-amar">por pedir</span>':''):''}</div>
-      ${(p.comprobantes||[]).length?`<div class="row" style="gap:6px;margin-top:4px;flex-wrap:wrap">${p.comprobantes.map(x=>`<a href="${h(x.url)}" target="_blank" class="pill">${x.tipo==='liquidacion'?'Liquidación':'Anticipo'} ${money(x.monto)}</a>${x.lectura?lectPill(x.lectura):''}`).join('')}</div>`:''}
+      ${(p.comprobantes||[]).length?`<div class="row" style="gap:6px;margin-top:4px;flex-wrap:wrap">${p.comprobantes.map(x=>`<a href="${h(x.url)}" target="_blank" class="pill">${x.tipo==='liquidacion'?'Liquidación':x.tipo==='abono'?'Abono':'Anticipo'} ${money(x.monto)}</a>${x.lectura?lectPill(x.lectura):''}`).join('')}</div>`:''}
       ${p.notas?`<div class="muted" style="margin-top:2px">📝 ${h(p.notas)}</div>`:''}</div>
       <div class="cpbtn">${p.telefono?`<a class="btn sm sec" target="_blank" href="https://wa.me/${waNum(p.telefono)}?text=${encodeURIComponent('Hola '+p.paciente_nombre+', le escribimos del Centro Ocular Especializado sobre su cirugía de la '+c.nombre+(p.dia?' programada el '+fFecha(p.dia):'')+'.')}">WhatsApp</a>`:''}
       ${can.programar()||can.cotizar()?`<button class="btn sm" onclick="pagoCampana('${p.id}')">Pago</button><button class="btn sm sec" onclick="editCampPac('${p.id}')">Editar</button>`:''}</div></div>`).join('')||'<div class="muted">Sin pacientes</div>'}</div>`}).join('');
@@ -2587,7 +2587,7 @@ function enviarCampana(cid){
 function pagoCampana(id){
   const p=S.campPac.find(x=>x.id===id),f=pagoCamp(p);
   const m=modal(`${mhead('Pago · '+h(p.paciente_nombre)+' '+h(p.ojo||''))}<div class="muted">Total ${money(f.tot)} · pagado ${money(f.pag)} · saldo <b>${money(f.saldo)}</b></div>
-  <div class="grid2"><div><label>Tipo</label><select id="cgT"><option value="anticipo">Anticipo</option><option value="liquidacion" ${f.pag?'selected':''}>Liquidación</option></select></div><div><label>Monto</label><input id="cgM" type="number" inputmode="decimal" value="${f.pag?f.saldo:''}"></div>
+  <div class="grid2"><div><label>Tipo</label><select id="cgT"><option value="anticipo" ${f.pag?'':'selected'}>Anticipo</option><option value="abono" ${f.pag?'selected':''}>Abono</option><option value="liquidacion">Liquidación (salda la cuenta)</option></select></div><div><label>Monto</label><input id="cgM" type="number" inputmode="decimal" value=""></div>
   <div><label>Método</label><select id="cgMe">${['Efectivo','Tarjeta','Transferencia','Depósito'].map(o=>`<option>${o}</option>`).join('')}</select></div><div><label>Folio / referencia</label><input id="cgF"></div></div>
   <label>Comprobante (obligatorio · se lee solo)</label><input type="file" id="cgA" accept="image/*,application/pdf" capture="environment">
   <div class="acts"><button class="btn" id="ok">Guardar con PIN</button></div>`,'sm');
@@ -2727,6 +2727,13 @@ async function imagenComprobante(file){
   const cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;return cv;
 }
 const MES_N={ene:1,feb:2,mar:3,abr:4,may:5,jun:6,jul:7,ago:8,sep:9,set:9,oct:10,nov:11,dic:12};
+/* fecha del comprobante: acepta aaaa/mm/dd, dd/mm/aaaa, dd/mm/aa y meses con letra; prefiere la que dice "Fecha" y descarta fechas imposibles */
+function leerFecha(txt){const hoy=hoyISO(),max=addDays(hoy,2),min='2020-01-01',out=[];
+  const mk=(y,m,d,i)=>{y=num(y);m=num(m);d=num(d);if(y<100)y+=2000;if(m<1||m>12||d<1||d>31)return;const f=`${y}-${pad(m)}-${pad(d)}`;if(f<min||f>max)return;const ant=txt.slice(Math.max(0,i-25),i);out.push({f,sc:(/fecha|fec\.|date|d[ií]a/i.test(ant)?2:0)})};
+  let m;const r1=/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/g;while((m=r1.exec(txt)))mk(m[1],m[2],m[3],m.index);
+  const r2=/(^|[^\d\/\-.])(\d{1,2})[\/\-. ](\d{1,2}|ene|feb|mar|abr|may|jun|jul|ago|sep|set|oct|nov|dic)[a-z]*[\/\-. ,]+(?:de[ ]+)?(\d{4}|\d{2})(?!\d)/gi;
+  while((m=r2.exec(txt))){const mm=isNaN(m[3])?MES_N[m[3].toLowerCase().slice(0,3)]:num(m[3]);mk(m[4],mm,m[2],m.index+m[1].length)}
+  out.sort((a,b)=>b.sc-a.sc||(b.f>a.f?1:-1));return out[0]?.f||null}
 function analizarTexto(t){
   const txt=String(t||'').replace(/[Oo](?=\d)/g,'0').replace(/(\d)[Oo]/g,'$10').replace(/(\d)[lI](?=\d)/g,'$11');
   const cand=[];const clave=/(importe|monto|total|cantidad|pagado|pago|abono|anticipo|transferido|cargo|neto)/i;
@@ -2739,9 +2746,8 @@ function analizarTexto(t){
     let sc=0;if(m[1])sc+=3;if(/[.,]\d{2}$/.test(m[2]))sc+=1;if(clave.test(ant))sc+=3;if(/total|importe|monto/i.test(ant))sc+=1;
     const e=cand.find(x=>Math.abs(x.v-v)<0.005);if(e)e.sc=Math.max(e.sc,sc)+1;else cand.push({v,sc})}
   cand.sort((a,b)=>b.sc-a.sc||b.v-a.v);
-  const fo=txt.match(/(folio|referencia|ref\.?|rastreo|autorizaci[oó]n|operaci[oó]n|transacci[oó]n)\s*(?:no\.?|n[uú]m\.?|de rastreo)?\s*[:#]?\s*([A-Z0-9][A-Z0-9\-]{3,})/i);
-  const fe=txt.match(/(\d{1,2})[\/\-. ](\d{1,2}|ene|feb|mar|abr|may|jun|jul|ago|sep|set|oct|nov|dic)[a-z]*[\/\-. ,]+(\d{2,4})/i);
-  let fecha=null;if(fe){const mm=isNaN(fe[2])?MES_N[fe[2].toLowerCase().slice(0,3)]:num(fe[2]);let y=num(fe[3]);if(y<100)y+=2000;if(mm>=1&&mm<=12&&num(fe[1])<=31)fecha=`${y}-${pad(mm)}-${pad(num(fe[1]))}`}
+  const fo=txt.match(/(folio|referencia|ref\.?|rastreo|autorizaci[oó]n|operaci[oó]n|transacci[oó]n)(?:[ \t]*(?:de[ \t]*)?(?:pago|venta|no\.?|n[uú]m\.?|de rastreo|clave))?[ \t]*[:#]*[ \t]*([A-Z0-9\-]*\d[A-Z0-9\-]{2,})/i);
+  const fecha=leerFecha(txt);
   return {montos:cand.slice(0,5).map(x=>x.v),folio:fo?fo[2]:null,fecha}
 }
 async function leerComprobante(file){
