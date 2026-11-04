@@ -352,7 +352,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.27';
+const VERSION='3.28';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -3426,7 +3426,7 @@ function addItemQ(pid,idx,ojoPre){
   const it=edit?JSON.parse(JSON.stringify(edit)):nuevoIt(p);
   if(ojoPre&&!edit)it.ojos=ojoPre==='AO'?['OD','OI']:[ojoPre];
   const lios=S.precios.filter(x=>x.categoria==='lio'&&x.activo&&precioVig(x)).sort((a,b)=>(/monofocal/i.test(b.nombre)&&!/t[oó]rico|multi/i.test(b.nombre))-(/monofocal/i.test(a.nombre)&&!/t[oó]rico|multi/i.test(a.nombre))||(a.orden||0)-(b.orden||0));
-  const lioBase=()=>{const l=lios[0];return l?{precio_id:l.id,nombre:l.nombre,precio:num(l.precio),poder:''}:{precio_id:null,nombre:'LIO monofocal',precio:0,poder:''}};
+  const lioBase=()=>{const tl=/multifocal t[oó]rico/i.test(it.nombre)?/multifocal t[oó]rico/i:/multifocal/i.test(it.nombre)?/^LIO multifocal$/i:/edof|foco extendido/i.test(it.nombre)?/edof/i:/t[oó]rico/i.test(it.nombre)?/^LIO t[oó]rico$/i:null;const l=(tl&&lios.find(x=>tl.test(x.nombre)))||lios[0];return l?{precio_id:l.id,nombre:l.nombre,precio:num(l.precio),poder:''}:{precio_id:null,nombre:'LIO monofocal',precio:0,poder:''}};
   const m=modal('<div id="aiq"></div>','sm');
   const draw=()=>{if(it.requiere_lio){it.lio=it.lio||{};it.ojos.forEach(o=>{if(!it.lio[o])it.lio[o]=lioBase()})}const c=calcItem(it),lat=it.lateralidad!=='sin_lado';
     m.querySelector('#aiq').innerHTML=`${mhead(h(it.nombre))}<div class="muted">${CATS[it.categoria]} · ${LAT_TXT[it.lateralidad]}${it.precio_bilateral?' · especial por los dos ojos '+money(it.precio_bilateral):''}</div>
