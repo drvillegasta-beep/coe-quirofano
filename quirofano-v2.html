@@ -352,7 +352,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.29';
+const VERSION='3.30';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -613,8 +613,10 @@ function powerMatch(l,r){
   if(r.cilindro!==''&&r.cilindro!=null&&num(r.cilindro)!==0&&Math.abs(num(l.cilindro)-num(r.cilindro))>0.01)return false;
   if(r.adicion!==''&&r.adicion!=null&&num(r.adicion)!==0&&Math.abs(num(l.adicion)-num(r.adicion))>0.01)return false;
   if(r.tipo&&l.tipo&&r.tipo!==l.tipo)return false;
+  if(!mismoModelo(l.modelo,r.modelo))return false;
   return true
 }
+function mismoModelo(a,b){if(!a||!b)return true;const n=x=>normTxt(x).replace(/[^a-z0-9]/g,'');const x=n(a),y=n(b);return !x||!y||x.includes(y)||y.includes(x)}
 const esLioEsp=r=>!!r&&/t[oó]rico|multifocal|edof|trifocal|extendid/i.test(r.tipo||'');
 const lioCalcOk=r=>!!r&&r.dioptria!==''&&r.dioptria!=null&&(!/t[oó]rico/i.test(r.tipo||'')||(num(r.cilindro)!==0&&r.eje!==''&&r.eje!=null));
 const lioPedidoCx=c=>{const p=(S.pedidos||[]).find(x=>(x.partidas||[]).some(y=>y.cirugia_id===c.id));if(p)return {folio:p.folio,estado:p.recibido_at?'recibido':p.enviado_at?'enviado':p.autorizado_at?'autorizado':(p.estado||'solicitado'),at:p.solicitado_at||p.created_at};return (c.checklist||{}).lio_pedido||null};
@@ -635,10 +637,10 @@ function readiness(c){
     {k:'lio_poder',t:'Poder del lente capturado',ok:c.lio_requerido.dioptria!==''&&c.lio_requerido.dioptria!=null,grupo:'lio'},
     ...(esLioEsp(c.lio_requerido)?[{k:'lio_calculo',t:'Cálculo del lente especial ('+c.lio_requerido.tipo+') capturado',ok:lioCalcOk(c.lio_requerido),grupo:'lio'},
       {k:'lio_pedido',t:'Lente especial solicitado a Finanzas',ok:!!lio||!!lioPedidoCx(c),grupo:'lio'}]:[]),
-    {k:'lio_asignado',t:'LIO asignado del inventario',ok:!!lio,grupo:'lio'},
+    {k:'lio_asignado',t:esLioEsp(c.lio_requerido)?'Lente del pedido recibido y asignado':'LIO asignado del inventario',ok:!!lio,grupo:'lio'},
     {k:'lio_coincide',t:'Poder del LIO asignado = poder indicado',ok:!!lio&&powerMatch(lio,c.lio_requerido),grupo:'lio'},
     {k:'lio_verificado',t:'Poder verificado por segunda persona',ok:!!c.lio_verificado_por,grupo:'lio'},
-    {k:'lio_respaldo',t:'LIO de respaldo apartado',ok:!!c.lio_respaldo_id||!!ck.respaldo_na,grupo:'lio'});
+    ...(esLioEsp(c.lio_requerido)?[]:[{k:'lio_respaldo',t:'LIO de respaldo apartado',ok:!!c.lio_respaldo_id||!!ck.respaldo_na,grupo:'lio'}]));
   it.push({k:'material',t:'Material completo en existencia',ok:faltantesCx(c).length===0,grupo:'mat'});
   const pend=it.filter(x=>!x.ok);
   return {it,pend,listo:!pend.length,f}
@@ -1268,14 +1270,14 @@ function renderForm(){
   <div class="sw"><input type="checkbox" id="rl" ${F.requiere_lio?'checked':''} onchange="F.requiere_lio=this.checked;if(F.requiere_lio&&!F.lio.tipo)F.lio.tipo='Monofocal';renderForm()"><label for="rl" style="margin:0;text-transform:none;font-size:15px;color:var(--ink)">Requiere LIO</label></div>
   ${F.requiere_lio?`<div class="grid3">
     <div><label>Tipo</label><select onchange="F.lio.tipo=this.value;renderForm()">${['Monofocal','Tórico','Multifocal','Multifocal tórico','EDOF','EDOF tórico','Cámara anterior','Fijación escleral','Fijación iridiana','Otro'].map(o=>`<option ${o===(F.lio.tipo||'Monofocal')?'selected':''}>${o}</option>`).join('')}</select></div>
-    <div><label>Modelo preferido</label><input value="${h(F.lio.modelo)}" oninput="F.lio.modelo=this.value"></div>
+    <div><label>Modelo con el que se calculó <span class="muted" style="text-transform:none;letter-spacing:0">· cada modelo tiene su constante</span></label><input value="${h(F.lio.modelo)}" list="dlModQx" onchange="F.lio.modelo=this.value;renderForm()"><datalist id="dlModQx">${[...new Set(S.lios.map(l=>l.modelo).filter(Boolean))].map(x=>`<option value="${h(x)}">`).join('')}</datalist></div>
     <div><label>Dioptría (D) <span class="muted" style="text-transform:none;letter-spacing:0">· opcional, se puede capturar después</span></label><input inputmode="decimal" placeholder="Pendiente" value="${h(F.lio.dioptria)}" onchange="F.lio.dioptria=this.value;renderForm()"></div>
     <div><label>Cilindro</label><input inputmode="decimal" value="${h(F.lio.cilindro)}" oninput="F.lio.cilindro=this.value"></div>
     <div><label>Eje</label><input inputmode="numeric" value="${h(F.lio.eje)}" oninput="F.lio.eje=this.value"></div>
     <div><label>Adición</label><input inputmode="decimal" value="${h(F.lio.adicion)}" oninput="F.lio.adicion=this.value"></div></div>
     <div class="card" style="margin-top:10px;background:var(--fondo)">
     ${lioSel?`<div class="row"><div><b>Asignado:</b> ${h(lioSel.marca||'')} ${h(lioSel.modelo)} ${fmtN(lioSel.dioptria)} D ${lioSel.cilindro?'Cil '+fmtN(lioSel.cilindro):''} · Serie ${h(lioSel.serie||'—')} · <span class="pill ${lioSel.propiedad==='consignacion'?'p-morado':'p-azul'}">${lioSel.propiedad}</span></div><button class="btn sec sm" style="flex:0 0 auto" onclick="F.lio_unidad_id=null;renderForm()">Quitar</button></div>`
-    :`<div><b>LIO disponibles compatibles</b></div>${lioCandidatos().map(l=>`<div class="list-item"><div class="grow">${h(l.marca||'')} ${h(l.modelo)} · <b>${fmtN(l.dioptria)} D</b> ${l.cilindro?'Cil '+fmtN(l.cilindro)+' ':''}${l.adicion?'Add '+fmtN(l.adicion):''}<div class="muted">${h(l.tipo||'')} · Serie ${h(l.serie||'—')} · Cad ${fCorta(l.caducidad)} · ${h(ubicById(l.ubicacion_id)?.nombre||'')}</div></div><span class="pill ${l.propiedad==='consignacion'?'p-morado':'p-azul'}">${l.propiedad==='consignacion'?'Consignación':'Propio'}</span><button class="btn sm" onclick="F.lio_unidad_id='${l.id}';renderForm()">Asignar</button></div>`).join('')||'<div class="muted">No hay un LIO compatible en inventario.</div>'}
+    :`<div><b>LIO disponibles compatibles</b></div>${lioCandidatos().map(l=>`<div class="list-item"><div class="grow">${h(l.marca||'')} ${h(l.modelo)} · <b>${fmtN(l.dioptria)} D</b> ${l.cilindro?'Cil '+fmtN(l.cilindro)+' ':''}${l.adicion?'Add '+fmtN(l.adicion):''}<div class="muted">${h(l.tipo||'')} · Serie ${h(l.serie||'—')} · Cad ${fCorta(l.caducidad)} · ${h(ubicById(l.ubicacion_id)?.nombre||'')}</div></div><span class="pill ${l.propiedad==='consignacion'?'p-morado':'p-azul'}">${l.propiedad==='consignacion'?'Consignación':'Propio'}</span><button class="btn sm" onclick="F.lio_unidad_id='${l.id}';renderForm()">Asignar</button></div>`).join('')||(esLioEsp(F.lio)?'<div class="muted"><b>Lente especial: va sobre pedido.</b> Guarda la cirugía; en su detalle quedan pendientes "Capturar cálculo" y "Solicitar a Finanzas". Cuando llegue, se registra en LIO → Recibir y se liga a esta cirugía.</div>':`<div class="muted">No hay un LIO compatible en inventario${F.lio.modelo?' del modelo '+h(F.lio.modelo)+' (si usas otro modelo, recalcula con su constante)':''}.</div>`)}
       <button class="btn sec sm" style="margin-top:8px" onclick="pedidoLIO()">Solicitar LIO especial</button>`}
     </div>
     ${lioSel?(()=>{const rs=F.lio_respaldo_id?S.lios.find(l=>l.id===F.lio_respaldo_id):null;return `<div class="card" style="margin-top:8px;background:var(--fondo)"><b>LIO de respaldo</b> <span class="muted">(por si el principal se contamina o falla)</span>
@@ -1321,7 +1323,7 @@ function cargarPaquete(pid){
 }
 function lioCandidatos(){
   const d=F.lio.dioptria===''?null:num(F.lio.dioptria),sedeU=ubicIdsSede();
-  return S.lios.filter(l=>l.estado==='disponible'&&sedeU.has(l.ubicacion_id)&&(d==null||Math.abs(num(l.dioptria)-d)<0.01)&&(!F.lio.tipo||!l.tipo||l.tipo===F.lio.tipo)&&(!l.caducidad||diasHasta(l.caducidad)>=0))
+  return S.lios.filter(l=>l.estado==='disponible'&&sedeU.has(l.ubicacion_id)&&(d==null||Math.abs(num(l.dioptria)-d)<0.01)&&(!F.lio.tipo||!l.tipo||l.tipo===F.lio.tipo)&&mismoModelo(l.modelo,F.lio.modelo)&&(!l.caducidad||diasHasta(l.caducidad)>=0))
     .sort((a,b)=>((a.propiedad==='consignacion'?0:1)-(b.propiedad==='consignacion'?0:1))||((a.caducidad||'9')<(b.caducidad||'9')?-1:1)).slice(0,15)
 }
 function respaldoCandidatos(){
@@ -1413,10 +1415,11 @@ function calcLIO(id){const c=S.cx.find(x=>x.id===id);if(!c)return;const r={tipo:
    <div class="grid2"><div><label>Tipo</label><select id="lcT">${['Monofocal','Tórico','Multifocal','Multifocal tórico','EDOF','EDOF tórico','Otro'].map(o=>`<option ${o===r.tipo?'selected':''}>${o}</option>`).join('')}</select></div>
    <div><label>Modelo / marca</label><input id="lcM" value="${h(r.modelo||'')}" placeholder="Ej. AcrySof IQ PanOptix"></div>
    <div><label>Dioptría (esfera)</label><input id="lcD" type="number" step="0.25" value="${h(r.dioptria??'')}"></div><div><label>Cilindro (tóricos)</label><input id="lcC" type="number" step="0.25" value="${h(r.cilindro??'')}"></div>
-   <div><label>Eje de implante (°)</label><input id="lcE" type="number" min="0" max="180" value="${h(r.eje??'')}"></div><div><label>Adición (multifocales)</label><input id="lcA" type="number" step="0.25" value="${h(r.adicion??'')}"></div></div>
+   <div><label>Eje de implante (°)</label><input id="lcE" type="number" min="0" max="180" value="${h(r.eje??'')}"></div><div><label>Adición (multifocales)</label><input id="lcA" type="number" step="0.25" value="${h(r.adicion??'')}"></div>
+   <div><label>Constante A usada</label><input id="lcK" inputmode="decimal" value="${h(r.constante??'')}" placeholder="Ej. 119.1"></div><div><label>Fórmula</label><input id="lcFo" value="${h(r.formula??'')}" placeholder="Barrett, SRK/T, Haigis…"></div></div>
    <label>Biometría / hoja de cálculo (foto o PDF, opcional)</label><input type="file" id="lcF" accept="image/*,application/pdf">
    <div class="acts"><button class="btn" id="ok">Guardar cálculo</button></div>`,'sm');
-  m.querySelector('#ok').onclick=async()=>{const g=s=>m.querySelector(s).value.trim();const n={...r,tipo:g('#lcT'),modelo:g('#lcM'),dioptria:g('#lcD'),cilindro:g('#lcC'),eje:g('#lcE'),adicion:g('#lcA')};
+  m.querySelector('#ok').onclick=async()=>{const g=s=>m.querySelector(s).value.trim();const n={...r,tipo:g('#lcT'),modelo:g('#lcM'),dioptria:g('#lcD'),cilindro:g('#lcC'),eje:g('#lcE'),adicion:g('#lcA'),constante:g('#lcK'),formula:g('#lcFo')};
     if(n.dioptria===''&&!await confirmar('No capturaste la dioptría. ¿Guardar así? Quedará pendiente.'))return;
     if(/t[oó]rico/i.test(n.tipo)&&(!num(n.cilindro)||n.eje==='')&&!await confirmar('Lente tórico sin cilindro o eje. ¿Guardar así? Quedará pendiente.'))return;
     m.querySelector('#ok').disabled=true;
@@ -1486,7 +1489,7 @@ function verCirugia(id){
     indicaciones:ck.indicaciones?`${ck.indicaciones.via==='whatsapp'?'Enviadas por WhatsApp':'Entregadas impresas'} · ${h(ck.indicaciones.nombre)} · ${fDT(ck.indicaciones.at)}`:'',
     confirmacion:ck.confirmacion?`${h(ck.confirmacion.nombre)} · ${fDT(ck.confirmacion.at)} · ${h(ck.confirmacion.nota||'')}`:'',
     valoracion:ck.valoracion_na?`No aplica — ${h(ck.valoracion_na.nombre)}: ${h(ck.valoracion_na.motivo||'')}`:'',
-    lio_calculo:c.lio_requerido?h(lioTxt(c.lio_requerido))+(lioCalcOk(c.lio_requerido)?'':` · <b style="color:#9a3412">pendiente: ${c.lio_requerido.dioptria===''||c.lio_requerido.dioptria==null?'dioptría':''}${/t[oó]rico/i.test(c.lio_requerido.tipo||'')&&!(num(c.lio_requerido.cilindro)&&c.lio_requerido.eje)?' cilindro y eje':''}</b>`):'',
+    lio_calculo:c.lio_requerido?h(lioTxt(c.lio_requerido))+(c.lio_requerido.constante?' · constante '+h(c.lio_requerido.constante):'')+(c.lio_requerido.formula?' · '+h(c.lio_requerido.formula):'')+(lioCalcOk(c.lio_requerido)?'':` · <b style="color:#9a3412">pendiente: ${c.lio_requerido.dioptria===''||c.lio_requerido.dioptria==null?'dioptría':''}${/t[oó]rico/i.test(c.lio_requerido.tipo||'')&&!(num(c.lio_requerido.cilindro)&&c.lio_requerido.eje)?' cilindro y eje':''}</b>`):'',
     lio_pedido:(()=>{const pd=lioPedidoCx(c);return pd?`Pedido ${h(pd.folio||'')} · ${h(pd.estado||'solicitado')} · ${pd.at?fDT(pd.at):''}`:lio?'Se asignó un lente del inventario':''})(),
     lio_coincide:lio?`Indicado: ${h(lioTxt(c.lio_requerido))} · Asignado: ${h(lio.modelo)} ${fmtN(lio.dioptria)} D${lio.cilindro?' Cil '+fmtN(lio.cilindro):''}`:'',
     lio_verificado:c.lio_verificado_por?`${h(c.lio_verificado_nombre)} · ${fDT(c.lio_verificado_at)}`:'',
@@ -2937,10 +2940,13 @@ function vLIO(){
 }
 function formLIO(){
   const alm=ubicSede().find(u=>u.tipo==='almacen')||ubicSede()[0];
+  const espPend=S.cx.filter(c=>['programada','confirmada'].includes(c.estado)&&c.fecha>=addDays(hoyISO(),-1)&&c.lio_requerido&&esLioEsp(c.lio_requerido)&&!c.lio_unidad_id).sort((a,b)=>a.fecha<b.fecha?-1:1);
   const m=modal(`${mhead('Recibir lente intraocular')}<div class="muted">Una captura por pieza. Usa "Guardar y otro" para capturar varias seguidas.</div>
+  ${espPend.length?`<label for="lCx">¿Es un lente sobre pedido para una cirugía?</label><select id="lCx"><option value="">No, es para stock</option>${espPend.map(c=>`<option value="${c.id}">${h(c.paciente_nombre)} ${h(c.ojo||'')} · ${fCorta(c.fecha)} · ${h(lioTxt(c.lio_requerido))}${lioPedidoCx(c)?' · '+h(lioPedidoCx(c).folio||''):''}</option>`).join('')}</select>`:''}
   <div class="grid3"><div><label>Marca</label><input id="lMa" list="dlMarcas"></div><div><label>Modelo</label><input id="lMo" list="dlModelos"></div>
   <div><label>Tipo</label><select id="lT">${['Monofocal','Tórico','Multifocal','Multifocal tórico','EDOF','EDOF tórico','Cámara anterior','Fijación escleral','Fijación iridiana','Otro'].map(o=>`<option>${o}</option>`).join('')}</select></div>
   <div><label>Dioptría</label><input id="lD" inputmode="decimal"></div><div><label>Cilindro</label><input id="lC" inputmode="decimal"></div><div><label>Adición</label><input id="lA" inputmode="decimal"></div>
+  <div><label>Eje (tóricos)</label><input id="lE" inputmode="numeric"></div>
   <div><label>Serie</label><input id="lS"></div><div><label>Lote</label><input id="lL"></div><div><label>Caducidad</label><input id="lCad" type="date"></div>
   <div><label>Propiedad</label><select id="lP"><option value="propio">Propio (comprado)</option><option value="consignacion">Consignación</option></select></div>
   <div><label>Proveedor</label><select id="lPr"><option value="">—</option>${S.prov.filter(p=>p.activo!==false).map(p=>`<option value="${p.id}">${h(p.nombre)}</option>`).join('')}</select></div>
@@ -2950,16 +2956,23 @@ function formLIO(){
   <datalist id="dlModelos">${[...new Set(S.lios.map(l=>l.modelo).filter(Boolean))].map(x=>`<option value="${h(x)}">`).join('')}</datalist>
   <div class="acts"><button class="btn sec" id="otro">Guardar y otro</button><button class="btn" id="ok">Guardar</button></div>`);
   let firmado=false;
+  const sx=m.querySelector('#lCx');if(sx)sx.onchange=()=>{const c=S.cx.find(x=>x.id===sx.value);if(!c)return;const r=c.lio_requerido||{};const set=(s,v)=>{if(v!=null&&v!=='')m.querySelector(s).value=v};
+    set('#lMo',r.modelo);set('#lD',r.dioptria);set('#lC',r.cilindro);set('#lA',r.adicion);set('#lE',r.eje);const t=m.querySelector('#lT');if(r.tipo&&[...t.options].some(o=>o.value===r.tipo))t.value=r.tipo};
   const save=async(otro)=>{
-    const g=id=>m.querySelector(id).value;
+    const g=id=>m.querySelector(id).value;const cxId=sx?.value||'',cx=cxId?S.cx.find(x=>x.id===cxId):null;
+    if(cx&&!powerMatch({modelo:g('#lMo'),tipo:g('#lT'),dioptria:g('#lD'),cilindro:g('#lC'),adicion:g('#lA')},cx.lio_requerido)&&!await confirmar(`El lente que capturas no coincide con el cálculo de ${h(cx.paciente_nombre)} (${h(lioTxt(cx.lio_requerido))}). ¿Ligarlo de todos modos?`))return;
     if(!g('#lMo')||g('#lD')==='')return toast('Modelo y dioptría son obligatorios',true);
     if(g('#lS')&&S.lios.some(l=>l.serie&&l.serie===g('#lS')&&l.modelo===g('#lMo')))return toast('Esa serie ya está registrada',true);
     if(!firmado){if(!await pedirPIN('Recepción de LIO'))return;firmado=true}
     try{const r=(await q(sb.from('qx_lio_unidades').insert({marca:g('#lMa')||null,modelo:g('#lMo'),tipo:g('#lT'),dioptria:num(g('#lD')),cilindro:g('#lC')===''?null:num(g('#lC')),adicion:g('#lA')===''?null:num(g('#lA')),
-      serie:g('#lS')||null,lote:g('#lL')||null,caducidad:g('#lCad')||null,propiedad:g('#lP'),proveedor_id:g('#lPr')||null,costo:num(g('#lCo')),ubicacion_id:g('#lU'),recibido_por:S.user.id}).select()))[0];
+      eje:g('#lE')===''?null:num(g('#lE')),serie:g('#lS')||null,lote:g('#lL')||null,caducidad:g('#lCad')||null,propiedad:g('#lP'),proveedor_id:g('#lPr')||null,costo:num(g('#lCo')),ubicacion_id:g('#lU'),recibido_por:S.user.id,
+      ...(cx?{estado:'reservado',cirugia_id:cx.id,paciente_nombre:cx.paciente_nombre,pedido_especial:true}:{})}).select()))[0];
       S.lios.push(r);
+      if(cx){await q(sb.from('qx_cirugias').update({lio_unidad_id:r.id,lio_verificado_por:null,lio_verificado_nombre:null,lio_verificado_at:null}).eq('id',cx.id),'Ligar lente');cx.lio_unidad_id=r.id;
+        const ped=(S.pedidos||[]).find(x=>(x.partidas||[]).some(y=>y.cirugia_id===cx.id)&&!x.recibido_at);if(ped)await sb.from('fin_pedidos').update({recibido_at:new Date().toISOString(),notas:(ped.notas||'')+'\nLente recibido en quirófano por '+S.user.nombre}).eq('id',ped.id);
+        await logA('lio_pedido_recibido','qx_cirugias',cx.id,{serie:r.serie,lio:lioTxt(cx.lio_requerido)})}
       await q(sb.from('qx_movimientos').insert({tipo:'lio',lio_unidad_id:r.id,ubicacion_id:r.ubicacion_id,cantidad:1,usuario_id:S.user.id,usuario_nombre:S.user.nombre,nota:'Recepción LIO '+r.propiedad}));
-      toast('LIO registrado');
+      toast(cx?'Lente recibido y ligado a la cirugía de '+cx.paciente_nombre:'LIO registrado');
       if(otro){['#lS','#lD','#lC','#lA'].forEach(id=>m.querySelector(id).value='');m.querySelector('#lD').focus()}else{m.remove();await loadAll();render()}
     }catch(e){}
   };
