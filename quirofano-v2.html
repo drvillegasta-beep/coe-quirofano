@@ -352,7 +352,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.28';
+const VERSION='3.29';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -615,6 +615,9 @@ function powerMatch(l,r){
   if(r.tipo&&l.tipo&&r.tipo!==l.tipo)return false;
   return true
 }
+const esLioEsp=r=>!!r&&/t[oó]rico|multifocal|edof|trifocal|extendid/i.test(r.tipo||'');
+const lioCalcOk=r=>!!r&&r.dioptria!==''&&r.dioptria!=null&&(!/t[oó]rico/i.test(r.tipo||'')||(num(r.cilindro)!==0&&r.eje!==''&&r.eje!=null));
+const lioPedidoCx=c=>{const p=(S.pedidos||[]).find(x=>(x.partidas||[]).some(y=>y.cirugia_id===c.id));if(p)return {folio:p.folio,estado:p.recibido_at?'recibido':p.enviado_at?'enviado':p.autorizado_at?'autorizado':(p.estado||'solicitado'),at:p.solicitado_at||p.created_at};return (c.checklist||{}).lio_pedido||null};
 const lioTxt=r=>r?`${r.tipo||''} ${r.modelo&&r.modelo!==r.tipo?r.modelo:''} ${r.dioptria!==''&&r.dioptria!=null?fmtN(r.dioptria)+' D':''}${r.cilindro&&num(r.cilindro)?' Cil '+fmtN(r.cilindro):''}${r.eje?' Eje '+r.eje+'°':''}${r.adicion&&num(r.adicion)?' Add '+fmtN(r.adicion):''}`.replace(/\s+/g,' ').trim():'';
 function readiness(c){
   const f=finCx(c),ck=c.checklist||{},req=!!c.lio_requerido,lio=c.lio_unidad_id?S.lios.find(l=>l.id===c.lio_unidad_id):null;
@@ -630,6 +633,8 @@ function readiness(c){
   if(req)it.push(
     {k:'biometria',t:'Biometría / cálculo de LIO adjunto',ok:evidCx(c.id,'biometria').length>0,grupo:'lio'},
     {k:'lio_poder',t:'Poder del lente capturado',ok:c.lio_requerido.dioptria!==''&&c.lio_requerido.dioptria!=null,grupo:'lio'},
+    ...(esLioEsp(c.lio_requerido)?[{k:'lio_calculo',t:'Cálculo del lente especial ('+c.lio_requerido.tipo+') capturado',ok:lioCalcOk(c.lio_requerido),grupo:'lio'},
+      {k:'lio_pedido',t:'Lente especial solicitado a Finanzas',ok:!!lio||!!lioPedidoCx(c),grupo:'lio'}]:[]),
     {k:'lio_asignado',t:'LIO asignado del inventario',ok:!!lio,grupo:'lio'},
     {k:'lio_coincide',t:'Poder del LIO asignado = poder indicado',ok:!!lio&&powerMatch(lio,c.lio_requerido),grupo:'lio'},
     {k:'lio_verificado',t:'Poder verificado por segunda persona',ok:!!c.lio_verificado_por,grupo:'lio'},
@@ -999,6 +1004,8 @@ function dashEnf(){
   const falt=Object.entries(nec).map(([mid,n])=>({m:matById(mid),n,st:stockMat(mid,ubicIdsSede())})).filter(x=>x.m&&x.st<x.n).sort((a,b)=>(critOf(a.m)==='critico'?0:1)-(critOf(b.m)==='critico'?0:1));
   const tareas=[];
   if(prog&&prog.st!=='realizado')tareas.push({t:INV_TIPOS[prog.tipo]+' (hoy, sin prórroga)',d:`${prog.hechas} de ${prog.total} ubicaciones`,go:"S.tab='inventario';S.sub.inv='conteo';render()",r:true});
+  (S.cx||[]).filter(c=>['programada','confirmada'].includes(c.estado)&&c.fecha>=hoyISO()&&c.lio_requerido&&esLioEsp(c.lio_requerido)&&(!c.sede_id||c.sede_id===S.sede)).forEach(c=>{const lio=c.lio_unidad_id,calc=lioCalcOk(c.lio_requerido),ped=!!lio||!!lioPedidoCx(c);if(calc&&ped)return;
+    tareas.push({t:`Lente ${c.lio_requerido.tipo}: ${!calc&&!ped?'falta cálculo y pedido':!calc?'falta capturar el cálculo':'falta solicitarlo a Finanzas'}`,d:`${c.paciente_nombre} ${c.ojo||''} · cirugía ${fCorta(c.fecha)}`,go:`verCirugia('${c.id}')`,r:diasHasta(c.fecha)<=10})});
   recont.forEach(c=>tareas.push({t:'Segundo conteo pendiente',d:ubicById(c.ubicacion_id)?.nombre||'',go:`reconteo('${c.id}')`,r:false}));
   if(R&&R.selloRoto)tareas.push({t:'Reponer y sellar carro rojo',d:'Se usó el '+fDT(R.ult.created_at),go:"formCarroRevision('reposicion')",r:true});
   else if(R&&R.revVencida)tareas.push({t:'Revisión del carro rojo',d:R.ultRev?'última hace '+R.dRev+' días':'sin revisiones',go:"formCarroRevision('rapida')",r:false});
@@ -1401,6 +1408,36 @@ async function guardarCirugia(){
     const nueva=!F.id;document.querySelector('.modal')?.remove();toast(nueva?'Cirugía programada. Siguiente paso: liquidación antes de entrar a quirófano':'Cirugía guardada');S.fecha=F.fecha;await loadAll();render();if(nueva)verCirugia(id);
   }catch(e){}
 }
+function calcLIO(id){const c=S.cx.find(x=>x.id===id);if(!c)return;const r={tipo:'Monofocal',modelo:'',dioptria:'',cilindro:'',eje:'',adicion:'',...(c.lio_requerido||{})};
+  const m=modal(`${mhead('Cálculo del lente · '+h(c.paciente_nombre)+' '+h(c.ojo||''))}<div class="muted">Captura el resultado de la biometría y el cálculo (calculadora del fabricante para tóricos).</div>
+   <div class="grid2"><div><label>Tipo</label><select id="lcT">${['Monofocal','Tórico','Multifocal','Multifocal tórico','EDOF','EDOF tórico','Otro'].map(o=>`<option ${o===r.tipo?'selected':''}>${o}</option>`).join('')}</select></div>
+   <div><label>Modelo / marca</label><input id="lcM" value="${h(r.modelo||'')}" placeholder="Ej. AcrySof IQ PanOptix"></div>
+   <div><label>Dioptría (esfera)</label><input id="lcD" type="number" step="0.25" value="${h(r.dioptria??'')}"></div><div><label>Cilindro (tóricos)</label><input id="lcC" type="number" step="0.25" value="${h(r.cilindro??'')}"></div>
+   <div><label>Eje de implante (°)</label><input id="lcE" type="number" min="0" max="180" value="${h(r.eje??'')}"></div><div><label>Adición (multifocales)</label><input id="lcA" type="number" step="0.25" value="${h(r.adicion??'')}"></div></div>
+   <label>Biometría / hoja de cálculo (foto o PDF, opcional)</label><input type="file" id="lcF" accept="image/*,application/pdf">
+   <div class="acts"><button class="btn" id="ok">Guardar cálculo</button></div>`,'sm');
+  m.querySelector('#ok').onclick=async()=>{const g=s=>m.querySelector(s).value.trim();const n={...r,tipo:g('#lcT'),modelo:g('#lcM'),dioptria:g('#lcD'),cilindro:g('#lcC'),eje:g('#lcE'),adicion:g('#lcA')};
+    if(n.dioptria===''&&!await confirmar('No capturaste la dioptría. ¿Guardar así? Quedará pendiente.'))return;
+    if(/t[oó]rico/i.test(n.tipo)&&(!num(n.cilindro)||n.eje==='')&&!await confirmar('Lente tórico sin cilindro o eje. ¿Guardar así? Quedará pendiente.'))return;
+    m.querySelector('#ok').disabled=true;
+    try{const f=m.querySelector('#lcF').files[0];if(f){const url=await subirArchivo(f,'biometria');await q(sb.from('qx_cirugia_evidencias').insert({cirugia_id:id,tipo:'biometria',url,nota:'Cálculo de LIO',usuario_id:S.user.id,usuario_nombre:S.user.nombre}),'Biometría')}
+      const cambio=JSON.stringify(n)!==JSON.stringify(c.lio_requerido||{});
+      await q(sb.from('qx_cirugias').update({lio_requerido:n,...(cambio?{lio_verificado_por:null,lio_verificado_nombre:null,lio_verificado_at:null}:{}),updated_at:new Date().toISOString()}).eq('id',id),'Cálculo LIO');
+      const pd=lioPedidoCx(c);await logA('calculo_lio','qx_cirugias',id,{lio:lioTxt(n)});m.remove();
+      toast(pd&&cambio?'Cálculo guardado. Ojo: ya había pedido '+(pd.folio||'')+'; avisa a Finanzas del cambio':'Cálculo guardado');await loadAll();refrescarDetalle(id)}catch(e){m.querySelector('#ok').disabled=false}};
+}
+async function pedirLioEsp(id){const c=S.cx.find(x=>x.id===id);if(!c)return;const L=c.lio_requerido||{};
+  if(lioPedidoCx(c))return toast('Ya se solicitó: '+lioPedidoCx(c).folio,true);
+  if(!lioCalcOk(L)&&!await confirmar(`Todavía falta el cálculo completo (${h(lioTxt(L)||'sin datos')}). Finanzas lo necesita para pedir el lente correcto. ¿Solicitar de todos modos?`,'Solicitar lente','Solicitar'))return;
+  if(!await pedirPIN('Solicitar lente '+(L.tipo||'')+' a Finanzas'))return;
+  const desc=`LIO ${lioTxt(L)} — ${c.paciente_nombre} ${c.ojo||''}, cirugía ${fCorta(c.fecha)} (${c.folio||''})`;
+  try{const fol=folio('QX');
+    await q(sb.from('fin_pedidos').insert({folio:fol,area:'Quirófano',sede:sedeById(c.sede_id||S.sede)?.nombre,descripcion:desc,
+      partidas:[{tipo:'LIO',descripcion:desc,cantidad:1,unidad:'pza',lio:L,paciente:c.paciente_nombre,ojo:c.ojo,cirugia_id:c.id,cirugia_folio:c.folio,fecha_cirugia:c.fecha}],
+      urgente:diasHasta(c.fecha)<=10,fecha_requerida:addDays(c.fecha,-3),estado:'solicitado',solicitado_at:new Date().toISOString(),notas:'Lente especial solicitado por '+S.user.nombre+' desde COE Quirófano'}),'Pedido de lente');
+    const ck={...(c.checklist||{}),lio_pedido:{folio:fol,estado:'solicitado',at:new Date().toISOString(),por:S.user.nombre}};
+    await q(sb.from('qx_cirugias').update({checklist:ck}).eq('id',id),'Pedido de lente');
+    await logA('pedido_lio_especial','fin_pedidos',null,{desc,cirugia:id});toast('Solicitado a COE Finanzas · '+fol);await loadAll();refrescarDetalle(id)}catch(e){}}
 async function pedidoLIO(){
   const L=F.lio;if(!L.dioptria&&!L.modelo)return toast('Indica al menos modelo o dioptría',true);
   if(!F.paciente_nombre)return toast('Primero captura el paciente',true);
@@ -1435,6 +1472,8 @@ function verCirugia(id){
     biometria:ed?`<button class="btn sm sec" onclick="subirEvid('${id}','biometria')">📷 Subir</button>`:'',
     lio_asignado:ed&&!lio?`<button class="btn sm sec" onclick="this.closest('.modal').remove();formCirugia('${id}')">Asignar</button>`:'',
     lio_coincide:'',
+    lio_calculo:ed?`<button class="btn sm ${lioCalcOk(c.lio_requerido)?'sec':''}" onclick="calcLIO('${id}')">${lioCalcOk(c.lio_requerido)?'Editar cálculo':'Capturar cálculo'}</button>`:'',
+    lio_pedido:ed&&!lio&&!lioPedidoCx(c)?`<button class="btn sm" onclick="pedirLioEsp('${id}')">Solicitar a Finanzas</button>`:'',
     lio_respaldo:ed&&!c.lio_respaldo_id&&!ck.respaldo_na?`<button class="btn sm sec" onclick="this.closest('.modal').remove();formCirugia('${id}')">Apartar</button>${can.aprobar()?`<button class="btn sm sec" onclick="respaldoNA('${id}')">Sin respaldo</button>`:''}`:'',
     validado:'',cotizacion:'',indicaciones:`<button class="btn sm" onclick="enviarIndic('${id}')">WhatsApp</button><button class="btn sm sec" onclick="hojaIndic('${id}')">Hoja QR</button>`,
     lio_verificado:ed&&!c.lio_verificado_por&&lio?`<button class="btn sm" onclick="verificarLIO('${id}')">Verificar (2ª persona)</button>`:'',
@@ -1447,6 +1486,8 @@ function verCirugia(id){
     indicaciones:ck.indicaciones?`${ck.indicaciones.via==='whatsapp'?'Enviadas por WhatsApp':'Entregadas impresas'} · ${h(ck.indicaciones.nombre)} · ${fDT(ck.indicaciones.at)}`:'',
     confirmacion:ck.confirmacion?`${h(ck.confirmacion.nombre)} · ${fDT(ck.confirmacion.at)} · ${h(ck.confirmacion.nota||'')}`:'',
     valoracion:ck.valoracion_na?`No aplica — ${h(ck.valoracion_na.nombre)}: ${h(ck.valoracion_na.motivo||'')}`:'',
+    lio_calculo:c.lio_requerido?h(lioTxt(c.lio_requerido))+(lioCalcOk(c.lio_requerido)?'':` · <b style="color:#9a3412">pendiente: ${c.lio_requerido.dioptria===''||c.lio_requerido.dioptria==null?'dioptría':''}${/t[oó]rico/i.test(c.lio_requerido.tipo||'')&&!(num(c.lio_requerido.cilindro)&&c.lio_requerido.eje)?' cilindro y eje':''}</b>`):'',
+    lio_pedido:(()=>{const pd=lioPedidoCx(c);return pd?`Pedido ${h(pd.folio||'')} · ${h(pd.estado||'solicitado')} · ${pd.at?fDT(pd.at):''}`:lio?'Se asignó un lente del inventario':''})(),
     lio_coincide:lio?`Indicado: ${h(lioTxt(c.lio_requerido))} · Asignado: ${h(lio.modelo)} ${fmtN(lio.dioptria)} D${lio.cilindro?' Cil '+fmtN(lio.cilindro):''}`:'',
     lio_verificado:c.lio_verificado_por?`${h(c.lio_verificado_nombre)} · ${fDT(c.lio_verificado_at)}`:'',
     material:faltantesCx(c).map(i=>h(matById(i.material_id)?.nombre)).join(', '),
