@@ -511,6 +511,7 @@ body.locked .shell{visibility:hidden}
 .rcwrap{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:6px 0 10px}.rctbl{width:100%;table-layout:fixed;border-collapse:collapse}.rctbl th,.rctbl td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;font-size:13px}.rctbl th{font-size:11px;text-transform:uppercase;color:var(--muted)}.rctbl th:nth-child(1){width:32%}.rctbl th:nth-child(2){width:9%}.rctbl th:nth-child(3){width:13%}.rctbl .num{text-align:right}.rctbl input{width:100%;min-width:0;padding:6px 8px}
 @media (max-width:640px){.rctbl th:nth-child(1){width:auto}}
 .rctbl.c4 th:nth-child(1){width:52%}.rctbl.c4 th:nth-child(2),.rctbl.c4 th:nth-child(3),.rctbl.c4 th:nth-child(4){width:16%}
+.rctbl.cq5 th:nth-child(1){width:30%}.rctbl.cq5 th:nth-child(2),.rctbl.cq5 th:nth-child(3),.rctbl.cq5 th:nth-child(4){width:10%}.rctbl.cq5 th:nth-child(5){width:40%}.rctbl.cq5 select{width:100%}
 .cuadre-dir{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:14px;border:2px solid var(--accent)}.cuadrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line)}.cuadrow:last-child{border-bottom:0}
 .citaok{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--ok-soft);color:var(--ok);font-weight:600}
 .strip2{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -940,19 +941,32 @@ function paintCuad(){const B=$('#cqBox');if(!B)return;const PR=PROD.filter(p=>!p
   const pin=$('#dPin').value.trim();if(!/^\d{4,6}$/.test(pin)){dErr('Escriba su PIN.');$('#dPin').focus();return}if(!needPin())return;
   try{const r=await rpc('far_cuadre_director',{p_token:ME.token,p_pin:pin,p_items:items,p_nota:$('#cqN').value.trim()||null});
    $('#msgOvl').hidden=true;toast(`Cuadre #${r.cuadre} firmado: ${r.ajustados} producto(s) ajustado(s), ${r.piezas} pza. Mostrador debe firmar de enterado.`);await reload()}catch(er){dErr(er.message)}}}
+const CQT={venta:'Venta',merma:'Merma',entrada:'Entrada no registrada',otro:'Otro'};
 function cuadVer(id,firmar){const c=CUADRES.find(x=>x.id===id);if(!c)return;const it=(c.items||[]).filter(x=>x.dif!==0),igual=(c.items||[]).length-it.length;
+ const CL={};(c.clasif||[]).forEach(x=>CL[x.producto_id]=x);const edit=firmar&&!c.confirmado_at;
+ const celda=x=>{if(edit){const op=x.dif<0?['venta','merma','otro']:['entrada','otro'];return `<select data-cqt="${x.producto_id}" style="min-width:150px"><option value="">— ¿De qué se trata? —</option>${op.map(o=>`<option value="${o}">${o==='entrada'?'Entrada no registrada':CQT[o]}</option>`).join('')}</select><input data-cqn="${x.producto_id}" placeholder="Detalle (obligatorio si es Otro)" style="margin-top:4px">`}
+  const k=CL[x.producto_id];return k?`${chip([k.tipo==='venta'?'info':k.tipo==='merma'?'crit':'warn',CQT[k.tipo]||k.tipo])}${k.nota?`<div class="note">${esc(k.nota)}</div>`:''}`:'<span class="note">—</span>'};
  dlg(`Cuadre del Director #${c.id}`,`<form id="ccF" autocomplete="off"><p class="note" style="margin-top:0">Firmado por <b>${esc(c.director)}</b> el ${fdt(c.firmado_at)}${c.nota?' · '+esc(c.nota):''}. ${igual?igual+' producto(s) quedaron igual.':''}</p>
-  <div class="rcwrap"><table class="rctbl c4"><thead><tr><th>Producto</th><th class="num">Antes</th><th class="num">Ahora</th><th class="num">Cambio</th></tr></thead><tbody>${it.map(x=>`<tr><td>${esc(x.nombre)}</td><td class="num">${x.antes}</td><td class="num"><b>${x.ahora}</b></td><td class="num" style="color:var(--${x.dif<0?'crit':'warn'})">${x.dif>0?'+':''}${x.dif}</td></tr>`).join('')||'<tr><td colspan="4" class="note">Sin cambios.</td></tr>'}</tbody></table></div>
+  <div class="rcwrap"><table class="rctbl cq5"><thead><tr><th>Producto</th><th class="num">Antes</th><th class="num">Ahora</th><th class="num">Cambio</th><th>Explicación de mostrador</th></tr></thead><tbody>${it.map(x=>`<tr><td>${esc(x.nombre)}</td><td class="num">${x.antes}</td><td class="num"><b>${x.ahora}</b></td><td class="num" style="color:var(--${x.dif<0?'crit':'warn'})">${x.dif>0?'+':''}${x.dif}</td><td>${celda(x)}</td></tr>`).join('')||'<tr><td colspan="5" class="note">Sin cambios.</td></tr>'}</tbody></table></div>
+  ${edit&&it.length?'<p class="note">Indique en cada renglón de qué se trata: <b>faltantes</b> = venta (se vendió y debe estar cobrada) o merma (se rompió, caducó o se perdió); <b>sobrantes</b> = entrada que no se registró. Al firmar, el Director recibe el resumen.</p>':''}
   ${c.confirmado_at?`<p>${chip([c.conforme?'ok':'crit',c.conforme?'Enterado':'En desacuerdo'])} ${esc(c.confirmado_por)} · ${fdt(c.confirmado_at)}${c.confirmacion_nota?' · '+esc(c.confirmacion_nota):''}</p>`:firmar?`
   <div class="seg2 sm" style="margin:8px 0"><button type="button" data-ccc="1" aria-pressed="true">✓ Enterado y de acuerdo</button><button type="button" data-ccc="0" aria-pressed="false">✗ No estoy de acuerdo</button></div>
   <label>Comentario <span class="note">(obligatorio si no está de acuerdo)</span><input id="ccN" placeholder="Ej. el Systane sí está en el anaquel de abajo"></label>${pinHtml('Su PIN para firmar','Firmar')}`:'<p class="note">Falta la firma de enterado de mostrador.</p>'}</form>`,true);
- if(!firmar||c.confirmado_at)return;let ok=true;
+ $('#msgOvl .dlg').classList.add('xwide');if(!firmar||c.confirmado_at)return;let ok=true;
  document.querySelectorAll('[data-ccc]').forEach(b=>b.onclick=()=>{ok=b.dataset.ccc==='1';document.querySelectorAll('[data-ccc]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))});
  $('#ccF').onsubmit=async e=>{e.preventDefault();dErr('');const nota=$('#ccN').value.trim();if(!ok&&!nota){dErr('Explique en qué no está de acuerdo.');return}
   const pin=$('#dPin').value.trim();if(!/^\d{4,6}$/.test(pin)){dErr('Escriba su PIN.');$('#dPin').focus();return}if(!needPin())return;
-  try{await rpc('far_cuadre_confirmar',{p_token:ME.token,p_pin:pin,p_id:id,p_conforme:ok,p_nota:nota||null});$('#msgOvl').hidden=true;toast(ok?'Firmado de enterado.':'Firmado en desacuerdo: se avisó al Director.');await reload()}catch(er){dErr(er.message)}}}
+  const cls=it.map(x=>({producto_id:x.producto_id,tipo:($(`[data-cqt="${x.producto_id}"]`)||{}).value||'',nota:(($(`[data-cqn="${x.producto_id}"]`)||{}).value||'').trim()}));
+  const sin=it.filter((x,i)=>!cls[i].tipo);if(sin.length){dErr('Indique de qué se trata: '+sin.map(x=>x.nombre).join(', ')+'.');return}
+  const otr=it.filter((x,i)=>cls[i].tipo==='otro'&&!cls[i].nota);if(otr.length){dErr('Escriba el detalle de: '+otr.map(x=>x.nombre).join(', ')+'.');return}
+  try{await rpc('far_cuadre_clasificar',{p_token:ME.token,p_pin:pin,p_id:id,p_conforme:ok,p_clasif:cls,p_nota:nota||null});$('#msgOvl').hidden=true;toast(ok?'Firmado. El Director recibió el resumen de ventas y mermas.':'Firmado en desacuerdo: se avisó al Director.');await reload()}catch(er){dErr(er.message)}}}
 document.addEventListener('click',e=>{const a=e.target.closest('[data-cuadconf],[data-cuadver],#cuadBtn');if(!a)return;if(a.id==='cuadBtn')return cuadreDlg();if(typeof closePop==='function'&&$('#popOvl')&&!$('#popOvl').hidden)closePop();
  if(a.dataset.cuadconf)cuadVer(+a.dataset.cuadconf,true);else cuadVer(+a.dataset.cuadver,false)});
+/* explicación de diferencias del conteo: faltante = venta o merma; sobrante = entrada no registrada */
+const JTIP={'-':['Venta','Merma','Otro'],'+':['Entrada no registrada','Otro']};
+function justSel(id,df){const v=JUST[id]||'',ops=JTIP[df<0?'-':'+'],t=ops.find(o=>v===o||v.startsWith(o+':'))||'',d=t?v.slice(t.length).replace(/^:\s*/,''):v;
+ return `<select data-justt="${id}" style="margin-top:4px"><option value="">— ¿De qué se trata? —</option>${ops.map(o=>`<option ${o===t?'selected':''}>${o}</option>`).join('')}</select><input type="text" id="just${id}" data-justd="${id}" value="${esc(d)}" placeholder="${t==='Otro'?'Explique (obligatorio)':'Detalle (opcional)'}" style="margin-top:4px">`}
+function justSet(id){const t=($(`[data-justt="${id}"]`)||{}).value||'',d=(($(`[data-justd="${id}"]`)||{}).value||'').trim();JUST[id]=t==='Otro'?(d?'Otro: '+d:''):t?(t+(d?': '+d:'')):''}
 function vConteo(){
  const PR=PROD.filter(p=>!p.srv),cats={col:[0,0],med:[0,0],var:[0,0]};
  PR.forEach(p=>{const k=cats[p.cat]?p.cat:'var';cats[k][0]+=CONTEO[p.id];cats[k][1]+=sistema(p)});
@@ -971,7 +985,7 @@ function vConteo(){
  ${L.map(p=>{const s=sistema(p),c=CONTEO[p.id],df=c-s,fl=[...p.lotes].filter(l=>l.cad).sort(lotSort)[0],venc=p.lotes.filter(l=>l.cad&&days(l.cad)<0).reduce((a,l)=>a+l.q,0),st=stock(p),sa=stockA(p),falta=p.cap&&p.min>0&&st<=p.min;
   return `<tr class="${df?'cnt-no':''}"><td class="desc"><b>${esc(p.nm)}</b><div class="mono note" style="font-size:11px">${esc(p.cl)}</div>${venc?`<div>${chip(['dead',venc+' vencida · apartar'])}</div>`:''}</td>
   <td class="num"><input class="cnt" type="number" min="0" id="cnt${p.id}" data-cnt="${p.id}" value="${c}"></td><td class="num">${s}</td>
-  <td>${df===0?'<span class="cnt-ok">✓ Cuadra</span>':`<span class="cnt-x">✗ ${df>0?'Sobran '+df:'Faltan '+(-df)}</span><input type="text" id="just${p.id}" data-just="${p.id}" value="${esc(JUST[p.id]||'')}" placeholder="¿Por qué no cuadra?" style="margin-top:4px">`}</td>
+  <td>${df===0?'<span class="cnt-ok">✓ Cuadra</span>':`<span class="cnt-x">✗ ${df>0?'Sobran '+df:'Faltan '+(-df)}</span>${justSel(p.id,df)}`}</td>
   <td>${fl?`${chip(cadState(fl.cad))}<div class="note">${fmtD(fl.cad)}${p.lotes.filter(l=>l.cad).length>1?' (más próxima)':''}</div>`:p.lotes.length?chip(['info','Sin caducidad']):'<span class="note">—</span>'}</td>
   <td class="num">${p.min}${falta?`<div>${chip([st?'warn':'dead',st?'En mínimo':'Agotado'])}</div>`:''}</td>
   <td class="num">${sa||'<span class="note">—</span>'}</td>
@@ -1391,9 +1405,10 @@ function bind(){
  const q=$('#invQ');if(q){q.oninput=e=>{invQ=e.target.value;const pos=e.target.selectionStart;render();const n=$('#invQ');n.focus();n.setSelectionRange(pos,pos)};q.onkeydown=e=>{if(e.key!=='Enter')return;const v=q.value.trim(),p=PROD.find(x=>x.cl===v);if(p&&can('entrada')){invQ='';entradaDlg(p.id)}}}
  const f=$('#invF');if(f)f.onchange=e=>{invFilter=e.target.value;render()};
  M.querySelectorAll('[data-cnt]').forEach(c=>c.onchange=()=>{CONTEO[+c.dataset.cnt]=Math.max(0,+c.value||0);CEDIT.add(+c.dataset.cnt);render()});
- M.querySelectorAll('[data-just]').forEach(c=>c.oninput=()=>{JUST[+c.dataset.just]=c.value});
+ M.querySelectorAll('[data-justt]').forEach(c=>c.onchange=()=>{justSet(+c.dataset.justt);const i=$(`[data-justd="${c.dataset.justt}"]`);if(i)i.placeholder=c.value==='Otro'?'Explique (obligatorio)':'Detalle (opcional)'});
+ M.querySelectorAll('[data-justd]').forEach(c=>c.oninput=()=>justSet(+c.dataset.justd));
  const ci=$('#cntImp');if(ci)ci.onclick=conteoImpDlg;const cf=$('#cntF');if(cf)cf.onchange=e=>{CNTF=e.target.value;render()};
- const cu=$('#cuadrar');if(cu)cu.onclick=()=>{const pend=PROD.filter(p=>CONTEO[p.id]!==sistema(p)&&!(JUST[p.id]||'').trim());if(pend.length){toast(`Falta explicar la diferencia de: ${pend.map(p=>p.nm).join(', ')}.`);render();return}if(sb){askPin('Firma del conteo físico').then(ok=>{if(!ok)return;const rows=PROD.filter(p=>!p.srv).map(p=>({fecha:ISO(TODAY),producto_id:p.id,conteo:CONTEO[p.id],existencia:sistema(p),explicacion:JUST[p.id]||null,firmado_por:ME?ME.nombre:PERFILES[eff()],autorizado:CONTEO[p.id]===sistema(p)}));db(sb.from('far_conteos').insert(rows),'Conteo').then(async d=>{if(d!==null){const nd=rows.filter(r=>!r.autorizado).length;logDb('conteo_firmado',{productos:rows.length,diferencias:nd});JUST={};CEDIT.clear();await reload();toast(nd?`Conteo firmado. ${nd} diferencia(s) quedan pendientes de autorización del Director.`:'Conteo firmado. Todo cuadra.')}})});return}toast('Conteo firmado por el mostrador. Los ajustes quedan pendientes de autorización del Director.')};
+ const cu=$('#cuadrar');if(cu)cu.onclick=()=>{const pend=PROD.filter(p=>CONTEO[p.id]!==sistema(p)&&!(JUST[p.id]||'').trim());if(pend.length){toast(`Indique si es venta, merma o entrada no registrada en: ${pend.map(p=>p.nm).join(', ')}.`);render();return}if(sb){askPin('Firma del conteo físico').then(ok=>{if(!ok)return;const rows=PROD.filter(p=>!p.srv).map(p=>({fecha:ISO(TODAY),producto_id:p.id,conteo:CONTEO[p.id],existencia:sistema(p),explicacion:JUST[p.id]||null,firmado_por:ME?ME.nombre:PERFILES[eff()],autorizado:CONTEO[p.id]===sistema(p)}));db(sb.from('far_conteos').insert(rows),'Conteo').then(async d=>{if(d!==null){const nd=rows.filter(r=>!r.autorizado).length;logDb('conteo_firmado',{productos:rows.length,diferencias:nd});JUST={};CEDIT.clear();await reload();toast(nd?`Conteo firmado. ${nd} diferencia(s) quedan pendientes de autorización del Director.`:'Conteo firmado. Todo cuadra.')}})});return}toast('Conteo firmado por el mostrador. Los ajustes quedan pendientes de autorización del Director.')};
 
  M.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{if(TPL_EDIT){tplDlg(b.dataset.tpl);return}loadTpl(b.dataset.tpl)});
  M.querySelectorAll('[data-tpled]').forEach(b=>b.onclick=()=>tplDlg(b.dataset.tpled));
