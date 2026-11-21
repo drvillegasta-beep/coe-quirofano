@@ -251,6 +251,7 @@ input.inl{width:72px;display:inline-block;padding:3px 6px;min-height:0;margin:0 
 .pq-3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.pq-3>div{border:1px solid #999;padding:6px;font-size:10.5px;line-height:1.5}.pq-3 h4{margin:0 0 4px}.pq-3 small{font-weight:400}
 .vit td,.vit th{height:18px;text-align:center;font-size:10px;padding:1px}.vit td:first-child{text-align:left;white-space:nowrap}
 .offbar{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:98;padding:10px 16px;font-size:14px;line-height:1.4;box-shadow:0 -2px 12px rgba(0,0,0,.12)}.offbar.off{background:#FEF3C7;color:#5c4400}.offbar.ok{background:#DCFCE7;color:#14532d}.offbar.err{background:#FEE2E2;color:#7f1d1d}.offbar details{display:inline}.offbar summary{cursor:pointer;text-decoration:underline;display:inline}.offbar button{border:0;border-radius:8px;padding:4px 10px;font-weight:700;cursor:pointer;margin-left:6px}@media print{.offbar{display:none}}
+.cpmod{display:inline-block;width:auto;min-height:0;padding:2px 6px;font-size:13px;margin:0 4px}
 .cptel{display:inline-block;margin-left:6px;font-weight:700;font-size:15px;color:var(--pr);text-decoration:none;white-space:nowrap}.cptel:hover{text-decoration:underline}
 .clas tr.clG td{background:var(--pr2);position:sticky;top:0;z-index:1;font-size:14px}.clas td,.clas th{padding:6px 6px;vertical-align:middle}.clas input[type=radio],.clas input[type=checkbox]{width:20px;height:20px;min-height:0}
 .pq-cons p{margin:3px 0;line-height:1.32;font-size:10.5px}.pq-cons .pq-fi{margin-top:14px}.pq-big{font-size:15px}.pq-big ul{line-height:1.6}
@@ -352,7 +353,7 @@ tr.r-crit td{background:var(--rojo2)}tr.r-crit td:first-child{box-shadow:inset 4
    ============================================================ */
 const SUPA_URL='https://ckjkdenwqicdjvodflba.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtkZW53cWljZGp2b2RmbGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDIzMzgsImV4cCI6MjA4OTE3ODMzOH0.7pd1oAevIWY81e0DTSMBFtzSECfQNa_mOqstG_UEj-0';
-const VERSION='3.31';
+const VERSION='3.32';
 const TEMAS=[['grafito','Grafito y salvia'],['noche','Azul noche'],['pizarra','Pizarra y champaña'],['claro','Claro cálido']];
 const aplicarTema=t=>{try{document.documentElement.dataset.tema=t||safeLS('qx_tema')||cfg('tema','claro')}catch(e){}};
 let sb=null;
@@ -2595,6 +2596,19 @@ function tablaEquiv(g,o,libres,dias,imp){const pod=[...new Set(g.lt.map(p=>num(p
   const rows=pod.map(P=>{const n=g.lt.filter(p=>num(p.lio_poder)===P),E=eqPoder(P,g.A,o.A);const disp=libres.filter(l=>mismoModelo(l.modelo,o.modelo)&&!usados.has(l.id)&&Math.abs(num(l.dioptria)-E)<0.01);const ns=Math.min(n.length,disp.length);disp.slice(0,ns).forEach(l=>usados.add(l.id));return {P,E,n,ns}});
   const tot=rows.reduce((a,r)=>a+r.ns,0);
   return {tot,html:`<table><tr><th>Poder calculado (${h(g.mod)})</th><th>Equivalente ${h(o.modelo)}</th><th>Total</th><th>En stock ${h(o.modelo)}</th><th>Faltan</th>${dias.map(d=>`<th>${fCorta(d.fecha)}</th>`).join('')}<th>Sin día</th></tr>${rows.map(r=>`<tr><td>${fmtN(r.P)} D</td><td><b>${fmtN(r.E)} D</b></td><td>${r.n.length}</td><td>${r.ns||''}</td><td>${r.n.length-r.ns?`<b${imp?'':' class="t-a"'}>${r.n.length-r.ns}</b>`:(imp?'':'<span class="muted">✓</span>')}</td>${dias.map(x=>`<td>${r.n.filter(p=>p.dia===x.fecha).length||''}</td>`).join('')}<td>${r.n.filter(p=>!p.dia).length||''}</td></tr>`).join('')}</table>`}}
+function modelosLio(actual){const l=[...new Set([...Object.keys(lioConsts()),...(actual?[actual]:[])])];return actual?l:['',...l]}
+function cambiarModeloCamp(id,modelo,sel){const p=S.campPac.find(x=>x.id===id);if(!p)return;const ant=p.lio_modelo||'';if(modelo===ant)return;
+  const A=constDe(modelo);
+  const m=modal(`${mhead('Cambiar lente · '+h(p.paciente_nombre)+' '+h(p.ojo||''))}<div class="muted">De <b>${h(ant||'sin modelo')}</b>${p.lio_poder!=null?' ('+fmtN(p.lio_poder)+' D)':''} a <b>${h(modelo)}</b>. El poder depende de la constante: captura el poder de tu cálculo individual para este modelo.</div>
+   <div class="grid2"><div><label for="cmA">Constante A</label><input id="cmA" inputmode="decimal" value="${A??''}"></div><div><label for="cmP">Poder calculado para ${h(modelo)} (D)</label><input id="cmP" inputmode="decimal" placeholder="Obligatorio"></div></div>
+   <div class="acts"><button class="btn sec" id="no">Cancelar</button><button class="btn" id="ok">Guardar</button></div>`,'sm');
+  const cancelar=()=>{m.remove();if(sel)sel.value=ant};m.querySelector('#no').onclick=cancelar;m.querySelector('.x')?.addEventListener('click',()=>{if(sel)sel.value=ant});
+  m.querySelector('#cmP').focus();
+  m.querySelector('#ok').onclick=async()=>{const pv=m.querySelector('#cmP').value.trim(),av=m.querySelector('#cmA').value.trim();
+    if(pv==='')return toast('Captura el poder calculado para '+modelo,true);if(av==='')return toast('Captura la constante A',true);
+    try{await q(sb.from('qx_campana_pacientes').update({lio_modelo:modelo,lio_constante:num(av),lio_poder:num(pv),updated_at:new Date().toISOString()}).eq('id',id),'Cambiar lente');
+      await logA('campana_cambio_lio','qx_campana_pacientes',id,{de:ant,poder_ant:p.lio_poder,a:modelo,poder:num(pv),constante:num(av)});
+      m.remove();toast('Lente cambiado a '+modelo+' '+fmtN(pv)+' D');await loadAll();render()}catch(e){}}}
 function constantesLIO(){const c=lioConsts();const mods=[...new Set([...Object.keys(c),...S.lios.map(l=>l.modelo).filter(Boolean)])];
   const m=modal(`${mhead('Constantes A de los lentes')}<div class="muted">La potencia calculada depende de la constante del modelo. Captura la constante de cada modelo que uses (la del biómetro / fabricante).</div>
    <table class="tbl"><tr><th>Modelo</th><th>Constante A</th></tr>${mods.map(k=>`<tr><td>${h(k)}</td><td><input data-k="${h(k)}" inputmode="decimal" value="${c[k]??''}" style="width:110px"></td></tr>`).join('')}
@@ -2624,21 +2638,19 @@ function vCampana(){
   html+=grupos.map(g=>{const l=pp.filter(x=>(x.p.dia||'')===g.k&&(!qq||(x.p.paciente_nombre||'').toLowerCase().includes(qq)));if(!l.length&&g.k==='')return '';
     return `<div class="card"><div class="ph3"><h3>${h(g.t)}</h3><span class="muted">${l.length}${g.cupo?' / '+g.cupo+' cupo':''} ojos · ${l.filter(x=>x.liq).length} liquidados</span></div>
     ${l.map(({p,est,cls,pag,saldo,tot})=>`<div class="cprow"><div class="grow"><b>${h(p.paciente_nombre)}</b> <span class="pill p-azul">${h(p.ojo||'')}</span>${telsCamp(p).map(t=>` <a class="cptel" href="tel:${h(String(t).replace(/\D/g,''))}" onclick="event.stopPropagation()">📞 ${h(fmtTel(t))}</a>`).join('')} <span class="pill ${cls}">${est}${!['Liquidado'].includes(est)&&tot?' · saldo '+money(saldo):''}</span>
-      <div class="muted">${h(p.procedimiento||'')}${lioCamp(p)?' · LIO <b style="color:var(--ink)">'+h(lioCamp(p))+'</b> '+(st[p.id]?'<span class="pill p-verde">en stock</span>':st[p.id]===null?'<span class="pill p-amar">por pedir</span>':''):''}</div>
+      <div class="muted">${h(p.procedimiento||'')}${can.programar()||can.cotizar()?` · <select class="cpmod" aria-label="Modelo de lente" onchange="cambiarModeloCamp('${p.id}',this.value,this)">${modelosLio(p.lio_modelo).map(m=>`<option value="${h(m)}" ${m===(p.lio_modelo||'')?'selected':''}>${m?h(m)+(constDe(m)!=null?' · A '+fmtN(constDe(m)):''):'Modelo…'}</option>`).join('')}</select>`:''}${lioCamp(p)?' · LIO <b style="color:var(--ink)">'+h(lioCamp(p))+'</b> '+(st[p.id]?'<span class="pill p-verde">en stock</span>':st[p.id]===null?'<span class="pill p-amar">por pedir</span>':''):''}</div>
       ${(p.comprobantes||[]).length?`<div class="row" style="gap:6px;margin-top:4px;flex-wrap:wrap">${p.comprobantes.map(x=>`<a href="${h(x.url)}" target="_blank" class="pill">${x.tipo==='liquidacion'?'Liquidación':x.tipo==='abono'?'Abono':'Anticipo'} ${money(x.monto)}</a>${x.lectura?lectPill(x.lectura):''}`).join('')}</div>`:''}
       ${p.notas?`<div class="muted" style="margin-top:2px">📝 ${h(p.notas)}</div>`:''}</div>
       <div class="cpbtn">${p.telefono?`<a class="btn sm sec" target="_blank" href="https://wa.me/${waNum(p.telefono)}?text=${encodeURIComponent('Hola '+p.paciente_nombre+', le escribimos del Centro Ocular Especializado sobre su cirugía de la '+c.nombre+(p.dia?' programada el '+fFecha(p.dia):'')+'.')}">WhatsApp</a>`:''}
       ${can.programar()||can.cotizar()?`<button class="btn sm" onclick="pagoCampana('${p.id}')">Pago</button><button class="btn sm sec" onclick="editCampPac('${p.id}')">Editar</button>`:''}</div></div>`).join('')||'<div class="muted">Sin pacientes</div>'}</div>`}).join('');
   // lentes requeridos por modelo (cada modelo con su constante) + equivalencia en el stock de otros modelos
   const LG=lentesCampGrupos(ps,c);
-  html+=`<div class="card"><div class="row" style="align-items:center"><h3 style="flex:3;margin:0">Lentes requeridos · ${lios.length} en total</h3>${can.config()?'<button class="btn sec" style="flex:0 0 auto" onclick="constantesLIO()">Constantes</button>':''}${nF&&can.pedir()?`<button class="btn" style="flex:0 0 auto" onclick="pedirLiosCamp()">Solicitar ${nF} faltantes a Finanzas</button>`:''}</div><div class="muted" style="margin:4px 0 6px">${nSt} en stock del mismo modelo · <b style="color:var(--ink)">${nF} por pedir</b>. Solo cuenta como "en stock" un lente del <b>mismo modelo</b> con el que se calculó el poder (cada modelo tiene su constante) y que no caduque antes del último día de la campaña.</div>
+  html+=`<div class="card"><div class="row" style="align-items:center"><h3 style="flex:3;margin:0">Lentes requeridos · ${lios.length} en total</h3>${can.config()?'<button class="btn sec" style="flex:0 0 auto" onclick="constantesLIO()">Constantes</button>':''}${nF&&can.pedir()?`<button class="btn" style="flex:0 0 auto" onclick="pedirLiosCamp()">Solicitar ${nF} faltantes a Finanzas</button>`:''}</div><div class="muted" style="margin:4px 0 6px">${nSt} en stock del mismo modelo · <b style="color:var(--ink)">${nF} por pedir</b>. Solo cuenta como "en stock" un lente del <b>mismo modelo</b> que el paciente tiene elegido (cada modelo tiene su constante) y que no caduque antes del último día de la campaña. Para usar otro modelo en un paciente, cámbialo en su renglón y captura el poder de tu cálculo para ese modelo.</div>
   ${LG.grupos.map(g=>{const pod=[...new Set(g.lt.map(p=>num(p.lio_poder)))];
     return `<div class="sec-t">Lista ${h(g.mod||'modelo sin definir')} · ${h(g.tipo)}${g.A!=null?' · constante A '+fmtN(g.A):''} · ${g.lt.length}</div>${g.mod?'':'<div class="muted">Estos ojos no tienen modelo de lente: edítalos para indicar con qué modelo se calculó el poder.</div>'}
     <div class="tblwrap"><table><tr><th>Poder</th><th>Total</th><th>En stock</th><th>Faltan</th>${dias.map(d=>`<th>${fCorta(d.fecha)}</th>`).join('')}<th>Sin día</th></tr>
     ${pod.sort((a,b)=>g.lt.filter(p=>num(p.lio_poder)===b).length-g.lt.filter(p=>num(p.lio_poder)===a).length||a-b).map(d=>{const n=g.lt.filter(p=>num(p.lio_poder)===d);const ns=n.filter(p=>st[p.id]).length;return `<tr><td><b>${fmtN(d)} D</b></td><td><b>${n.length}</b></td><td>${ns||''}</td><td>${n.length-ns?`<b class="t-a">${n.length-ns}</b>`:'<span class="muted">✓</span>'}</td>${dias.map(x=>`<td>${n.filter(p=>p.dia===x.fecha).length||''}</td>`).join('')}<td>${n.filter(p=>!p.dia).length||''}</td></tr>`}).join('')}</table></div>
-    ${g.otros.map(o=>{const T=tablaEquiv(g,o,LG.libres,dias);return `<div class="sec-t" style="margin-top:14px">Lista alternativa: si se usa ${h(o.modelo)} del stock (constante A ${fmtN(o.A)}) · ${T.tot} de ${g.lt.length} disponibles</div>
-      <div class="lect warn" style="margin-bottom:6px">Equivalencia <b>aproximada</b>: poder ${h(o.modelo)} ≈ poder ${h(g.mod)} ${o.A-g.A>=0?'+':''}${fmtN(Math.round((o.A-g.A)*100)/100)} D (diferencia de constantes), redondeado a 0.50 D. Sirve para planear, pero <b>antes de implantar un ${h(o.modelo)} recalcula cada ojo en el biómetro con su constante</b>; en ojos muy cortos o muy largos la diferencia no es 1:1.</div>
-      <div class="tblwrap">${T.html}</div>`}).join('')}`}).join('')||'<div class="muted">Aún no hay poderes capturados.</div>'}
+`}).join('')||'<div class="muted">Aún no hay poderes capturados.</div>'}
   ${ps.length-lios.length?`<div class="muted" style="margin-top:6px">${ps.length-lios.length} ojo(s) sin poder de lente capturado.</div>`:''}</div>`;
   $('#main').innerHTML=html;
 }
@@ -2749,7 +2761,9 @@ function editCampPac(id){
   <div><label>Teléfono</label><input id="epTel" inputmode="tel" value="${h(p.telefono||'')}"></div></div><label>Nota</label><textarea id="epN">${h(p.notas||'')}</textarea>
   <div class="acts"><button class="btn rojo" id="del">Quitar de la campaña</button><button class="btn" id="ok">Guardar</button></div>`,'sm');
   const g=s=>m.querySelector(s).value.trim();
-  m.querySelector('#ok').onclick=async()=>{await q(sb.from('qx_campana_pacientes').update({ojo:g('#epO'),dia:g('#epD')||null,lio_tipo:g('#epT')||null,lio_poder:g('#epP')===''?null:num(g('#epP')),lio_modelo:g('#epM')||null,lio_constante:g('#epK')!==''?num(g('#epK')):constDe(g('#epM')),telefono:g('#epTel')||null,notas:g('#epN')||null,updated_at:new Date().toISOString()}).eq('id',id));await logA('campana_editar','qx_campana_pacientes',id);m.remove();await loadAll();render()};
+  m.querySelector('#epM').onchange=()=>{const nm=g('#epM');if(nm!==(p.lio_modelo||'')){m.querySelector('#epP').value='';m.querySelector('#epP').placeholder='Poder calculado para '+nm;const A=constDe(nm);m.querySelector('#epK').value=A??''}};
+  m.querySelector('#ok').onclick=async()=>{if(g('#epM')!==(p.lio_modelo||'')&&g('#epM')&&g('#epP')==='')return toast('Cambiaste el modelo: captura el poder calculado para '+g('#epM'),true);
+    await q(sb.from('qx_campana_pacientes').update({ojo:g('#epO'),dia:g('#epD')||null,lio_tipo:g('#epT')||null,lio_poder:g('#epP')===''?null:num(g('#epP')),lio_modelo:g('#epM')||null,lio_constante:g('#epK')!==''?num(g('#epK')):constDe(g('#epM')),telefono:g('#epTel')||null,notas:g('#epN')||null,updated_at:new Date().toISOString()}).eq('id',id));await logA('campana_editar','qx_campana_pacientes',id);m.remove();await loadAll();render()};
   m.querySelector('#del').onclick=async()=>{if((p.comprobantes||[]).length)return toast('Tiene pagos registrados: no se puede quitar',true);if(!await confirmar('¿Quitar a '+h(p.paciente_nombre)+' de la campaña?'))return;if(!await pedirPIN('Quitar de campaña'))return;await q(sb.from('qx_campana_pacientes').delete().eq('id',id));await logA('campana_baja','qx_campana_pacientes',id,{paciente:p.paciente_nombre});m.remove();await loadAll();render()};
 }
 function vCampanas(out){
@@ -2787,7 +2801,7 @@ function imprimirLiosCamp(){
   const c=campActiva(),dias=diasCamp(c),ps=(S.campPac||[]).filter(p=>p.campana_id===c.id),LG=lentesCampGrupos(ps,c),st=LG.st;
   printWin(`${printHead('Lentes requeridos · '+h(c.nombre))}<div style="margin:6px 0">Total: <b>${LG.lios.length} lentes</b> · "En stock" solo cuenta lentes del mismo modelo con el que se calculó el poder.</div>${LG.grupos.map(g=>{const pod=[...new Set(g.lt.map(p=>num(p.lio_poder)))].sort((a,b)=>a-b);
    return `<h4>Lista ${h(g.mod||'modelo sin definir')} · ${h(g.tipo)}${g.A!=null?' · A '+fmtN(g.A):''} · ${g.lt.length}</h4><table><tr><th>Poder</th><th>Total</th><th>En stock</th><th>Pedir</th>${dias.map(d=>`<th>${fCorta(d.fecha)}</th>`).join('')}<th>Sin día</th></tr>${pod.map(d=>{const n=g.lt.filter(p=>num(p.lio_poder)===d),ns=n.filter(p=>st[p.id]).length;return `<tr><td>${fmtN(d)} D</td><td><b>${n.length}</b></td><td>${ns||''}</td><td><b>${n.length-ns||''}</b></td>${dias.map(x=>`<td>${n.filter(p=>p.dia===x.fecha).length||''}</td>`).join('')}<td>${n.filter(p=>!p.dia).length||''}</td></tr>`}).join('')}</table>
-   ${g.otros.map(o=>{const T=tablaEquiv(g,o,LG.libres,dias,true);return `<h4>Alternativa: ${h(o.modelo)} del stock (A ${fmtN(o.A)}) · ${T.tot} disponibles</h4><div style="font-size:11px;margin-bottom:4px">Equivalencia aproximada (diferencia de constantes ${o.A-g.A>=0?'+':''}${fmtN(Math.round((o.A-g.A)*100)/100)} D, redondeo a 0.50 D). Recalcular cada ojo con la constante de ${h(o.modelo)} antes de implantar.</div>${T.html}`}).join('')}`}).join('')}`);
+`}).join('')}`);
 }
 
 
